@@ -35,6 +35,24 @@ void conectar_con_consola()
     pthread_join(hilo_consolas, NULL);
 }
 
+void conectar_con_cpu(){
+    log_info(logger, "[KERNEL] conectando con CPU...");
+
+    socket_cpu = iniciar_servidor(KernelConfig.IP_CPU, KernelConfig.PUERTO_CPU);
+
+    if(socket_cpu < 0)
+    {
+        log_info(logger,"[KERNEL]: Error al conectar con CPU. Finalizando Ejecucion");
+        log_error(logger,"[KERNEL]: CPU no está disponible");
+
+        return FAILURE;
+
+    }
+    log_info(logger, "[KERNEL]: Conexion con CPU: OK");
+
+    return SUCCESS;
+}
+
 void terminar_ejecucion(){
     log_warning(logger, "[KERNEL]: Finalizando ejecucion...");
     log_destroy(logger);

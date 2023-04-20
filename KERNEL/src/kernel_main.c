@@ -12,7 +12,7 @@ int main()
 
     //conectar_con_filesystem();
 
-    //conectar_con_cpu();
+    conectar_con_cpu();
 
     conectar_con_consola();
 

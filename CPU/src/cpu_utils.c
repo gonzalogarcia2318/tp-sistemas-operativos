@@ -1,0 +1,43 @@
+#include <cpu_utils.h>
+
+void iniciar_logger_cpu()
+{
+    logger = log_create(ARCHIVO_LOGGER, "CPU", 1, LOG_LEVEL_INFO);
+    log_info(logger, "[CPU]: Logger creado correctamente");
+}
+
+void iniciar_config_cpu()
+{
+    config = config_create(ARCHIVO_CONFIG);
+    rellenar_configuracion_cpu(config);
+    log_info(logger,"[CPU]: Archivo Config creado y rellenado correctamente");
+}
+
+void iniciar_servidor_cpu()
+{
+  log_info(logger, "[CPU]: Iniciando Servidor ...");
+  socket_cpu = iniciar_servidor(CPUConfig.IP, CPUConfig.PUERTO_ESCUCHA);
+
+  if (socket_kernel < 0)
+  {
+    log_error(logger, "[CPU]: Error intentando iniciar Servidor.");
+    return EXIT_FAILURE;
+  }
+
+  log_info(logger, "[CPU]: Servidor iniciado correctamente.");
+}
+
+// Conectar con cliente de cpu? - esperar kernel
+void conectar_con_kernel()
+{
+    // Utiliza socket_kernel
+
+    pthread_create(&hilo_kernel, NULL, (void *)esperar_kernel, (void *)socket_cpu);
+    pthread_join(hilo_kernel, NULL);
+}
+
+void terminar_ejecucion(){
+    log_warning(logger, "[CPU]: Finalizando ejecucion...");
+    log_destroy(logger);
+    config_destroy(config);
+}
