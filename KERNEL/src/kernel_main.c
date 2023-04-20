@@ -8,7 +8,7 @@ int main()
 
     iniciar_servidor_kernel();
 
-    //conectar_con_memoria();
+    conectar_con_memoria();
 
     //conectar_con_filesystem();
 
