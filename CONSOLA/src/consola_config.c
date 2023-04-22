@@ -1,4 +1,4 @@
-#include <consola_config.h>
+#include "consola_config.h"
 
 CONSOLA_CONFIG ConsolaConfig;
 

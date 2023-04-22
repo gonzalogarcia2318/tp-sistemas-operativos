@@ -1,7 +1,7 @@
 #ifndef CONSOLA_CONFIG_H
 #define CONSOLA_CONFIG_H
 
-#include <protocolo.h>
+#include "protocolo.h"
 
 typedef struct CONSOLA_CONFIG
 {

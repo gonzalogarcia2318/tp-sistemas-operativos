@@ -1,0 +1,22 @@
+{
+    "folders": [
+        {
+            "path": "CONSOLA"
+        },
+        {
+            "path": "CPU"
+        },
+        {
+            "path": "FILE_SYSTEM"
+        },
+        {
+            "path": "KERNEL"
+        },
+        {
+            "path": "MEMORIA"
+        },
+        {
+            "path": "shared"
+        }
+    ]
+}

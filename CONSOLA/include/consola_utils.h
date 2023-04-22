@@ -8,13 +8,13 @@
 #define ARCHIVO_CONFIG "consola.config"
 #define ARCHIVO_CODIGO "pseudocodigo.txt"
 
-#include <protocolo.h>
-#include <consola_config.h>
-#include <socket/server.h>
-#include <socket/cliente.h>
+#include "protocolo.h"
+#include "consola_config.h"
+#include "socket/server.h"
+#include "socket/cliente.h"
 
 extern int socket_kernel;
-extern  Logger *logger;
+extern Logger *logger;
 extern Config *config;
 
 void inicializar_logger_consola();
