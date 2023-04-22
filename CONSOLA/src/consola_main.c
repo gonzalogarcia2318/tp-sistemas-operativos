@@ -2,11 +2,14 @@
 
 int main()
 {
-    t_log *logger = log_create("./cfg/proceso1.log", "PROCESO1", true, LOG_LEVEL_INFO);
-    log_info(logger, "Soy el proceso 1! %s", mi_funcion_compartida());
+    // TODO: Prueba shared. Borrar.
+    // t_log *logger = log_create("./proceso1.log", "PROCESO1", true, LOG_LEVEL_INFO);
+    // log_info(logger, "Soy el proceso 1! %s", mi_funcion_compartida());
 
     inicializar_logger_consola();
     inicializar_config_consola();
+
+    log_info(logger, "%s", config_get_string_value(config, "IP_KERNEL"));
 
     if(conectar_con_kernel() == SUCCESS)
     {

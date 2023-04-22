@@ -4,9 +4,11 @@
 #include <commons/config.h>
 #include <commons/log.h>
 // #include <list.h>
-#include <socket/socket.h>
 #include <string.h>
 #include <pthread.h>
+#include "cliente.h"
+#include "server.h"
+#include "socket.h"
 
 typedef t_config Config;
 typedef t_list Lista;
@@ -16,23 +18,22 @@ typedef pthread_t Hilo;
 typedef enum
 {
     DESCONEXION = -1,
-	MENSAJE,
-	PAQUETE_2, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
+    MENSAJE,
+    PAQUETE_2, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
     FINALIZAR_PROCESO
-}CODIGO_OPERACION;
+} CODIGO_OPERACION;
 
 typedef struct
 {
-	int size;
-	void* stream;
+    int size;
+    void *stream;
 } BUFFER;
 
 typedef struct
 {
-	CODIGO_OPERACION codigo_operacion;
-	BUFFER* buffer;
+    CODIGO_OPERACION codigo_operacion;
+    BUFFER *buffer;
 } PAQUETE;
-
 
 // ------- Funciones de Cliente y Servidor  -------
 
@@ -54,7 +55,6 @@ char *obtener_mensaje_del_cliente(int socketCliente);
 Lista *obtener_paquete_como_lista(int socketCliente);
 char *obtener_mensaje_del_servidor(int socketServidor);
 
-char* mi_funcion_compartida();
-
+char *mi_funcion_compartida();
 
 #endif

@@ -14,7 +14,8 @@
                 "/usr/include",
                 "${workspaceFolder}/include",
                 "../shared/include",
-                "/usr/include/x86_64-linux-gnu"
+                "/usr/include/x86_64-linux-gnu",
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "_GNU_SOURCE"

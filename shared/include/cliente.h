@@ -2,6 +2,7 @@
 #define CLIENTE_H
 
 #include "socket.h"
+#include "protocolo.h"
 
 /**
  * @brief Crea una conexión con un servidor específico.

@@ -1,4 +1,4 @@
-#include <socket/cliente.h>
+#include "cliente.h"
 
 
 int crear_conexion_con_servidor(char *ip, char *puerto)

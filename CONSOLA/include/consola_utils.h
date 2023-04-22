@@ -10,12 +10,14 @@
 
 #include "protocolo.h"
 #include "consola_config.h"
-#include "socket/server.h"
-#include "socket/cliente.h"
+#include "server.h"
+#include "cliente.h"
 
 extern int socket_kernel;
 extern Logger *logger;
 extern Config *config;
+
+void test1();
 
 void inicializar_logger_consola();
 void inicializar_config_consola();

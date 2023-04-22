@@ -27,8 +27,10 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-#include "cliente.h"
-#include "server.h"
+// #include "cliente.h"
+// #include "server.h"
+
+#include "protocolo.h"
 
 #endif
 
