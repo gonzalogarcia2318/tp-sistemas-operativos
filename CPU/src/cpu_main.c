@@ -10,7 +10,13 @@ int main()
 
     conectar_con_kernel();
 
-    //conectar_con_memoria();
+    int conexionMemoria = conectar_con_memoria();
+
+    if( conexionMemoria== SUCCESS)
+    {
+    	enviar_mensaje_a_servidor(mensaje,  socketCliente) //reemplazar parametros
+        liberar_conexion_con_servidor(conexionMemoria);
+    }
 
     terminar_ejecucion();
 

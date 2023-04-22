@@ -10,6 +10,8 @@ int main()
 
     conectar_con_kernel();
 
+    conectar_con_cpu();
+
     terminar_ejecucion();
 
     return EXIT_SUCCESS;

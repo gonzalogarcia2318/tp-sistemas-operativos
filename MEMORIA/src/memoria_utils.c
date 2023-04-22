@@ -35,6 +35,14 @@ void conectar_con_kernel()
     pthread_join(hilo, NULL);
 }
 
+void conectar_con_kernel()
+{
+    // Utiliza socket_memoria
+
+    pthread_create(&hilo_cpu, NULL, (void *)esperar_cpu, (void *)socket_memoria);
+    pthread_join(hilo_cpu, NULL);
+}
+
 void terminar_ejecucion(){
     log_warning(logger, "[MEMORIA]: Finalizando ejecucion...");
     log_destroy(logger);
