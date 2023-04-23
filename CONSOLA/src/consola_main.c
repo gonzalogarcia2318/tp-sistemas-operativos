@@ -2,9 +2,12 @@
 
 int main()
 {
+    int x = 5;
+
+    x = 7;
     // TODO: Prueba shared. Borrar.
-    // t_log *logger = log_create("./proceso1.log", "PROCESO1", true, LOG_LEVEL_INFO);
-    // log_info(logger, "Soy el proceso 1! %s", mi_funcion_compartida());
+    t_log *logger = log_create("./proceso1.log", "PROCESO1", true, LOG_LEVEL_INFO);
+    log_info(logger, "Soy el proceso 1! %s", mi_funcion_compartida());
 
     inicializar_logger_consola();
     inicializar_config_consola();

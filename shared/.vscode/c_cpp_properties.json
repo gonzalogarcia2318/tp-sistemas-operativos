@@ -14,7 +14,8 @@
                 "/usr/include",
                 "${workspaceFolder}/include",
                 "../shared/include",
-                "../shared/include/socket"
+                "/usr/include/x86_64-linux-gnu",
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "_GNU_SOURCE"
@@ -32,8 +33,7 @@
                     "/usr/local/include",
                     "/usr/lib/gcc/i686-linux-gnu/5/include-fixed",
                     "/usr/include/i386-linux-gnu",
-                    "/usr/include",
-                    "/usr/include/socket"
+                    "/usr/include"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""

@@ -1,0 +1,8 @@
+[INFO] 19:08:29:519 PROCESO1/(16770:16770): Soy el proceso 1! Hice uso de la shared!
+[INFO] 19:08:32:388 PROCESO1/(16770:16770): 127.0.0.1
+[INFO] 19:12:30:424 PROCESO1/(16996:16996): Soy el proceso 1! Hice uso de la shared!
+[INFO] 19:12:30:430 PROCESO1/(16996:16996): 127.0.0.1
+[INFO] 19:39:26:795 PROCESO1/(17180:17180): Soy el proceso 1! Hice uso de la shared!
+[INFO] 19:39:26:800 PROCESO1/(17180:17180): 127.0.0.1
+[INFO] 19:39:59:027 PROCESO1/(17237:17237): Soy el proceso 1! Hice uso de la shared!
+[INFO] 19:39:59:030 PROCESO1/(17237:17237): 127.0.0.1
