@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Make",
+            "type": "shell",
+            "command": "make",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+            "label": "FILE_SYSTEM Normal",
+            "type": "shell",
+            "command": "./exec"
+        },
+        {
+            "label": "FILE_SYSTEM Valgrind",
+            "type": "shell",
+            "command": "./valgrind-exec"
+        }
+    ]
+}

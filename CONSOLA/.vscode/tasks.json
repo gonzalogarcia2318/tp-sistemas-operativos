@@ -17,7 +17,7 @@
         {
             "label": "CONSOLA Valgrind",
             "type": "shell",
-            "command": "./vexec"
+            "command": "./valgrind-exec"
         }
     ]
 }

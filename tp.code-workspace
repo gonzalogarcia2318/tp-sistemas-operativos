@@ -18,5 +18,10 @@
         {
             "path": "shared"
         }
-    ]
+    ],
+    "settings": {
+        "files.associations": {
+            "kernel_utils.h": "c"
+        }
+    }
 }

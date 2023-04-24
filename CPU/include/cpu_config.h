@@ -1,7 +1,7 @@
 #ifndef CPU_CONFIG_H
 #define CPU_CONFIG_H
 
-#include <protocolo.h>
+#include "protocolo.h"
 
 typedef struct CPU_CONFIG
 {

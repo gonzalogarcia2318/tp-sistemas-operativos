@@ -1,4 +1,4 @@
-#include <cpu_utils.h>
+#include "cpu_utils.h"
 
 void iniciar_logger_cpu()
 {
@@ -35,11 +35,12 @@ void conectar_con_kernel()
     pthread_create(&hilo_kernel, NULL, (void *)esperar_kernel, (void *)socket_cpu);
     pthread_join(hilo_kernel, NULL);
 }
-void conectar_con_memoria()
+
+int conectar_con_memoria()
 {
 	 log_info(logger, "[CPU] conectando con memoria...");
 
-	    socket_memoria = crear_conexion_con_servidor(CPUConfig.IP, CPUConfig.PUERTO_ESCUCHA)
+	    socket_memoria = crear_conexion_con_servidor(CPUConfig.IP, CPUConfig.PUERTO_ESCUCHA);
 
 	    if(socket_memoria < 0)
 	    {

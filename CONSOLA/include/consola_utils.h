@@ -4,8 +4,8 @@
 #define SUCCESS 0
 #define FAILURE -1
 
-#define ARCHIVO_LOGGER "consola.log"
-#define ARCHIVO_CONFIG "consola.config"
+#define ARCHIVO_LOGGER "config/consola.log"
+#define ARCHIVO_CONFIG "config/consola.config"
 #define ARCHIVO_CODIGO "pseudocodigo.txt"
 
 #include "protocolo.h"

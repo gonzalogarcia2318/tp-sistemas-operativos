@@ -1,4 +1,9 @@
-#include <file_system_utils.h>
+#include "file_system_utils.h"
+
+Logger *logger;
+Config *config;
+Hilo hilo_fileSystem;
+int socket_fileSystem;
 
 void iniciar_logger_fileSystem()
 {
@@ -31,8 +36,8 @@ void conectar_con_kernel()
 {
     // Utiliza socket_fileSystem
 
-    pthread_create(&hilo_kernel, NULL, (void *)esperar_kernel, (void *)socket_fileSystem);
-    pthread_join(hilo_kernel, NULL);
+    pthread_create(&hilo_fileSystem, NULL, (void *)esperar_kernel, (void *)socket_fileSystem);
+    pthread_join(hilo_fileSystem, NULL);
 }
 
 void terminar_ejecucion(){

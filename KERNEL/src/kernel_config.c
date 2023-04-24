@@ -1,4 +1,4 @@
-#include <kernel_config.h>
+#include "kernel_config.h"
 
 KERNEL_CONFIG KernelConfig;
 

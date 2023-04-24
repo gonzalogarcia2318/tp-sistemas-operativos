@@ -1,16 +1,17 @@
 #ifndef MEMORIA_UTILS_H
 #define MEMORIA_UTILS_H
 
-#include <protocolo.h>
-#include <memoria_config.h>
-#include <memoria_thread.h>
+#include "protocolo.h"
+#include "memoria_config.h"
+#include "memoria_thread.h"
 
-#define ARCHIVO_LOGGER "memoria.log"
-#define ARCHIVO_CONFIG "memoria.config"
+#define ARCHIVO_LOGGER "config/memoria.log"
+#define ARCHIVO_CONFIG "config/memoria.config"
 
 extern Logger *logger;
 extern Config *config;
 extern Hilo hilo;
+extern Hilo hilo_cpu;
 extern int socket_memoria;
 extern int socket_kernel;
 

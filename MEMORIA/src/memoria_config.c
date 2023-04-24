@@ -1,4 +1,4 @@
-#include <memoria_config.h>
+#include "memoria_config.h"
 
 MEMORIA_CONFIG MemoriaConfig;
 

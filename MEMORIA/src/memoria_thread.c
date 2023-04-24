@@ -1,4 +1,4 @@
-#include <memoria_thread.h>
+#include "memoria_thread.h"
 
 void esperar_kernel(int socket_memoria)
 {

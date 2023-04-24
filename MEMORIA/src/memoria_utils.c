@@ -1,4 +1,11 @@
-#include <memoria_utils.h>
+#include "memoria_utils.h"
+
+Logger *logger;
+Config *config;
+Hilo hilo;
+Hilo hilo_cpu;
+int socket_memoria;
+int socket_kernel;
 
 void iniciar_logger_memoria()
 {
@@ -35,7 +42,7 @@ void conectar_con_kernel()
     pthread_join(hilo, NULL);
 }
 
-void conectar_con_kernel()
+void conectar_con_cpu()
 {
     // Utiliza socket_memoria
 

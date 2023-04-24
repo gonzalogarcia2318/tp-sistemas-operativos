@@ -1,12 +1,15 @@
 #ifndef KERNEL_UTILS_H
 #define KERNEL_UTILS_H
 
-#include <protocolo.h>
-#include <kernel_config.h>
-#include <kernel_thread.h>
+#include "protocolo.h"
+#include "kernel_config.h"
+#include "kernel_thread.h"
 
-#define ARCHIVO_LOGGER "kernel.log"
-#define ARCHIVO_CONFIG "kernel.config"
+#define ARCHIVO_LOGGER "config/kernel.log"
+#define ARCHIVO_CONFIG "config/kernel.config"
+
+#define SUCCESS 0
+#define FAILURE -1
 
 extern Logger *logger;
 extern Config *config;

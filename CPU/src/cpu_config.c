@@ -1,4 +1,4 @@
-#include <cpu_config.h>
+#include "cpu_config.h"
 
 CPU_CONFIG CPUConfig;
 

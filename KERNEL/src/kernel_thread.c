@@ -1,4 +1,4 @@
-#include <kernel_thread.h>
+#include "kernel_thread.h"
 
 void esperar_consola(int socketKernel)
 {

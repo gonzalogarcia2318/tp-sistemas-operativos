@@ -1,12 +1,12 @@
 #ifndef FILE_SYSTEM_UTILS_H
 #define FILE_SYSTEM_UTILS_H
 
-#include <protocolo.h>
-#include <file_system_config.h>
-#include <file_system_thread.h>
+#include "protocolo.h"
+#include "file_system_config.h"
+#include "file_system_thread.h"
 
-#define ARCHIVO_LOGGER "fileSystem.log"
-#define ARCHIVO_CONFIG "fileSystem.config"
+#define ARCHIVO_LOGGER "config/fileSystem.log"
+#define ARCHIVO_CONFIG "config/file_system.config"
 
 extern Logger *logger;
 extern Config *config;

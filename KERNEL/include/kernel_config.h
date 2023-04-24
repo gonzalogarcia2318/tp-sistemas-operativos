@@ -1,7 +1,7 @@
 #ifndef KERNEL_CONFIG_H
 #define KERNEL_CONFIG_H
 
-#include <protocolo.h>
+#include "protocolo.h"
 
 typedef struct KERNEL_CONFIG
 {

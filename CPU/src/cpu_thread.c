@@ -1,4 +1,4 @@
-#include <cpu_thread.h>
+#include "cpu_thread.h"
 
 void esperar_kernel(int socket_cpu)
 {
@@ -18,7 +18,7 @@ void esperar_kernel(int socket_cpu)
     log_info(logger, "[CPU]: Conexión de Kernel establecida.");
 
     Hilo hilo_kernel;
-    pthread_create(&hilo_kernel, NULL, (void *)manejar_paquete_consola, (void *)socket_consola);
+    pthread_create(&hilo_kernel, NULL, (void *)manejar_paquete_kernel, (void *)socket_consola);
     pthread_detach(hilo_kernel);
   }
 }

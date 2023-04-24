@@ -1,4 +1,11 @@
-#include <kernel_utils.h>
+#include "kernel_utils.h"
+
+Logger *logger;
+Config *config;
+Hilo hilo_consolas;
+int socket_kernel;
+int socket_cpu;
+int socket_memoria;
 
 void iniciar_logger_kernel()
 {

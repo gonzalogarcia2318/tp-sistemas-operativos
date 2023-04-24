@@ -1,4 +1,12 @@
-#include <cpu_utils.h>
+#include "cpu_utils.h"
+
+Logger *logger;
+Config *config;
+Hilo hilo_kernel;
+int socket_cpu;
+int socket_memoria;
+int socket_cliente;
+int socket_kernel;
 
 int main()
 {
@@ -14,7 +22,8 @@ int main()
 
     if( conexionMemoria== SUCCESS)
     {
-    	enviar_mensaje_a_servidor(mensaje,  socketCliente) //reemplazar parametros
+        char *mensaje;
+    	enviar_mensaje_a_servidor(mensaje,  socket_cliente); //reemplazar parametros
         liberar_conexion_con_servidor(conexionMemoria);
     }
 
