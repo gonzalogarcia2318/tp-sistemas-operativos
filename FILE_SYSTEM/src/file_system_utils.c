@@ -4,6 +4,7 @@ Logger *logger;
 Config *config;
 Hilo hilo_fileSystem;
 int socket_fileSystem;
+int socket_memoria;
 
 void iniciar_logger_fileSystem()
 {
@@ -38,6 +39,22 @@ void conectar_con_kernel()
 
     pthread_create(&hilo_fileSystem, NULL, (void *)esperar_kernel, (void *)socket_fileSystem);
     pthread_join(hilo_fileSystem, NULL);
+}
+
+void conectar_con_memoria(){
+
+  log_info(logger, "[FILESYSTEM] conectando con Memoria...");
+  socket_memoria = iniciar_servidor(FileSystemConfig.IP, FileSystemConfig.PUERTO_MEMORIA);
+
+  if (socket_memoria < 0)
+  {
+      log_info(logger, "[FILESYSTEM]: Error al conectar con Memoria. Finalizando Ejecucion");
+      log_error(logger, "[FILESYSTEM]: Memoria no está disponible");
+      return FAILURE;
+  }
+  log_info(logger, "[FILESYSTEM]: Conexion con Memoria: OK");
+
+  return SUCCESS;
 }
 
 void terminar_ejecucion(){

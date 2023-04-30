@@ -7,6 +7,8 @@
 
 #define ARCHIVO_LOGGER "config/fileSystem.log"
 #define ARCHIVO_CONFIG "config/file_system.config"
+#define SUCCESS 0
+#define FAILURE -1
 
 extern Logger *logger;
 extern Config *config;
