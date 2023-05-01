@@ -3,11 +3,15 @@
 
 void enviar_instrucciones_a_kernel()
 {
-    // COMPLETAR
+    log_info(logger,"[CONSOLA]:Enviando mensaje a KERNEL...");
+    enviar_mensaje_a_servidor(ConsolaConfig.IP_KERNEL,socket_kernel);
+    log_info(logger,"[CONSOLA]:Mensaje enviado.");
+
 }
 
 void escuchar_kernel()
 {
+    /*
     while (1)
     {
         switch (obtener_codigo_operacion(socket_kernel))
@@ -22,4 +26,5 @@ void escuchar_kernel()
 
         break;
     }
+    */
 }
