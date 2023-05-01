@@ -28,10 +28,11 @@ void iniciar_servidor_kernel()
     if (socket_kernel < 0)
     {
         log_error(logger, "[KERNEL]: Error intentando iniciar Servidor.");
-        return EXIT_FAILURE;
+        return FAILURE;
     }
 
     log_info(logger, "[KERNEL]: Servidor iniciado correctamente.");
+    return SUCCESS;
 }
 
 void conectar_con_consola()

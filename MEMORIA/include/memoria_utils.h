@@ -8,6 +8,9 @@
 #define ARCHIVO_LOGGER "config/memoria.log"
 #define ARCHIVO_CONFIG "config/memoria.config"
 
+#define SUCCESS 0
+#define FAILURE -1
+
 extern Logger *logger;
 extern Config *config;
 extern Hilo hilo;
@@ -17,8 +20,9 @@ extern int socket_kernel;
 
 void iniciar_logger_memoria();
 void iniciar_config_memoria();
-void iniciar_servidor_memoria();
+int iniciar_servidor_memoria();
 void conectar_con_kernel();
+void conectar_con_cpu();
 void terminar_ejecucion();
 
 #endif

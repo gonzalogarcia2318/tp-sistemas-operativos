@@ -6,20 +6,20 @@ Hilo hilo_fileSystem;
 int socket_fileSystem;
 int socket_memoria;
 
-void iniciar_logger_fileSystem()
+void iniciar_logger_file_system()
 {
     logger = log_create(ARCHIVO_LOGGER, "File_System", 1, LOG_LEVEL_INFO);
     log_info(logger, "[FILE_SYSTEM]: Logger creado correctamente");
 }
 
-void iniciar_config_fileSystem()
+void iniciar_config_file_system()
 {
     config = config_create(ARCHIVO_CONFIG);
-    rellenar_configuracion_fileSystem(config);
+    rellenar_configuracion_file_system(config);
     log_info(logger,"[FILE_SYSTEM]: Archivo Config creado y rellenado correctamente");
 }
 
-void iniciar_servidor_fileSystem()
+int iniciar_servidor_file_system()
 {
   log_info(logger, "[FILE_SYSTEM]: Iniciando Servidor ...");
   socket_fileSystem = iniciar_servidor(FileSystemConfig.IP, FileSystemConfig.PUERTO_ESCUCHA);
@@ -27,10 +27,11 @@ void iniciar_servidor_fileSystem()
   if (socket_fileSystem < 0)
   {
     log_error(logger, "[FILE_SYSTEM]: Error intentando iniciar Servidor.");
-    return EXIT_FAILURE;
+    return FAILURE;
   }
 
   log_info(logger, "[FILE_SYSTEM]: Servidor iniciado correctamente.");
+  return SUCCESS;
 }
 
 void conectar_con_kernel()

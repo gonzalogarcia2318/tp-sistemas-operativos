@@ -1,8 +1,8 @@
-#include <file_system_config.h>
+#include "file_system_config.h"
 
 FILE_SYSTEM_CONFIG FileSystemConfig;
 
-void rellenar_configuracion_fileSystem(Config *config)
+void rellenar_configuracion_file_system(Config *config)
 {
 	FileSystemConfig.IP = config_get_string_value(config, "IP");
 	FileSystemConfig.PUERTO_ESCUCHA = config_get_string_value(config, "PUERTO_ESCUCHA");

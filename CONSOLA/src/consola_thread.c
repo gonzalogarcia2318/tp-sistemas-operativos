@@ -1,4 +1,5 @@
 #include "consola_thread.h"
+#include "protocolo.h"
 
 void enviar_instrucciones_a_kernel()
 {

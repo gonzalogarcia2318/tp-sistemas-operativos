@@ -1,20 +1,23 @@
 PROCESS_NAME=CONSOLA
-IDIR =./include
-SHARED_IDIR = ../shared/include
+IDIR=../CONSOLA/include
+SHARED_IDIR=../shared/include
 CC=gcc
-CFLAGS=-I$(IDIR) -I$(SHARED_IDIR) -g -Wall
-
+CFLAGS=-I$(IDIR) -I$(SHARED_IDIR) -g -Wall -std=c11 -D_POSIX_C_SOURCE=200112L
 ODIR=./obj
-SRCDIR =./src
-LIBS=-lcommons -lpthread -lreadline -lcunit -lrt
+SRCDIR=./src
+LIBS=-lcommons -lpthread -lreadline -lcunit -lrt -lresolv
 
-SHARED_SRCDIR = ../shared/src
-SHARED_ODIR = ../shared/obj
+LDFLAGS=-L../shared -Wl,-rpath,../shared
 
-DEPS = $(wildcard $(IDIR)/*.h)
+SHARED_SRCDIR=../shared/src
+SHARED_ODIR=../shared/obj
+SHARED_DEPS=$(wildcard $(SHARED_IDIR)/*.h)
+SHARED_SRC=$(wildcard $(SHARED_SRCDIR)/*.c)
+SHARED_OBJ=$(patsubst $(SHARED_SRCDIR)/%.c,$(SHARED_ODIR)/%.o,$(SHARED_SRC))
 
-SRC = $(wildcard $(SRCDIR)/*.c)
-OBJ = $(patsubst $(SRCDIR)/%.c,$(ODIR)/%.o,$(SRC))
+DEPS=$(wildcard $(IDIR)/*.h)
+SRC=$(wildcard $(SRCDIR)/*.c)
+OBJ=$(patsubst $(SRCDIR)/%.c,$(ODIR)/%.o,$(SRC))
 
 $(ODIR)/%.o: $(SRCDIR)/%.c $(DEPS) $(SHARED_DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -22,15 +25,18 @@ $(ODIR)/%.o: $(SRCDIR)/%.c $(DEPS) $(SHARED_DEPS)
 $(SHARED_ODIR)/%.o: $(SHARED_SRCDIR)/%.c $(SHARED_DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-SHARED_DEPS = $(wildcard $(SHARED_IDIR)/*.h)
-
-SHARED_SRC = $(wildcard $(SHARED_SRCDIR)/*.c)
-SHARED_OBJ = $(patsubst $(SHARED_SRCDIR)/%.c,$(SHARED_ODIR)/%.o,$(SHARED_SRC))
-
 $(PROCESS_NAME): $(OBJ) $(SHARED_OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS)
 
-.PHONY: clean
+shared: $(SHARED_OBJ)
+	$(CC) -shared -o ../shared/libcommons.so $^
+
+.PHONY: all clean run
+
+all: $(PROCESS_NAME)
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ $(PROCESS_NAME) $(SHARED_ODIR)/*.o 
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ $(PROCESS_NAME) $(SHARED_ODIR)/*.o ../shared/libcommons.so
+
+run: all
+	./$(PROCESS_NAME)

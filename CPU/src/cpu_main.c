@@ -20,11 +20,12 @@ int main()
 
     int conexionMemoria = conectar_con_memoria();
 
-    if( conexionMemoria== SUCCESS)
+    if(conexionMemoria == SUCCESS)
     {
-        char *mensaje;
-    	enviar_mensaje_a_servidor(mensaje,  socket_cliente); //reemplazar parametros
+        //char *mensaje; //¿Qué mensaje, de donde lo saca? Falta inicializar
+    	//enviar_mensaje_a_servidor(mensaje,  socket_cliente); //reemplazar parametros
         liberar_conexion_con_servidor(conexionMemoria);
+        //free(mensaje); //Luego de inicializar el char* corresponde usar free para liberar la memoria utilizada
     }
 
     terminar_ejecucion();

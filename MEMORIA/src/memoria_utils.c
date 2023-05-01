@@ -20,7 +20,7 @@ void iniciar_config_memoria()
     log_info(logger,"[MEMORIA]: Archivo Config creado y rellenado correctamente");
 }
 
-void iniciar_servidor_memoria()
+int iniciar_servidor_memoria()
 {
   log_info(logger, "[MEMORIA]: Iniciando Servidor ...");
   socket_memoria = iniciar_servidor(MemoriaConfig.IP, MemoriaConfig.PUERTO_ESCUCHA);
@@ -28,10 +28,11 @@ void iniciar_servidor_memoria()
   if (socket_memoria < 0)
   {
     log_error(logger, "[MEMORIA]: Error intentando iniciar Servidor.");
-    return EXIT_FAILURE;
+    return FAILURE;
   }
 
   log_info(logger, "[MEMORIA]: Servidor iniciado correctamente.");
+  return SUCCESS;
 }
 
 void conectar_con_kernel()

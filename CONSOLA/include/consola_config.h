@@ -6,7 +6,7 @@
 typedef struct CONSOLA_CONFIG
 {
   char *IP_KERNEL;
-  int PUERTO_KERNEL;
+  char *PUERTO_KERNEL;
 } CONSOLA_CONFIG;
 
 extern CONSOLA_CONFIG ConsolaConfig;

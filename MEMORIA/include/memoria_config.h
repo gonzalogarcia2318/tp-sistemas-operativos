@@ -6,7 +6,7 @@
 typedef struct MEMORIA_CONFIG
 {
   char *IP;
-  int PUERTO_ESCUCHA;
+  char *PUERTO_ESCUCHA;
   int TAM_MEMORIA;
   int TAM_SEGMENTO_0;
   int CANT_SEGMENTOS;

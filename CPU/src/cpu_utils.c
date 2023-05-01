@@ -13,7 +13,7 @@ void iniciar_config_cpu()
     log_info(logger,"[CPU]: Archivo Config creado y rellenado correctamente");
 }
 
-void iniciar_servidor_cpu()
+int iniciar_servidor_cpu()
 {
   log_info(logger, "[CPU]: Iniciando Servidor ...");
   socket_cpu = iniciar_servidor(CPUConfig.IP, CPUConfig.PUERTO_ESCUCHA);
@@ -21,10 +21,11 @@ void iniciar_servidor_cpu()
   if (socket_kernel < 0)
   {
     log_error(logger, "[CPU]: Error intentando iniciar Servidor.");
-    return EXIT_FAILURE;
+    return FAILURE;
   }
 
   log_info(logger, "[CPU]: Servidor iniciado correctamente.");
+  return SUCCESS;
 }
 
 // Conectar con cliente de cpu? - esperar kernel

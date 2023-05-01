@@ -10,14 +10,18 @@
 #define SUCCESS 0
 #define FAILURE -1
 
+#define SUCCESS 0
+#define FAILURE -1
+
 extern Logger *logger;
 extern Config *config;
 extern Hilo hilo_fileSystem;
 extern int socket_fileSystem;
 
-void iniciar_logger_fileSystem();
-void iniciar_config_fileSystem();
-void iniciar_servidor_fileSystem();
+void iniciar_logger_file_system();
+void iniciar_config_file_system();
+int iniciar_servidor_file_system();
+void conectar_con_memoria();
 void conectar_con_kernel();
 void terminar_ejecucion();
 

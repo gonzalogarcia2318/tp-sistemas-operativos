@@ -9,7 +9,7 @@ typedef struct CPU_CONFIG
   int RETARDO_INSTRUCCION;
   char *IP_MEMORIA;
   int PUERTO_MEMORIA;
-  int PUERTO_ESCUCHA;
+  char* PUERTO_ESCUCHA;
   int TAM_MAX_SEGMENTO;
 } CPU_CONFIG;
 

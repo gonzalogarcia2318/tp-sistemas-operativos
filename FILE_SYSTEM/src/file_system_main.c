@@ -2,11 +2,11 @@
 
 int main()
 {
-    iniciar_logger_fileSystem();
+    iniciar_logger_file_system();
 
-    iniciar_config_fileSystem();
+    iniciar_config_file_system();
 
-    iniciar_servidor_fileSystem();
+    iniciar_servidor_file_system(); //COMPROBAR QUE SE HAYA CONECTADO (SUCCESS)
 
     //conectar_con_memoria();
 

@@ -22,8 +22,9 @@ extern int socket_kernel;
 
 void iniciar_logger_cpu();
 void iniciar_config_cpu();
-void iniciar_servidor_cpu();
+int iniciar_servidor_cpu();
 void terminar_ejecucion();
+void conectar_con_kernel();
 int conectar_con_memoria();
 
 #endif

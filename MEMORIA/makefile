@@ -30,7 +30,12 @@ SHARED_OBJ = $(patsubst $(SHARED_SRCDIR)/%.c,$(SHARED_ODIR)/%.o,$(SHARED_SRC))
 $(PROCESS_NAME): $(OBJ) $(SHARED_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
-.PHONY: clean
+.PHONY: all clean run
+
+all: $(PROCESS_NAME)
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ $(PROCESS_NAME) $(SHARED_ODIR)/*.o 
+	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ $(PROCESS_NAME) $(SHARED_ODIR)/*.o ../shared/libcommons.so
+
+run: $(PROCESS_NAME)
+	./$(PROCESS_NAME)

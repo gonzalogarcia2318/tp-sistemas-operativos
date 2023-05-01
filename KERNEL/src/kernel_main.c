@@ -6,7 +6,7 @@ int main()
 
     iniciar_config_kernel();
 
-    iniciar_servidor_kernel();
+    iniciar_servidor_kernel(); //COMPROBAR SUCCESS
 
     conectar_con_memoria();
 

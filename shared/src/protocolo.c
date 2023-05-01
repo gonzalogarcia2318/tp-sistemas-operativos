@@ -158,7 +158,7 @@ char *obtener_mensaje_del_servidor(int socketServidor)
   {
   case MENSAJE:
     listaMensaje = obtener_paquete_como_lista(socketServidor);
-    mensaje = string_duplicate((char *)list_get(listaMensaje, 0));
+    mensaje = ((char *)list_get(listaMensaje, 0));
     list_destroy_and_destroy_elements(listaMensaje, &free);
     break;
 

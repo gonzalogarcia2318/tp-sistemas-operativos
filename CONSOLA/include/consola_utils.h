@@ -12,6 +12,7 @@
 #include "consola_config.h"
 #include "server.h"
 #include "cliente.h"
+#include "consola_thread.h"
 
 extern int socket_kernel;
 extern Logger *logger;

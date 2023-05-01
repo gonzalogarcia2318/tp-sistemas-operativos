@@ -23,6 +23,8 @@ int crear_conexion_con_servidor(char *ip, char *puerto)
   return conexion ? socketCliente : DESCONEXION;
 }
 
+
+
 void liberar_conexion_con_servidor(int socketCliente)
 {
   close(socketCliente);
