@@ -17,10 +17,12 @@ extern Hilo hilo_consolas;
 extern int socket_kernel;
 extern int socket_cpu;
 extern int socket_memoria;
+extern int socket_file_system;
 
 void iniciar_logger_kernel();
 void iniciar_config_kernel();
-void iniciar_servidor_kernel();
+int iniciar_servidor_kernel();
+void conectar_con_file_system();
 void conectar_con_consola();
 void conectar_con_cpu();
 void conectar_con_memoria();

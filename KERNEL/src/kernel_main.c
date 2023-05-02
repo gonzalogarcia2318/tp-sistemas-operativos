@@ -6,15 +6,16 @@ int main()
 
     iniciar_config_kernel();
 
-    iniciar_servidor_kernel(); //COMPROBAR SUCCESS
+    if(iniciar_servidor_kernel() == SUCCESS)
+    {
+        conectar_con_memoria();
 
-    conectar_con_memoria();
+        conectar_con_file_system();
 
-    //conectar_con_filesystem();
+        conectar_con_cpu();
 
-    conectar_con_cpu();
-
-    conectar_con_consola();
+        conectar_con_consola();
+    }
 
     terminar_ejecucion();
 

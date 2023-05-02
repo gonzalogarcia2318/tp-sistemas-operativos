@@ -1,5 +1,5 @@
 #include "cpu_thread.h"
-
+/*
 void esperar_kernel(int socket_cpu)
 {
   while (true)
@@ -22,6 +22,7 @@ void esperar_kernel(int socket_cpu)
     pthread_detach(hilo_kernel);
   }
 }
+*/
 
 void manejar_paquete_kernel(int socket_kernel)
 {

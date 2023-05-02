@@ -6,6 +6,7 @@
 typedef struct FILE_SYSTEM_CONFIG
 {
     char *IP;
+    char *IP_MEMORIA;
     char *PUERTO_MEMORIA;
     char *PUERTO_ESCUCHA;
     char *PATH_SUPERBLOQUE;

@@ -6,12 +6,19 @@ int main()
 
     iniciar_config_memoria();
 
-    iniciar_servidor_memoria(); //COMPROBAR SUCCESS
+    if(iniciar_servidor_memoria() == SUCCESS)
+    {
+        conectar_con_file_system();
 
-    conectar_con_kernel();
+        conectar_con_cpu();
+        
+        conectar_con_kernel();
 
-    conectar_con_cpu();
-
+        pthread_join(hilo_file_system, NULL);
+        pthread_join(hilo_cpu, NULL);
+        pthread_join(hilo_kernel, NULL);
+    }
+    
     terminar_ejecucion();
 
     return EXIT_SUCCESS;

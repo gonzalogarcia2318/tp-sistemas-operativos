@@ -35,6 +35,7 @@ int conectar_con_kernel()
         return FAILURE;
     }
     log_info(logger, "[CONSOLA]: Conexion con Kernel: OK");
+    enviar_mensaje_a_servidor("HOLA! SOY CONSOLA (☞ﾟヮﾟ)☞", socket_kernel);
 
     return SUCCESS;
 }
