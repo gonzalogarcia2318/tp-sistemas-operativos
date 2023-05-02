@@ -25,9 +25,8 @@ void inicializar_config_consola()
 int conectar_con_kernel()
 {
     log_info(logger, "[CONSOLA] conectando con Kernel...");
-
-    socket_kernel = iniciar_servidor(ConsolaConfig.IP_KERNEL, ConsolaConfig.PUERTO_KERNEL);
-
+    socket_kernel = crear_conexion_con_servidor(ConsolaConfig.IP_KERNEL, ConsolaConfig.PUERTO_KERNEL);
+    log_info(logger, "socket_kernel:%d",socket_kernel);
     if (socket_kernel < 0)
     {
         log_info(logger, "[CONSOLA]: Error al conectar con Kernel. Finalizando Ejecucion");

@@ -52,3 +52,13 @@ Mkfile.old
 dkms.conf
 .vscode/c_cpp_properties.json
 .vscode/settings.json
+CONSOLA/CONSOLA
+CONSOLA/config/consola.log
+CPU/CPU
+CPU/config/cpu.log
+FILE_SYSTEM/FILE_SYSTEM
+FILE_SYSTEM/config/fileSystem.log
+KERNEL/KERNEL
+KERNEL/config/kernel.log
+MEMORIA/MEMORIA
+MEMORIA/config/memoria.log
