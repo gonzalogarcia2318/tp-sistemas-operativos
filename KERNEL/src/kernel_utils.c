@@ -59,8 +59,6 @@ void conectar_con_cpu()
     }
     log_info(logger, "[KERNEL]: Conexion con CPU: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL╰(*°▽°*)╯", socket_cpu);
-
-    return SUCCESS;
 }
 
 void conectar_con_memoria()
@@ -78,8 +76,6 @@ void conectar_con_memoria()
     }
     log_info(logger, "[KERNEL]: Conexion con Memoria: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL ╰(*°▽°*)╯",socket_memoria);
-
-    return SUCCESS;
 }
 
 void conectar_con_file_system()
@@ -97,7 +93,6 @@ void conectar_con_file_system()
     }
     log_info(logger, "[KERNEL]: Conexion con FILE SYSTEM: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL╰(*°▽°*)╯", socket_file_system);
-    return SUCCESS;
 }
 
 void terminar_ejecucion()

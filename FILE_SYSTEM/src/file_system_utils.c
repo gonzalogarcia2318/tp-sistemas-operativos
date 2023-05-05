@@ -58,8 +58,6 @@ void conectar_con_memoria(){
   }
   log_info(logger, "[FILESYSTEM]: Conexion con Memoria: OK");
   enviar_mensaje_a_servidor("HOLA! SOY FILE SYSTEM (●'◡'●)",socket_memoria);
-
-  return SUCCESS;
 }
 
 void terminar_ejecucion(){
