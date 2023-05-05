@@ -31,17 +31,19 @@ int iniciar_servidor_cpu()
 // Conectar con cliente de cpu? - esperar kernel
 void conectar_con_kernel()
 {
-    // Utiliza socket_kernel
+    log_info(logger, "[MEMORIA]: Esperando conexiones de KERNEL..");
+    socket_kernel = esperar_cliente(socket_cpu);
+    log_info(logger, "[MEMORIA]: Conexión de KERNEL establecida.");
 
-    pthread_create(&hilo_kernel, NULL, (void *)esperar_kernel, (void *)socket_cpu);
+    pthread_create(&hilo_kernel, NULL, (void *)manejar_paquete_kernel, (void *)socket_kernel);
     pthread_join(hilo_kernel, NULL);
 }
 
 int conectar_con_memoria()
 {
 	 log_info(logger, "[CPU] conectando con memoria...");
-
-	    socket_memoria = crear_conexion_con_servidor(CPUConfig.IP, CPUConfig.PUERTO_ESCUCHA);
+      log_info(logger, CPUConfig.PUERTO_MEMORIA);
+	    socket_memoria = crear_conexion_con_servidor(CPUConfig.IP_MEMORIA, CPUConfig.PUERTO_MEMORIA);
 
 	    if(socket_memoria < 0)
 	    {
@@ -51,7 +53,7 @@ int conectar_con_memoria()
 	        return FAILURE;
 
 	    }
-	    log_info(logger, "[CPU]: Conexion con Memoria: OK");
+	    log_info(logger, "[CPU]: Conexion con Memoria: OK %d", socket_memoria);
 
 	    return SUCCESS;
 }

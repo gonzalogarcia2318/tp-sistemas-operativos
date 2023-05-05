@@ -16,7 +16,9 @@
 extern Logger *logger;
 extern Config *config;
 extern Hilo hilo_fileSystem;
-extern int socket_fileSystem;
+extern int socket_file_system;
+extern int socket_memoria;
+extern int socket_kernel;
 
 void iniciar_logger_file_system();
 void iniciar_config_file_system();

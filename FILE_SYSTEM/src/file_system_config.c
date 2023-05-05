@@ -5,6 +5,7 @@ FILE_SYSTEM_CONFIG FileSystemConfig;
 void rellenar_configuracion_file_system(Config *config)
 {
 	FileSystemConfig.IP = config_get_string_value(config, "IP");
+	FileSystemConfig.IP_MEMORIA = config_get_string_value(config, "IP_MEMORIA");
 	FileSystemConfig.PUERTO_ESCUCHA = config_get_string_value(config, "PUERTO_ESCUCHA");
 	FileSystemConfig.PUERTO_MEMORIA = config_get_string_value(config, "PUERTO_MEMORIA");
 	FileSystemConfig.PATH_SUPERBLOQUE = config_get_string_value(config, "PATH_SUPERBLOQUE");

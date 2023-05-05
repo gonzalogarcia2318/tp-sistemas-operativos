@@ -3,9 +3,6 @@
 
 void enviar_instrucciones_a_kernel()
 {
-    log_info(logger,"[CONSOLA]:Enviando mensaje a KERNEL...");
-    enviar_mensaje_a_servidor(ConsolaConfig.IP_KERNEL,socket_kernel);
-    log_info(logger,"[CONSOLA]:Mensaje enviado.");
 
 }
 

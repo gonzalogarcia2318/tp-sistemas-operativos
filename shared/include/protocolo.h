@@ -56,6 +56,4 @@ char *obtener_mensaje_del_cliente(int socketCliente);
 Lista *obtener_paquete_como_lista(int socketCliente);
 char *obtener_mensaje_del_servidor(int socketServidor);
 
-char *mi_funcion_compartida();
-
 #endif

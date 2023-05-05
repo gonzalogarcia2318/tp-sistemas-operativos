@@ -3,8 +3,9 @@
 Logger *logger;
 Config *config;
 Hilo hilo_fileSystem;
-int socket_fileSystem;
+int socket_file_system;
 int socket_memoria;
+int socket_kernel;
 
 void iniciar_logger_file_system()
 {
@@ -22,9 +23,9 @@ void iniciar_config_file_system()
 int iniciar_servidor_file_system()
 {
   log_info(logger, "[FILE_SYSTEM]: Iniciando Servidor ...");
-  socket_fileSystem = iniciar_servidor(FileSystemConfig.IP, FileSystemConfig.PUERTO_ESCUCHA);
+  socket_file_system = iniciar_servidor(FileSystemConfig.IP, FileSystemConfig.PUERTO_ESCUCHA);
 
-  if (socket_fileSystem < 0)
+  if (socket_file_system < 0)
   {
     log_error(logger, "[FILE_SYSTEM]: Error intentando iniciar Servidor.");
     return FAILURE;
@@ -36,26 +37,27 @@ int iniciar_servidor_file_system()
 
 void conectar_con_kernel()
 {
-    // Utiliza socket_fileSystem
+ log_info(logger, "[MEMORIA]: Esperando conexiones de Kernel...");
+  socket_kernel = esperar_cliente(socket_file_system);
+  log_info(logger, "[MEMORIA]: Conexión de Kernel establecida.");
 
-    pthread_create(&hilo_fileSystem, NULL, (void *)esperar_kernel, (void *)socket_fileSystem);
-    pthread_join(hilo_fileSystem, NULL);
+  pthread_create(&hilo_fileSystem, NULL, (void *)manejar_paquete_kernel, (void *)socket_kernel);
+  pthread_join(hilo_fileSystem, NULL);
 }
 
 void conectar_con_memoria(){
 
   log_info(logger, "[FILESYSTEM] conectando con Memoria...");
-  socket_memoria = iniciar_servidor(FileSystemConfig.IP, FileSystemConfig.PUERTO_MEMORIA);
+  socket_memoria = crear_conexion_con_servidor(FileSystemConfig.IP_MEMORIA, FileSystemConfig.PUERTO_MEMORIA);
 
   if (socket_memoria < 0)
   {
-      log_info(logger, "[FILESYSTEM]: Error al conectar con Memoria. Finalizando Ejecucion");
-      log_error(logger, "[FILESYSTEM]: Memoria no está disponible");
-      return FAILURE;
+    log_info(logger, "[FILESYSTEM]: Error al conectar con Memoria. Finalizando Ejecucion");
+    log_error(logger, "[FILESYSTEM]: Memoria no está disponible");
+    return FAILURE;
   }
   log_info(logger, "[FILESYSTEM]: Conexion con Memoria: OK");
-
-  return SUCCESS;
+  enviar_mensaje_a_servidor("HOLA! SOY FILE SYSTEM (●'◡'●)",socket_memoria);
 }
 
 void terminar_ejecucion(){

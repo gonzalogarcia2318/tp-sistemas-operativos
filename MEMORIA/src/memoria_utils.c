@@ -2,10 +2,13 @@
 
 Logger *logger;
 Config *config;
-Hilo hilo;
+Hilo hilo_kernel;
 Hilo hilo_cpu;
+Hilo hilo_file_system;
 int socket_memoria;
 int socket_kernel;
+int socket_file_system;
+int socket_cpu;
 
 void iniciar_logger_memoria()
 {
@@ -37,18 +40,30 @@ int iniciar_servidor_memoria()
 
 void conectar_con_kernel()
 {
-    // Utiliza socket_memoria
+    log_info(logger, "[MEMORIA]: Esperando conexiones de Kernel...");
+    socket_kernel = esperar_cliente(socket_memoria);
+    log_info(logger, "[MEMORIA]: Conexión de Kernel establecida.");
 
-    pthread_create(&hilo, NULL, (void *)esperar_kernel, (void *)socket_memoria);
-    pthread_join(hilo, NULL);
+    pthread_create(&hilo_kernel, NULL, (void *)escuchar_kernel, (void *)socket_kernel);
+}
+
+void conectar_con_file_system()
+{
+    log_info(logger, "[MEMORIA]: Esperando conexiones de FILE SYSTEM...");
+    socket_file_system = esperar_cliente(socket_memoria);
+    log_info(logger, "[MEMORIA]: Conexión de FILE SYSTEM establecida.");
+
+    pthread_create(&hilo_file_system, NULL, (void *)escuchar_file_system, (void *)socket_file_system);
+   
 }
 
 void conectar_con_cpu()
 {
-    // Utiliza socket_memoria
-
-    pthread_create(&hilo_cpu, NULL, (void *)esperar_cpu, (void *)socket_memoria);
-    pthread_join(hilo_cpu, NULL);
+    log_info(logger, "[MEMORIA]: Esperando conexiones de CPU...");
+    socket_cpu = esperar_cliente(socket_memoria);
+    log_info(logger, "[MEMORIA]: Conexión de CPU establecida.");
+    pthread_create(&hilo_cpu, NULL, (void *)escuchar_cpu, (void *)socket_cpu);
+    
 }
 
 void terminar_ejecucion(){

@@ -1,9 +1,5 @@
 #include "protocolo.h"
 
-char* mi_funcion_compartida(){
-    return "Hice uso de la shared!";
-}
-
 PAQUETE *crear_paquete(CODIGO_OPERACION codigoOperacion)
 {
   PAQUETE *paquete = malloc(sizeof(PAQUETE));
