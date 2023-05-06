@@ -41,10 +41,17 @@ void manejar_paquete_kernel(int socket_kernel)
     case DESCONEXION:
       log_warning(logger, "[CPU]: Conexión de Kernel terminada.");
       return;
-
+    case PCB:
+      log_info(logger, "[CPU]: Recibida PCB con: PID: [..].");
+      recibir_instrucciones(); //UTILIZA PCB y POR AHORA NO DEVUELVE NADA (void)
+        //PORQUE ESTOY MANEJANDO PUNTEROS, VAMOS A MANDAR UN MENSAJE A KERNEL DICIENDO QUE 
+        //EL PROCESO DE PID: X HA CONCLUIDO CON EXITO Y SE HA MODIFICADO SU CONTEXTO..
+      
     default:
       log_warning(logger, "[CPU]: Operacion desconocida desde kernel.");
       break;
     }
   }
+
+  
 }
