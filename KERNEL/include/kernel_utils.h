@@ -19,6 +19,7 @@ extern int socket_cpu;
 extern int socket_memoria;
 extern int socket_file_system;
 
+
 void iniciar_logger_kernel();
 void iniciar_config_kernel();
 int iniciar_servidor_kernel();
