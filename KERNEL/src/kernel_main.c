@@ -1,7 +1,5 @@
 #include "kernel_utils.h"
 
-int PROCESO_ID = 4000;
-
 int main()
 {
     iniciar_logger_kernel();
@@ -17,9 +15,9 @@ int main()
         conectar_con_cpu();
 
         conectar_con_consola();
-
-
     }
+
+    manejar_proceso_consola();
 
     terminar_ejecucion();
 

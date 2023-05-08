@@ -24,6 +24,17 @@ void esperar_kernel(int socket_cpu)
 }
 */
 
+PCB * recibir_pcb(int socket_kernel){
+
+	BUFFER* buffer = recibir_buffer(socket_kernel);
+
+	PCB* pcb = deserializar_pcb(buffer);
+
+	free(buffer);
+
+	return pcb;
+}
+
 void manejar_paquete_kernel(int socket_kernel)
 {
   
@@ -42,9 +53,17 @@ void manejar_paquete_kernel(int socket_kernel)
       log_warning(logger, "[CPU]: Conexión de Kernel terminada.");
       return;
 
+    case OP_PCB:
+      log_info(logger, "[CPU]: PCB Recibido de Kernel");
+      PCB *pcb = recibir_pcb(socket_kernel);
+
+      log_info(logger, "[CPU]: PCB Deserializada: %d", pcb->pID);
+      return;
+
     default:
       log_warning(logger, "[CPU]: Operacion desconocida desde kernel.");
       break;
     }
   }
 }
+

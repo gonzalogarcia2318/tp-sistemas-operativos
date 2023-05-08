@@ -41,7 +41,7 @@ void conectar_con_consola()
     // Utiliza socket_kernel
 
     pthread_create(&hilo_consolas, NULL, (void *)esperar_consola, (void *)socket_kernel);
-    pthread_join(hilo_consolas, NULL);
+    pthread_detach(hilo_consolas);
 }
 
 void conectar_con_cpu()
@@ -75,7 +75,7 @@ void conectar_con_memoria()
         return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con Memoria: OK");
-    enviar_mensaje_a_servidor("HOLA! SOY KERNEL ╰(*°▽°*)╯",socket_memoria);
+    enviar_mensaje_a_servidor("HOLA! SOY KERNEL ╰(*°▽°*)╯", socket_memoria);
 }
 
 void conectar_con_file_system()
