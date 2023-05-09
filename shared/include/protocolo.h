@@ -9,6 +9,8 @@
 #include "cliente.h"
 #include "server.h"
 #include "socket.h"
+#include "tipos.h"
+
 
 
 typedef t_config Config;
@@ -56,5 +58,24 @@ void *obtener_buffer_del_cliente(int *tamanio, int socketCliente);
 char *obtener_mensaje_del_cliente(int socketCliente);
 Lista *obtener_paquete_como_lista(int socketCliente);
 char *obtener_mensaje_del_servidor(int socketServidor);
+
+BUFFER* recibir_buffer(int socket);
+
+
+// TODO: MOVER A OTRO ARCHIVO
+typedef struct
+{
+    int32_t pID;
+    t_list *instrucciones;
+    int32_t program_counter;
+    char *registros_cpu;   // Tipo struct REGISTROS_CPU
+    char *tabla_segmentos; // Lista de Struct TABLA_SEGMENTOS
+    double proxima_rafaga;
+    char *tiempo_ready;
+    char *archivos_abiertos; // Lista de struct ARCHIVOS_ABIERTOS
+} PCB;
+
+BUFFER *serializar_pcb(PCB *pcb);
+PCB *deserializar_pcb(BUFFER *buffer);
 
 #endif

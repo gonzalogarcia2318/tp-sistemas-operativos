@@ -112,6 +112,16 @@ void *obtener_buffer_del_cliente(int *tamanio, int socketCliente)
   return buffer;
 }
 
+BUFFER* recibir_buffer(int socket) {
+	BUFFER* buffer = malloc(sizeof(BUFFER));
+
+	recv(socket, &(buffer->size), sizeof(int), 0);
+	buffer->stream = malloc(buffer->size);
+	recv(socket, buffer->stream, buffer->size, 0);
+
+	return buffer;
+}
+
 char *obtener_mensaje_del_cliente(int socketCliente)
 {
   int tamanio;
@@ -163,4 +173,51 @@ char *obtener_mensaje_del_servidor(int socketServidor)
   }
 
   return mensaje;
+}
+
+
+
+// TODO: MOVER A OTRO ARCHIVO
+
+
+BUFFER *serializar_pcb(PCB *pcb)
+{
+    printf("Serializar pcb \n");
+    printf("pcb id %d \n", pcb->pID);
+    printf("pcb pc %d \n", pcb->program_counter);
+
+    BUFFER *buffer = malloc(sizeof(PCB));
+
+    buffer->size = sizeof(int32_t) * 2;
+
+    void *stream = malloc(buffer->size);
+    int offset = 0;
+
+    printf("1 \n");
+    printf("strem %s \n", stream + offset );
+
+    memcpy(stream + offset, &pcb->pID, sizeof(int32_t));
+    printf("2 \n");
+    offset += sizeof(int32_t);
+
+    memcpy(stream + offset, &pcb->program_counter, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    buffer->stream = stream;
+
+    return buffer;
+}
+
+PCB *deserializar_pcb(BUFFER *buffer)
+{
+    PCB *pcb = malloc(sizeof(PCB));
+
+    void *stream = buffer->stream;
+
+    memcpy(&(pcb->pID), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+    memcpy(&(pcb->program_counter), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    return pcb;
 }
