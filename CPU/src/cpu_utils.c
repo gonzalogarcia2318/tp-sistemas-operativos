@@ -1,5 +1,8 @@
 #include "cpu_utils.h"
 
+//bool esExit = false;//posiblemente combinar ambos bool.
+//bool esYield = false;
+
 void iniciar_logger_cpu()
 {
     logger = log_create(ARCHIVO_LOGGER, "CPU", 1, LOG_LEVEL_INFO);
@@ -63,3 +66,59 @@ void terminar_ejecucion(){
     log_destroy(logger);
     config_destroy(config);
 }
+
+/*
+PCB* o void recibir_instrucciones(PCB){ 
+    Instrucciones* = List_get(PCB.Instrucciones); 
+    Instruccion* Prox_instruccion; 
+    
+    while(!esExit || !esYield)
+    {
+    
+        Prox_Instruccion = List_get(PCB.Instrucciones,IP); //FORMA PARTE DEL FETCH
+        
+        decode_instruccion(Prox_Instruccion);
+        
+        ejecutar_instruccion(Prox_Instruccion);
+
+        ...
+
+        PCB.IP ++;
+    }
+    
+    return PCB o sin return...
+}
+
+void decode_instruccion("Struct_Instruccion"){
+
+    IF(ES_SET)
+    {
+        aplicar_retardo(CONFIG.RETARDO);
+    }
+}
+
+*/
+/*
+void ejecutar_instruccion("Struct_Instruccion"){ //EXECUTE
+    
+        switch ("Struct.NombreInstruccion")
+        {
+            case "SET": 
+                asignar_a_registro(Valor,Registro);
+                break;
+            
+            case "YIELD":
+                breack;
+
+            case "EXIT":
+                esExit = true:
+                break;
+            
+            default:
+                log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
+                break;
+        }
+    }
+    
+}
+*/
