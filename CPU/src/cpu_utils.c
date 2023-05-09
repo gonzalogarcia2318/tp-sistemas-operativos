@@ -67,51 +67,67 @@ void terminar_ejecucion(){
     config_destroy(config);
 }
 
-/*
-PCB* o void recibir_instrucciones(PCB){ 
-    Instrucciones* = List_get(PCB.Instrucciones); 
-    Instruccion* Prox_instruccion; 
+
+void recibir_instrucciones(PCB* pcb)
+{ 
+    t_list* instrucciones = list_duplicate(pcb->instrucciones);
+
+    Instruccion* prox_instruccion;
     
-    while(!esExit || !esYield)
+    while(!esExit(prox_instruccion) && !esYield(prox_instruccion))
     {
-    
-        Prox_Instruccion = List_get(PCB.Instrucciones,IP); //FORMA PARTE DEL FETCH
+        prox_instruccion = list_get(instrucciones,pcb->program_counter); //FORMA PARTE DEL FETCH
         
-        decode_instruccion(Prox_Instruccion);
+        decode_instruccion(prox_instruccion);
         
-        ejecutar_instruccion(Prox_Instruccion);
+        ejecutar_instruccion(prox_instruccion, pcb);
 
-        ...
+        //...
 
-        PCB.IP ++;
-    }
-    
-    return PCB o sin return...
-}
-
-void decode_instruccion("Struct_Instruccion"){
-
-    IF(ES_SET)
-    {
-        aplicar_retardo(CONFIG.RETARDO);
+        pcb->program_counter ++;
     }
 }
 
-*/
-/*
-void ejecutar_instruccion("Struct_Instruccion"){ //EXECUTE
+bool esExit(Instruccion* Instruccion){
+    bool es = !strcmp(Instruccion->nombreInstruccion,"EXIT");
+    return es;
+}
+bool esYield(Instruccion* Instruccion){
+    bool es = !strcmp(Instruccion->nombreInstruccion,"YIELD");
+    return es;
+}
+bool esSet(Instruccion* Instruccion){
+    bool es = !strcmp(Instruccion->nombreInstruccion,"SET");
+    return es;
+}
+
+void decode_instruccion(Instruccion* Instruccion){
+
+    if(esSet(Instruccion))
+    {
+        aplicar_retardo(CPUConfig.RETARDO_INSTRUCCION);
+    }
+    /*
+    if(requiereTraduccionDireccionLogica(Instruccion)){
+        realizar_traduccion()
+    }
+    */
+}
+
+
+void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb){ //EXECUTE
     
-        switch ("Struct.NombreInstruccion")
+        switch (*Instruccion->nombreInstruccion)
         {
-            case "SET": 
-                asignar_a_registro(Valor,Registro);
+            case 'SET': 
+                asignar_a_registro(Instruccion->valor,Instruccion->registro, pcb); 
                 break;
             
-            case "YIELD":
-                breack;
+            case 'YIELD':
+                //......
+                break;
 
-            case "EXIT":
-                esExit = true:
+            case 'EXIT': //NO HACE NADA, LO ELIMINO?
                 break;
             
             default:
@@ -119,6 +135,12 @@ void ejecutar_instruccion("Struct_Instruccion"){ //EXECUTE
                 break;
         }
     }
-    
+/*  
+asignar_a_registro (int32_t valor , char* nombreRegistro, PCB* pcb) {
+    int i = 0;
+    for(i; i < sizeof(pcb->registros_cpu;i++))
+    {
+        
+    }
 }
 */

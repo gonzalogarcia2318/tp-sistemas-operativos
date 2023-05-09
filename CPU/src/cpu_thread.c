@@ -53,9 +53,14 @@ void manejar_paquete_kernel(int socket_kernel)
       log_warning(logger, "[CPU]: Conexión de Kernel terminada.");
       return;
 
-    case PCB:
-      log_info(logger, "[CPU]: Recibida PCB con: PID: [..].");
-      recibir_instrucciones(); //UTILIZA PCB y POR AHORA NO DEVUELVE NADA (void)
+    case OP_PCB:
+      log_info(logger, "[CPU]: OP PCB Recibido de Kernel");
+      PCB *pcb = recibir_pcb(socket_kernel);
+      log_info(logger, "[CPU]: PCB Deserializada: con PID:[%d]",pcb->PID);
+      recibir_instrucciones(pcb);
+      //DEVOLVER CONTEXTO A KERNEL
+      return;
+        //; UTILIZA PCB y POR AHORA NO DEVUELVE NADA (void)
         //PORQUE ESTOY MANEJANDO PUNTEROS, VAMOS A MANDAR UN MENSAJE A KERNEL DICIENDO QUE 
         //EL PROCESO DE PID: X HA CONCLUIDO CON EXITO Y SE HA MODIFICADO SU CONTEXTO..
       

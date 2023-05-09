@@ -23,7 +23,7 @@ typedef enum
     DESCONEXION = -1,
     MENSAJE,
     PAQUETE_2, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
-    PCB,
+    OP_PCB,
     FINALIZAR_PROCESO
 } CODIGO_OPERACION;
 
@@ -65,15 +65,36 @@ BUFFER* recibir_buffer(int socket);
 // TODO: MOVER A OTRO ARCHIVO
 typedef struct
 {
-    int32_t pID;
+    int32_t PID;
     t_list *instrucciones;
     int32_t program_counter;
-    char *registros_cpu;   // Tipo struct REGISTROS_CPU
+    t_list *registros_cpu;   // Tipo struct REGISTROS_CPU
     char *tabla_segmentos; // Lista de Struct TABLA_SEGMENTOS
     double proxima_rafaga;
     char *tiempo_ready;
     char *archivos_abiertos; // Lista de struct ARCHIVOS_ABIERTOS
 } PCB;
+
+typedef struct 
+{
+    char* nombreInstruccion;
+    int32_t valor;
+    char* registro; //Recibe nombr de registro, comparo y asigno al registro del PCB
+    int32_t direccionLogica;
+    int32_t tiempo;
+    char* nombreArchivo;
+    int32_t posicion;
+    int32_t cantBytes;
+    char* recurso;
+    int32_t idSegmento;
+} Instruccion;
+
+typedef struct 
+{
+    char* nombre;
+    int32_t valor;
+} Registro_CPU;
+
 
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);
