@@ -36,6 +36,7 @@ void manejar_paquete_consola(int socketConsola)
         case MENSAJE:
             mensaje = obtener_mensaje_del_cliente(socketConsola);
             log_info(logger, "[KERNEL]: Mensaje recibido de Consola: %s", mensaje);
+            // TODO_A: mandar un mensaje a socket_consola y deberia llegarle solamente a la instancia de consola que corresponda
             free(mensaje);
             break;
 
@@ -43,6 +44,7 @@ void manejar_paquete_consola(int socketConsola)
             log_warning(logger, "[KERNEL]: Conexión de Consola terminada.");
             return;
 
+        //TODO_A: RECIBIR INSTRUCCIONES DE CONSOLA
         case PAQUETE_2:
             // Recibir info consola
             manejar_proceso_consola();
@@ -74,6 +76,10 @@ void manejar_proceso_consola()
     // pcb.proxima_rafaga;
     // pcb.tiempo_ready;
     // pcb.archivos_abiertos; //Lista de struct ARCHIVOS_ABIERTOS
+
+    // METER PCB A LISTA procesos
+    // TODO_A: AVISAR QUE SE CREO EL PCB
+
 
     enviar_pcb_a_cpu(&pcb);
 }
