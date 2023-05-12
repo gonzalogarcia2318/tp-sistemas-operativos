@@ -66,11 +66,11 @@ void manejar_proceso_consola()
     list_add(instrucciones, "Instruccion1");
     list_add(instrucciones, "Instruccion1");
 
-    pcb.pID = PROCESO_ID++;
+    pcb.PID = PROCESO_ID++;
     pcb.instrucciones = instrucciones;
     pcb.program_counter = 1;
 
-    log_info(logger, "[KERNEL]: PCB Creada: %d", pcb.pID);
+    log_info(logger, "[KERNEL]: PCB Creada: %d", pcb.PID);
     // pcb.registros_cpu;  //Tipo struct REGISTROS_CPU
     // pcb.tabla_segmentos; //Lista de Struct TABLA_SEGMENTOS
     // pcb.proxima_rafaga;
@@ -91,7 +91,7 @@ void enviar_pcb_a_cpu(PCB *pcb)
 
     PAQUETE *paquete_pcb = crear_paquete(OP_PCB);
 
-    log_info(logger, "[KERNEL]: Enviar PCB a CPU: serializar pcb %d", pcb->pID);
+    log_info(logger, "[KERNEL]: Enviar PCB a CPU: serializar pcb %d", pcb->PID);
 
     paquete_pcb->buffer = serializar_pcb(pcb);
 

@@ -183,7 +183,7 @@ char *obtener_mensaje_del_servidor(int socketServidor)
 BUFFER *serializar_pcb(PCB *pcb)
 {
     printf("Serializar pcb \n");
-    printf("pcb id %d \n", pcb->pID);
+    printf("pcb id %d \n", pcb->PID);
     printf("pcb pc %d \n", pcb->program_counter);
 
     BUFFER *buffer = malloc(sizeof(PCB));
@@ -196,7 +196,7 @@ BUFFER *serializar_pcb(PCB *pcb)
     printf("1 \n");
     printf("strem %s \n", stream + offset );
 
-    memcpy(stream + offset, &pcb->pID, sizeof(int32_t));
+    memcpy(stream + offset, &pcb->PID, sizeof(int32_t));
     printf("2 \n");
     offset += sizeof(int32_t);
 
@@ -214,7 +214,7 @@ PCB *deserializar_pcb(BUFFER *buffer)
 
     void *stream = buffer->stream;
 
-    memcpy(&(pcb->pID), stream, sizeof(int32_t));
+    memcpy(&(pcb->PID), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
     memcpy(&(pcb->program_counter), stream, sizeof(int32_t));
     stream += sizeof(int32_t);

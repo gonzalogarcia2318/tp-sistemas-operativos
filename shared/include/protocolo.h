@@ -63,12 +63,19 @@ BUFFER* recibir_buffer(int socket);
 
 
 // TODO: MOVER A OTRO ARCHIVO
+typedef struct 
+{
+    int32_t valor_AX;
+    int32_t valor_BX;
+    int32_t valor_CX;
+    int32_t valor_DX;
+} Registro_CPU;
 typedef struct
 {
     int32_t PID;
     t_list *instrucciones;
     int32_t program_counter;
-    t_list *registros_cpu;   // Tipo struct REGISTROS_CPU
+    Registro_CPU *registros_cpu;   // Tipo struct REGISTROS_CPU
     char *tabla_segmentos; // Lista de Struct TABLA_SEGMENTOS
     double proxima_rafaga;
     char *tiempo_ready;
@@ -89,11 +96,6 @@ typedef struct
     int32_t idSegmento;
 } Instruccion;
 
-typedef struct 
-{
-    char* nombre;
-    int32_t valor;
-} Registro_CPU;
 
 
 BUFFER *serializar_pcb(PCB *pcb);

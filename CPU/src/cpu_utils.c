@@ -45,7 +45,6 @@ void conectar_con_kernel()
 int conectar_con_memoria()
 {
 	 log_info(logger, "[CPU] conectando con memoria...");
-      log_info(logger, CPUConfig.PUERTO_MEMORIA);
 	    socket_memoria = crear_conexion_con_servidor(CPUConfig.IP_MEMORIA, CPUConfig.PUERTO_MEMORIA);
 
 	    if(socket_memoria < 0)
@@ -115,32 +114,52 @@ void decode_instruccion(Instruccion* Instruccion){
 }
 
 
-void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb){ //EXECUTE
-    
-        switch (*Instruccion->nombreInstruccion)
-        {
-            case 'SET': 
-                asignar_a_registro(Instruccion->valor,Instruccion->registro, pcb); 
-                break;
-            
-            case 'YIELD':
-                //......
-                break;
-
-            case 'EXIT': //NO HACE NADA, LO ELIMINO?
-                break;
-            
-            default:
-                log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
-                break;
-        }
-    }
-/*  
-asignar_a_registro (int32_t valor , char* nombreRegistro, PCB* pcb) {
-    int i = 0;
-    for(i; i < sizeof(pcb->registros_cpu;i++))
+void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE
+{ 
+    char* nombre_instru = Instruccion->nombreInstruccion;
+    if(!strcmp(nombre_instru,"SET"))
     {
-        
+        log_info(logger,"CPU: Leí la instrucción SET en ejecutar_instruccion");
+        asignar_a_registro(Instruccion->valor,Instruccion->registro, pcb);
     }
+    else if(!strcmp(nombre_instru,"YIELD"))
+    {
+        log_info(logger,"CPU: Leí la instrucción YIELD en ejecutar_instruccion");
+    }
+    else if(!strcmp(nombre_instru,"EXIT"))
+    {
+        log_info(logger,"CPU: Leí la instrucción EXIT en ejecutar_instruccion");
+    }
+    else
+    {
+          log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
+    } 
 }
-*/
+ 
+void asignar_a_registro (int32_t valor , char* registro_instr, PCB* pcb)
+{
+    Registro_CPU* reg_cpu = pcb->registros_cpu;
+
+    if(!strcmp(registro_instr,"AX")){
+        reg_cpu->valor_AX = valor;
+    }
+    else if(!strcmp(registro_instr,"BX")){
+        reg_cpu->valor_BX = valor;
+    }
+    else if(!strcmp(registro_instr,"CX")){
+        reg_cpu->valor_CX = valor;
+    }
+    else if(!strcmp(registro_instr,"DX")){
+        reg_cpu->valor_DX = valor;
+    }
+    else{
+        log_warning(logger,"CPU: ERROR AL ASIGNAR REGISTRO, NOMBRE DESCONOCIDO");
+    }
+
+}
+
+void aplicar_retardo(int32_t retardo)
+{
+    sleep(retardo);
+}
+
