@@ -41,7 +41,7 @@ void conectar_con_consola()
     // Utiliza socket_kernel
 
     pthread_create(&hilo_consolas, NULL, (void *)esperar_consola, (void *)socket_kernel);
-    pthread_detach(hilo_consolas);
+    pthread_join(hilo_consolas,NULL);
 }
 
 void conectar_con_cpu()
@@ -54,8 +54,6 @@ void conectar_con_cpu()
     {
         log_info(logger, "[KERNEL]: Error al conectar con CPU. Finalizando Ejecucion");
         log_error(logger, "[KERNEL]: CPU no está disponible");
-
-        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con CPU: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL╰(*°▽°*)╯", socket_cpu);
@@ -71,8 +69,6 @@ void conectar_con_memoria()
     {
         log_info(logger, "[KERNEL]: Error al conectar con Memoria. Finalizando Ejecucion");
         log_error(logger, "[KERNEL]: Memoria no está disponible");
-
-        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con Memoria: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL ╰(*°▽°*)╯", socket_memoria);
@@ -89,7 +85,6 @@ void conectar_con_file_system()
         log_info(logger, "[KERNEL]: Error al conectar con FILE SYSTEM. Finalizando Ejecucion");
         log_error(logger, "[KERNEL]: FILE SYSTEM no está disponible");
 
-        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con FILE SYSTEM: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL╰(*°▽°*)╯", socket_file_system);

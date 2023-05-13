@@ -29,6 +29,7 @@ int main()
     // marcamos PCB recien creada como NEW 
 
     // EMPEZAR PLANIFICACION
+    /*
     while (haya procesos en new, ready, exec, bloqueado){
 
         // semaforo: semaforo_ready va a tener tantas instancias como grado_multiprogramacion
@@ -52,13 +53,7 @@ int main()
             
 
         }
-    }
-    
-
-
-
-
-
+    */
     // manejar_proceso_consola();
 
     terminar_ejecucion();

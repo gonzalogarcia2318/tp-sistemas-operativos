@@ -6,11 +6,11 @@
 typedef struct CPU_CONFIG
 {
   char *IP;
-  char *RETARDO_INSTRUCCION;
+  int32_t RETARDO_INSTRUCCION;
   char *IP_MEMORIA;
   char *PUERTO_MEMORIA;
-  char* PUERTO_ESCUCHA;
-  char *TAM_MAX_SEGMENTO;
+  char *PUERTO_ESCUCHA;
+  int32_t *TAM_MAX_SEGMENTO;
 } CPU_CONFIG;
 
 extern CPU_CONFIG CPUConfig;

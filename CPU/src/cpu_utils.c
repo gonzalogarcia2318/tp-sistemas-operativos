@@ -45,7 +45,6 @@ void conectar_con_kernel()
 int conectar_con_memoria()
 {
 	 log_info(logger, "[CPU] conectando con memoria...");
-      log_info(logger, CPUConfig.PUERTO_MEMORIA);
 	    socket_memoria = crear_conexion_con_servidor(CPUConfig.IP_MEMORIA, CPUConfig.PUERTO_MEMORIA);
 
 	    if(socket_memoria < 0)
@@ -67,58 +66,100 @@ void terminar_ejecucion(){
     config_destroy(config);
 }
 
-/*
-PCB* o void recibir_instrucciones(PCB){ 
-    Instrucciones* = List_get(PCB.Instrucciones); 
-    Instruccion* Prox_instruccion; 
+
+void recibir_instrucciones(PCB* pcb)
+{ 
+    t_list* instrucciones = list_duplicate(pcb->instrucciones);
+
+    Instruccion* prox_instruccion;
     
-    while(!esExit || !esYield)
+    while(!esExit(prox_instruccion) && !esYield(prox_instruccion))
     {
-    
-        Prox_Instruccion = List_get(PCB.Instrucciones,IP); //FORMA PARTE DEL FETCH
+        prox_instruccion = list_get(instrucciones,pcb->program_counter); //FORMA PARTE DEL FETCH
         
-        decode_instruccion(Prox_Instruccion);
+        decode_instruccion(prox_instruccion);
         
-        ejecutar_instruccion(Prox_Instruccion);
+        ejecutar_instruccion(prox_instruccion, pcb);
 
-        ...
+        //...
 
-        PCB.IP ++;
+        pcb->program_counter ++;
     }
-    
-    return PCB o sin return...
 }
 
-void decode_instruccion("Struct_Instruccion"){
+bool esExit(Instruccion* Instruccion){
+    bool es = !strcmp(Instruccion->nombreInstruccion,"EXIT");
+    return es;
+}
+bool esYield(Instruccion* Instruccion){
+    bool es = !strcmp(Instruccion->nombreInstruccion,"YIELD");
+    return es;
+}
+bool esSet(Instruccion* Instruccion){
+    bool es = !strcmp(Instruccion->nombreInstruccion,"SET");
+    return es;
+}
 
-    IF(ES_SET)
+void decode_instruccion(Instruccion* Instruccion){
+
+    if(esSet(Instruccion))
     {
-        aplicar_retardo(CONFIG.RETARDO);
+        aplicar_retardo(CPUConfig.RETARDO_INSTRUCCION);
     }
+    /*
+    if(requiereTraduccionDireccionLogica(Instruccion)){
+        realizar_traduccion()
+    }
+    */
 }
 
-*/
-/*
-void ejecutar_instruccion("Struct_Instruccion"){ //EXECUTE
-    
-        switch ("Struct.NombreInstruccion")
-        {
-            case "SET": 
-                asignar_a_registro(Valor,Registro);
-                break;
-            
-            case "YIELD":
-                breack;
 
-            case "EXIT":
-                esExit = true:
-                break;
-            
-            default:
-                log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
-                break;
-        }
+void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE
+{ 
+    char* nombre_instru = Instruccion->nombreInstruccion;
+    if(!strcmp(nombre_instru,"SET"))
+    {
+        log_info(logger,"CPU: Leí la instrucción SET en ejecutar_instruccion");
+        asignar_a_registro(Instruccion->valor,Instruccion->registro, pcb);
     }
-    
+    else if(!strcmp(nombre_instru,"YIELD"))
+    {
+        log_info(logger,"CPU: Leí la instrucción YIELD en ejecutar_instruccion");
+    }
+    else if(!strcmp(nombre_instru,"EXIT"))
+    {
+        log_info(logger,"CPU: Leí la instrucción EXIT en ejecutar_instruccion");
+    }
+    else
+    {
+          log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
+    } 
 }
-*/
+ 
+void asignar_a_registro (int32_t valor , char* registro_instr, PCB* pcb)
+{
+    Registro_CPU* reg_cpu = pcb->registros_cpu;
+
+    if(!strcmp(registro_instr,"AX")){
+        reg_cpu->valor_AX = valor;
+    }
+    else if(!strcmp(registro_instr,"BX")){
+        reg_cpu->valor_BX = valor;
+    }
+    else if(!strcmp(registro_instr,"CX")){
+        reg_cpu->valor_CX = valor;
+    }
+    else if(!strcmp(registro_instr,"DX")){
+        reg_cpu->valor_DX = valor;
+    }
+    else{
+        log_warning(logger,"CPU: ERROR AL ASIGNAR REGISTRO, NOMBRE DESCONOCIDO");
+    }
+
+}
+
+void aplicar_retardo(int32_t retardo)
+{
+    sleep(retardo);
+}
+
