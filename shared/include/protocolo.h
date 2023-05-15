@@ -3,6 +3,8 @@
 
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/string.h>
+#include <commons/collections/list.h>
 // #include <list.h>
 #include <string.h>
 #include <pthread.h>
@@ -86,10 +88,12 @@ typedef struct
 {
     char* nombreInstruccion;
     int32_t valor;
+    char* valorChar; // TODO: Chequear. SET AX HOLA
     char* registro; //Recibe nombr de registro, comparo y asigno al registro del PCB
     int32_t direccionLogica;
     int32_t tiempo;
     char* nombreArchivo;
+    int32_t nombreARchivoLength;
     int32_t posicion;
     int32_t cantBytes;
     char* recurso;
