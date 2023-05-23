@@ -1,22 +1,27 @@
 #include "consola_utils.h"
 
-int main()
+int main(int argc, char** argv)
 {
 
-    // TODO_A: RECIBIR PATHS DE CONFIG Y PSEUDOCODIGO POR ARGUMENTOS
-
-    char *path_instrucciones = "./pseudocodigo2.txt";
-
     inicializar_logger_consola();
-    inicializar_config_consola();
+    
+    if(argc != 3){
+        log_error(logger, "[CONSOLA]: Error. Se requiere el path de configuracion y pseudocodigo.");
+        return EXIT_FAILURE;
+    }
 
-    t_list *instrucciones = leer_instrucciones(path_instrucciones);
+    char *config_path = argv[1];
+    char *pseudocodigo_path = argv[2];
 
-    log_info(logger, "IP_KERNEL: %s", config_get_string_value(config, "IP_KERNEL"));
+    // SETEAR PATH ACA PARA PROBAR MAS FACIL. SACAR.
+    pseudocodigo_path = "pseudocodigo.txt";
+    
+    inicializar_config_consola(config_path);
+
+    t_list *instrucciones = leer_instrucciones(pseudocodigo_path);
 
     if (conectar_con_kernel() == SUCCESS)
     {
-        // GONZI <<<<
         //  -------------------------
         // CHILY >>>>
 

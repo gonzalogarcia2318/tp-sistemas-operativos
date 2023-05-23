@@ -15,9 +15,9 @@ void inicializar_logger_consola()
     log_info(logger, "[CONSOLA]: Logger creado correctamente");
 }
 
-void inicializar_config_consola()
+void inicializar_config_consola(char *path_config)
 {
-    config = config_create(ARCHIVO_CONFIG);
+    config = config_create(path_config);
     rellenar_configuracion_consola(config);
     log_info(logger, "[CONSOLA]: Archivo Config creado y rellenado correctamente");
 }
