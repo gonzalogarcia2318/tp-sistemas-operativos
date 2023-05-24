@@ -65,10 +65,18 @@ BUFFER* recibir_buffer(int socket);
 // TODO: MOVER A OTRO ARCHIVO
 typedef struct 
 {
-    int32_t valor_AX;
-    int32_t valor_BX;
-    int32_t valor_CX;
-    int32_t valor_DX;
+    char* valor_AX;
+    char* valor_BX;
+    char* valor_CX;
+    char* valor_DX;
+    char* valor_EAX;
+    char* valor_EBX;
+    char* valor_ECX;
+    char* valor_EDX;
+    char* valor_RAX;
+    char* valor_RBX;
+    char* valor_RCX;
+    char* valor_RDX;
 } Registro_CPU;
 typedef struct
 {
@@ -85,9 +93,10 @@ typedef struct
 typedef struct 
 {
     char* nombreInstruccion;
-    int32_t valor;
+    char* valor;
     char* registro; //Recibe nombr de registro, comparo y asigno al registro del PCB
     int32_t direccionLogica;
+    int32_t direccionFisica;
     int32_t tiempo;
     char* nombreArchivo;
     int32_t posicion;

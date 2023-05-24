@@ -101,16 +101,17 @@ bool esSet(Instruccion* Instruccion){
 }
 
 void decode_instruccion(Instruccion* Instruccion){
-
+    
     if(esSet(Instruccion))
     {
         aplicar_retardo(CPUConfig.RETARDO_INSTRUCCION);
     }
-    /*
-    if(requiereTraduccionDireccionLogica(Instruccion)){
-        realizar_traduccion()
+    
+    if(requiereTraduccionDireccionLogica(Instruccion))
+    {
+        Instruccion->direccionFisica = realizar_traduccion(Instruccion->direccionLogica);
     }
-    */
+    
 }
 
 
@@ -132,30 +133,66 @@ void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE
     }
     else
     {
-          log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
+        log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
     } 
 }
  
-void asignar_a_registro (int32_t valor , char* registro_instr, PCB* pcb)
+void asignar_a_registro (char* valor , char* registro_instr, PCB* pcb)
 {
     Registro_CPU* reg_cpu = pcb->registros_cpu;
 
-    if(!strcmp(registro_instr,"AX")){
-        reg_cpu->valor_AX = valor;
+    if(!strcmp(registro_instr,"AX"))
+    {
+        reg_cpu->valor_AX = string_duplicate(valor);
     }
-    else if(!strcmp(registro_instr,"BX")){
-        reg_cpu->valor_BX = valor;
+    else if(!strcmp(registro_instr,"BX"))
+    {
+        reg_cpu->valor_BX = string_duplicate(valor);
     }
-    else if(!strcmp(registro_instr,"CX")){
-        reg_cpu->valor_CX = valor;
+    else if(!strcmp(registro_instr,"CX"))
+    {
+        reg_cpu->valor_CX = string_duplicate(valor);
     }
-    else if(!strcmp(registro_instr,"DX")){
-        reg_cpu->valor_DX = valor;
+    else if(!strcmp(registro_instr,"DX"))
+    {
+        reg_cpu->valor_DX = string_duplicate(valor);
     }
-    else{
-        log_warning(logger,"CPU: ERROR AL ASIGNAR REGISTRO, NOMBRE DESCONOCIDO");
+    else if(!strcmp(registro_instr,"EAX"))
+    {
+        reg_cpu->valor_EAX = string_duplicate(valor);
     }
-
+    else if(!strcmp(registro_instr,"EBX"))
+    {
+        reg_cpu->valor_EBX = string_duplicate(valor);
+    }
+    else if(!strcmp(registro_instr,"ECX"))
+    {
+        reg_cpu->valor_ECX = string_duplicate(valor);
+    }
+    else if(!strcmp(registro_instr,"EDX"))
+    {
+        reg_cpu->valor_EDX = string_duplicate(valor);
+    }
+    else if(!strcmp(registro_instr,"RAX"))
+    {
+        reg_cpu->valor_RAX = string_duplicate(valor);
+    }
+    else if(!strcmp(registro_instr,"RBX"))
+    {
+        reg_cpu->valor_RBX = string_duplicate(valor);
+    }
+    else if(!strcmp(registro_instr,"RCX"))
+    {
+        reg_cpu->valor_RCX = string_duplicate(valor);
+    }
+    else if(!strcmp(registro_instr,"RDX"))
+    {
+        reg_cpu->valor_RDX = string_duplicate(valor);
+    }
+    else
+    {
+        log_error(logger,"CPU: ERROR AL ASIGNAR REGISTRO, NOMBRE DESCONOCIDO");
+    }
 }
 
 void aplicar_retardo(int32_t retardo)
@@ -163,3 +200,19 @@ void aplicar_retardo(int32_t retardo)
     sleep(retardo);
 }
 
+bool requiereTraduccionDireccionLogica(Instruccion* instruccion)
+{
+    //COMPROBAR INSTRUCCIÓN
+        //MOV_IN
+        //MOV_OUT
+        //F_READ
+        //F_WRITE
+    return 1;
+}
+
+int32_t realizar_traduccion(){
+    
+//num_segmento = floor(dir_logica / tam_max_segmento)
+// desplazamiento_segmento = dir_logica % tam_max_segmento
+
+}
