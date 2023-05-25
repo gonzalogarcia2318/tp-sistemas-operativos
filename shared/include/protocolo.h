@@ -3,6 +3,7 @@
 
 #include <commons/config.h>
 #include <commons/log.h>
+#include <math.h>
 // #include <list.h>
 #include <string.h>
 #include <pthread.h>
@@ -27,6 +28,24 @@ typedef enum
     FINALIZAR_PROCESO
 } CODIGO_OPERACION;
 
+typedef enum
+{
+    MOV_IN,
+    MOV_OUT,
+    IO,
+    F_OPEN,
+    F_CLOSE,
+    F_SEEK,
+    F_READ,
+    F_WRITE,
+    F_TRUNCATE,
+    WAIT,
+    SIGNAL,
+    CREATE_SEGMENT,
+    DELETE_SEGMENT,
+    YIELD,
+    EXIT
+} CODIGO_INSTRUCCION;
 typedef struct
 {
     int size;

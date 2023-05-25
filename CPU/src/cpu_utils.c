@@ -115,13 +115,77 @@ void decode_instruccion(Instruccion* Instruccion){
 }
 
 
-void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE
+void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA INSTRUCCIÓN DEBE TENER SU log_warning(PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>)
 { 
-    char* nombre_instru = Instruccion->nombreInstruccion;
+    char* nombre_instru = string_duplicate(Instruccion->nombreInstruccion);
+
     if(!strcmp(nombre_instru,"SET"))
     {
         log_info(logger,"CPU: Leí la instrucción SET en ejecutar_instruccion");
         asignar_a_registro(Instruccion->valor,Instruccion->registro, pcb);
+    }
+    else if(!strcmp(nombre_instru,"MOV_IN")) //TOM
+    {
+        //Traducir Dirección
+        //Comunicación con Memoria: Memoria -> Registro
+    }
+    else if(!strcmp(nombre_instru,"MOV_OUT")) //TOM
+    {
+        //Traducir Dirección
+        //Comunicación con Memoria: Registro -> Memoria
+    }
+    else if(!strcmp(nombre_instru,"I/O")) //TOM
+    {
+        //Comunicación con Kernel: Unidades de tiempo que se bloquea. 
+		//Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"F_OPEN")) //TOM
+    {
+        //Comunicación con Kernel: nombre_archivo
+        //Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"F_CLOSE")) //TOM
+    {
+        //Comunicación con Kernel: nombre_archivo
+		//Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"F_SEEK")) //DIEGO
+    {
+        //Comunicación con Kernel: nombre_archivo, posición
+        //Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"F_READ")) //DIEGO
+    {
+        //Comunicación con Kernel: nombre_archivo, dire_lógica, cant_bytes
+        //Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"F_WRITE"))//DIEGO
+    {
+        //Comunicación con Kernel: nombre_archivo, dire_lógica, cant_bytes
+        //Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"F_TRUNCATE ")) //DIEGO
+    {
+        //Comunicación con Kernel: nombre_archivo, tamaño
+        //Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"WAIT")) //CAMIL
+    {
+        //Avisarle a Kernel que se bloquee
+        //Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"SIGNAL")) //CAMIL
+    {
+        //Avisarle a Kernel que se libere
+        //Devolver Contexto de Ejecución
+    }
+    else if(!strcmp(nombre_instru,"CREATE_SEGMENT")) //CAMIL
+    {
+        //solicita al kernel la creación del segmento con el Id y tamaño.
+    }
+    else if(!strcmp(nombre_instru,"DELETE_SEGMENT ")) //CAMIL
+    {
+        //solicita al kernel que se elimine el segmento cuyo Id se pasa por parámetro.
     }
     else if(!strcmp(nombre_instru,"YIELD"))
     {
@@ -135,11 +199,12 @@ void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE
     {
         log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
     } 
+
 }
  
 void asignar_a_registro (char* valor , char* registro_instr, PCB* pcb)
 {
-    Registro_CPU* reg_cpu = pcb->registros_cpu;
+    Registro_CPU* reg_cpu = string_duplicate(pcb->registros_cpu);
 
     if(!strcmp(registro_instr,"AX"))
     {
@@ -200,19 +265,32 @@ void aplicar_retardo(int32_t retardo)
     sleep(retardo);
 }
 
-bool requiereTraduccionDireccionLogica(Instruccion* instruccion)
+bool requiere_traduccion(Instruccion* instruccion)
 {
-    //COMPROBAR INSTRUCCIÓN
-        //MOV_IN
-        //MOV_OUT
-        //F_READ
-        //F_WRITE
-    return 1;
+    char* nombre_instru = string_duplicate(instruccion->nombreInstruccion);
+
+    if(!strcmp(nombre_instru,"MOV_IN" ||
+        !strcmp(nombre_instru,"MOV_OUT") ||
+        !strcmp(nombre_instru,"F_READ") ||
+        !strcmp(nombre_instru,"F_WRITE"))) 
+            return true;
+    
+    else return false;
 }
 
-int32_t realizar_traduccion(){
-    
-//num_segmento = floor(dir_logica / tam_max_segmento)
-// desplazamiento_segmento = dir_logica % tam_max_segmento
+int32_t realizar_traduccion(int32_t dir_logica)
+{ 
+    int num_segmento = floor(dir_logica / CPUConfig.TAM_MAX_SEGMENTO);
+    int desplazamiento_segmento = (dir_logica % CPUConfig.TAM_MAX_SEGMENTO);
 
+    int32_t direccion_fisica = num_segmento * CPUConfig.TAM_MAX_SEGMENTO + desplazamiento_segmento;
+
+    return direccion_fisica;
+}
+
+bool comprobar_segmentation_fault(int32_t dir_logica, int32_t tam_leer_escribir)
+{
+    int desplazamiento_segmento = (dir_logica % CPUConfig.TAM_MAX_SEGMENTO);
+
+    return desplazamiento_segmento + tam_leer_escribir > CPUConfig.TAM_MAX_SEGMENTO;
 }

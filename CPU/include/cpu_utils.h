@@ -37,8 +37,12 @@ void recibir_instrucciones(PCB*); //RECIBE PCB, ES GENERAL PARA TODAS, INCLUYE F
     bool esSet(Instruccion*);
 void decode_instruccion();//RECIBE INSTRUCCION
     void aplicar_retardo(int32_t);
+    bool requiere_traduccion(Instruccion*);
+    int32_t realizar_traduccion(int32_t);
 void ejecutar_instruccion(); //EXECUTE
-    void asignar_a_registro (int32_t, char*, PCB*);
+    void asignar_a_registro (char*, char*, PCB*);
+    bool comprobar_segmentation_fault(int32_t, int32_t);
+
 
 
 #endif
