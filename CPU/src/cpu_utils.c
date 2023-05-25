@@ -107,7 +107,7 @@ void decode_instruccion(Instruccion* Instruccion){
         aplicar_retardo(CPUConfig.RETARDO_INSTRUCCION);
     }
     
-    if(requiereTraduccionDireccionLogica(Instruccion))
+    if(requiere_traduccion(Instruccion))
     {
         Instruccion->direccionFisica = realizar_traduccion(Instruccion->direccionLogica);
     }
@@ -204,7 +204,7 @@ void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA I
  
 void asignar_a_registro (char* valor , char* registro_instr, PCB* pcb)
 {
-    Registro_CPU* reg_cpu = string_duplicate(pcb->registros_cpu);
+    Registro_CPU* reg_cpu = pcb->registros_cpu;
 
     if(!strcmp(registro_instr,"AX"))
     {
@@ -269,10 +269,10 @@ bool requiere_traduccion(Instruccion* instruccion)
 {
     char* nombre_instru = string_duplicate(instruccion->nombreInstruccion);
 
-    if(!strcmp(nombre_instru,"MOV_IN" ||
+    if(!strcmp(nombre_instru,"MOV_IN") ||
         !strcmp(nombre_instru,"MOV_OUT") ||
         !strcmp(nombre_instru,"F_READ") ||
-        !strcmp(nombre_instru,"F_WRITE"))) 
+        !strcmp(nombre_instru,"F_WRITE")) 
             return true;
     
     else return false;

@@ -5,7 +5,7 @@
 #include <commons/log.h>
 #include <math.h>
 // #include <list.h>
-#include <string.h>
+#include <commons/string.h>
 #include <pthread.h>
 #include "cliente.h"
 #include "server.h"
@@ -25,7 +25,8 @@ typedef enum
     MENSAJE,
     PAQUETE_2, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
     OP_PCB,
-    FINALIZAR_PROCESO
+    FINALIZAR_PROCESO,
+    INSTRUCCION
 } CODIGO_OPERACION;
 
 typedef enum
