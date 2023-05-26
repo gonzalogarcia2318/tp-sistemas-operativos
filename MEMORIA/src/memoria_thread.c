@@ -79,29 +79,39 @@ void escuchar_cpu(int socket_cpu)
 
 void recibir_instruccion_cpu()
 {
-  Lista* lista;
-  PAQUETE* paquete = crear_paquete(INSTRUCCION);
+  int direccion_fisica = 0;
+  Lista* lista_recepcion;
+  lista_recepcion = obtener_paquete_como_lista(socket_cpu);
 
-  lista = obtener_paquete_como_lista(socket_cpu);
-
-  CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION *)list_get(lista,0);
+  CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION *)list_get(lista_recepcion,0);
 
   switch (cod_instruccion)
   {
-  case MOV_IN:
-    log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
-    int direccion_fisica = *(int*)list_get(lista,1);
-    //...
-    //leer de memoria y devolver valor de la dire_fisica dada
-    //...TODO
-    agregar_a_paquete(paquete,"VALOR_LEIDO",sizeof(char*));
-    enviar_paquete_a_cliente(paquete,socket_cpu);
-    log_info(logger, "[MEMORIA]: PAQUETE ENVIADO A CPU por instrucción recibida: MOV_IN");
-    break;
+    case MOV_IN:
+      log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
+      direccion_fisica = *(int*)list_get(lista_recepcion,1);
+      //...
+      //leer de memoria y devolver valor de la dire_fisica dada
+      //...TODO
+      enviar_mensaje_a_cliente("VALOR_LEIDO",socket_cpu);
+      log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <VALOR_LEIDO> COMO MOTIVO DE FIN DE MOV_IN");
+      break;
+
+    case MOV_OUT:
+      log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_OUT");
+      direccion_fisica = *(int*)list_get(lista_recepcion,1);
+      char* valor_a_escribir = string_duplicate((char*)list_get(lista_recepcion,2));
+      //...
+      //escribir valor en memoria
+      //...TODO
+      enviar_mensaje_a_cliente("OK",socket_cpu);
+      log_info(logger,"MEMORIA: ENVIE EL MENSAJE <OK> A CPU COMO MOTIVO DE FIN DE MOV_OUT");
+      break;
+
   default:
     log_warning(logger, "[MEMORIA]: Código Instrucción desconocido.");
     break;
   }
-  list_destroy(lista);
-  eliminar_paquete(paquete);
+  
+  list_destroy(lista_recepcion);
 }

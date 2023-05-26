@@ -132,7 +132,7 @@ void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA I
     }
     else if(!strcmp(nombre_instru,"MOV_OUT")) //TOM
     {
-        //Traducir Dirección
+        ejecutar_mov_out(paquete,Instruccion,pcb);
         //Comunicación con Memoria: Registro -> Memoria
     }
     else if(!strcmp(nombre_instru,"I/O")) //TOM
@@ -261,6 +261,64 @@ void asignar_a_registro (char* valor , char* registro_instr, PCB* pcb)
         log_error(logger,"CPU: ERROR AL ASIGNAR REGISTRO, NOMBRE DESCONOCIDO");
     }
 }
+char* obtener_valor_registro(Registro_CPU* registros_pcb,char* registro_buscado)
+{
+    char* valor = string_itoa(0); //solo lo inicializo, se tiene q pisar
+
+    if(!strcmp(registro_buscado,"AX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_AX);
+    }
+    else if(!strcmp(registro_buscado,"BX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_BX);
+    }
+    else if(!strcmp(registro_buscado,"CX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_CX);
+    }
+    else if(!strcmp(registro_buscado,"DX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_DX);
+    }
+    else if(!strcmp(registro_buscado,"EAX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_EAX);
+    }
+    else if(!strcmp(registro_buscado,"EBX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_EBX);
+    }
+    else if(!strcmp(registro_buscado,"ECX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_ECX);
+    }
+    else if(!strcmp(registro_buscado,"EDX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_EDX);
+    }
+    else if(!strcmp(registro_buscado,"RAX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_RAX);
+    }
+    else if(!strcmp(registro_buscado,"RBX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_RBX);
+    }
+    else if(!strcmp(registro_buscado,"RCX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_RCX);
+    }
+    else if(!strcmp(registro_buscado,"RDX"))
+    {
+        valor = string_duplicate(registros_pcb->valor_RDX);
+    }
+    else
+    {
+        log_error(logger,"CPU: ERROR AL BUSCAR REGISTRO, NOMBRE DESCONOCIDO");
+    }
+    return valor;
+}
 
 void aplicar_retardo(int32_t retardo)
 {
@@ -299,29 +357,53 @@ bool comprobar_segmentation_fault(int32_t dir_logica, int32_t tam_leer_escribir)
 
 void ejecutar_mov_in(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
 {
-    Lista* lista_recepcion;
 
     log_warning(logger,"CPU: PID: <%d> - Ejecutando: <MOV_IN> - <REGISTRO:%s , DIRECCIÓN LÓGICA: %d>",
                     pcb->PID,
                     instruccion->registro, 
-                    instruccion->direccionLogica);
+                    instruccion->direccionLogica
+                );
     agregar_a_paquete(paquete,MOV_IN,sizeof(int));
     agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int32_t));
     enviar_paquete_a_servidor(paquete,socket_memoria);
-    lista_recepcion = obtener_paquete_como_lista(socket_memoria);
-    
-    //... SE BLOQUEA HASTA QUE RESPONDA
 
-    char* valor = string_duplicate((char*)list_get(lista_recepcion,0));
+    char* valor = string_duplicate(obtener_mensaje_del_servidor(socket_memoria));
+    //... SE BLOQUEA HASTA QUE RESPONDA
+    
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
 
     log_warning(logger,"CPU: PID: <%d> - Acción: <LEER> - Segmento: <%d> - Dirección Física: <%d> - Valor: <%s>",
                     pcb->PID,
                     num_segmento,
                     instruccion->direccionFisica,
-                    valor);
-    
+                    valor
+                );
     asignar_a_registro(valor,instruccion->registro,pcb);
 
-    list_destroy(lista_recepcion);
+}
+
+void ejecutar_mov_out(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <MOV_OUT> - <DIRECCIÓN LÓGICA: %d, REGISTRO: %s>",
+                    pcb->PID,
+                    instruccion->direccionLogica,
+                    instruccion->registro
+                );
+    char* registro = string_duplicate(instruccion->registro);
+    char* valor_registro = string_duplicate(obtener_valor_registro(pcb->registros_cpu,registro));
+
+    agregar_a_paquete(paquete,MOV_OUT,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int32_t));
+    agregar_a_paquete(paquete,valor_registro,sizeof(char*));
+    enviar_paquete_a_servidor(paquete,socket_memoria);
+    char* mensaje = obtener_mensaje_del_servidor(socket_memoria);
+    //... SE BLOQUEA HASTA QUE RESPONDA
+    log_info(logger,"CPU: Recibi un mensaje de MEMORIA como RTA a MOV_OUT: <%s>",mensaje);
+    int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
+
+    log_warning(logger,"CPU: PID: <%d> - Acción: <ESCRIBIR> - Segmento: <%d> - Dirección Física: <%d> - Valor: <%s>",
+                    pcb->PID,
+                    num_segmento,
+                    instruccion->direccionFisica,
+                    valor_registro);
 }

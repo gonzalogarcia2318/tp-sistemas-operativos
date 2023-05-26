@@ -194,7 +194,7 @@ BUFFER *serializar_pcb(PCB *pcb)
     int offset = 0;
 
     printf("1 \n");
-    printf("strem %s \n", stream + offset );
+    //printf("strem %s \n", stream + offset ); DA WARNING, ME ROMPÍA LA COMUNICACIÓN ENTRE LOS MÓDULOS ¯\_(ツ)_/¯
 
     memcpy(stream + offset, &pcb->PID, sizeof(int32_t));
     printf("2 \n");
