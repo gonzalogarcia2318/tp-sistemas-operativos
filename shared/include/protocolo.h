@@ -5,9 +5,11 @@
 #include <commons/log.h>
 #include <commons/string.h>
 #include <commons/collections/list.h>
+#include <commons/collections/queue.h>
 // #include <list.h>
 #include <string.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include "cliente.h"
 #include "server.h"
 #include "socket.h"
