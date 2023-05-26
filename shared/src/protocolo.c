@@ -125,7 +125,7 @@ BUFFER* recibir_buffer(int socket) {
 
 void * obtener_paquete_estructura_dinamica(int socketCliente){
   BUFFER *buffer = recibir_buffer(socketCliente);
-    // LISTA DE INSTRUCCIOENS
+    
   t_list* instrucciones = deserializar_instrucciones(buffer);
 
   return instrucciones;
@@ -323,25 +323,27 @@ Instruccion2* deserializar_instruccion(BUFFER* buffer, int stream_offset)
 
     memcpy(&(instruccion->nombreInstruccion_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
-    instruccion->nombreInstruccion = malloc(instruccion->nombreInstruccion_long);
+    instruccion->nombreInstruccion = malloc(instruccion->nombreInstruccion_long+1); // +1 para el caracter nulo
     memcpy(instruccion->nombreInstruccion, stream, instruccion->nombreInstruccion_long);
+    instruccion->nombreInstruccion[instruccion->nombreInstruccion_long] = '\0'; // Agrega el caracter nulo al final de la cadena
     stream += instruccion->nombreInstruccion_long + 1;
+
 
     memcpy(&(instruccion->valor), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    // ok
-
     memcpy(&(instruccion->valorChar_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
-    instruccion->valorChar = malloc(instruccion->valorChar_long);
+    instruccion->valorChar = malloc(instruccion->valorChar_long+1);
     memcpy(instruccion->valorChar, stream, instruccion->valorChar_long);
+    instruccion->valorChar[instruccion->valorChar_long] = '\0';
     stream += instruccion->valorChar_long + 1;
 
     memcpy(&(instruccion->registro_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
     instruccion->registro = malloc(instruccion->registro_long);
     memcpy(instruccion->registro, stream, instruccion->registro_long);
+    instruccion->registro[instruccion->registro_long] = '\0';
     stream += instruccion->registro_long + 1;
 
     memcpy(&(instruccion->direccionLogica), stream, sizeof(int32_t));
@@ -354,6 +356,7 @@ Instruccion2* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     stream += sizeof(int32_t);
     instruccion->nombreArchivo = malloc(instruccion->nombreArchivo_long);
     memcpy(instruccion->nombreArchivo, stream, instruccion->nombreArchivo_long);
+    instruccion->nombreArchivo[instruccion->nombreArchivo_long] = '\0';
     stream += instruccion->nombreArchivo_long + 1;
 
     memcpy(&(instruccion->posicion), stream, sizeof(int32_t));
@@ -366,6 +369,7 @@ Instruccion2* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     stream += sizeof(int32_t);
     instruccion->recurso = malloc(instruccion->recurso_long);
     memcpy(instruccion->recurso, stream, instruccion->recurso_long);
+    instruccion->recurso[instruccion->recurso_long] = '\0';
     stream += instruccion->recurso_long + 1;
 
     memcpy(&(instruccion->idSegmento), stream, sizeof(int32_t));
@@ -382,16 +386,13 @@ BUFFER *serializar_instrucciones(t_list *instrucciones){
 	int i = 0;
 	for(i = 0; i < list_size(instrucciones); i++){
 		Instruccion2* instruccion = list_get(instrucciones, i);
-        int a = strlen(instruccion->nombreInstruccion) + 1;
-        int b = strlen(instruccion->valorChar) + 1;
         int tamanio = sizeof(int32_t) * 11       
-            + b
-            + a
+            + strlen(instruccion->valorChar) + 1
+            + strlen(instruccion->nombreInstruccion) + 1
             + strlen(instruccion->registro) + 1
             + strlen(instruccion->nombreArchivo) + 1
             + strlen(instruccion->recurso) + 1; 
         buffer->size += tamanio;
-        printf("INSTRUCCION %d: %d \n", i, tamanio);
 	}
 
 	void* stream = malloc(buffer->size);

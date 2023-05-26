@@ -103,17 +103,17 @@ Instruccion2 *parsear_instruccion_por_linea(char *linea)
     // TODO: free(instruccion) cuando se termine de usar
     Instruccion2 *instruccion = malloc(sizeof(Instruccion2));
     instruccion->nombreArchivo = "";
-    //instruccion->nombreInstruccion = "";
+    instruccion->nombreInstruccion = "";
     instruccion->valorChar = "";
     instruccion->registro = "";
     instruccion->recurso = "";
 
-    instruccion->nombreInstruccion = "SET";
+    instruccion->nombreInstruccion = linea_splitted[0];
 
     if (strcmp(instruccion->nombreInstruccion, "SET") == 0)
     {
-        instruccion->registro = "AX";
-        instruccion->valorChar = "HOLA";
+        instruccion->registro = linea_splitted[1];
+        instruccion->valorChar = linea_splitted[2];
     }
     else if (strcmp(instruccion->nombreInstruccion, "MOV_IN") == 0)
     {
