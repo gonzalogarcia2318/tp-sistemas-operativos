@@ -125,9 +125,11 @@ BUFFER* recibir_buffer(int socket) {
 
 void * obtener_paquete_estructura_dinamica(int socketCliente){
 
-  int tamanioBuffer;
+  //int tamanioBuffer;
 
-  void *buffer = obtener_buffer_del_cliente(&tamanioBuffer, socketCliente);
+  //void *buffer = obtener_buffer_del_cliente(&tamanioBuffer, socketCliente);
+
+  BUFFER *buffer = recibir_buffer(socketCliente);
 
   Instruccion2* instrucciones = deserializar_instrucciones(buffer);
 
@@ -285,10 +287,10 @@ BUFFER *serializar_instrucciones(Instruccion2 *instrucciones)
     offset += sizeof(int32_t);
 
     //nombreArchivo longitud y palabra
+    memcpy(stream + offset, &(instrucciones->nombreArchivo_long), sizeof(int32_t));
+    offset += sizeof(int32_t);
     memcpy(stream + offset, instrucciones->nombreArchivo, strlen(instrucciones->nombreArchivo) + 1);
     offset += strlen(instrucciones->nombreArchivo) + 1;
-    memcpy(stream + offset, &(instrucciones->nombreARchivoLength), sizeof(int32_t));
-    offset += sizeof(int32_t);
 
 
     memcpy(stream + offset, &(instrucciones->posicion), sizeof(int32_t));
@@ -328,17 +330,19 @@ Instruccion2* deserializar_instrucciones(BUFFER* buffer)
     memcpy(&(instrucciones->valor), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    memcpy(&(instrucciones->valorChar), stream, sizeof(int32_t));
+    // ok
+
+    memcpy(&(instrucciones->valorChar_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
     instrucciones->valorChar = malloc(instrucciones->valorChar_long);
     memcpy(instrucciones->valorChar, stream, instrucciones->valorChar_long);
     stream += instrucciones->valorChar_long + 1;
 
-    memcpy(&(instrucciones->registro), stream, sizeof(int32_t));
+    memcpy(&(instrucciones->registro_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
     instrucciones->registro = malloc(instrucciones->registro_long);
     memcpy(instrucciones->registro, stream, instrucciones->registro_long);
-    stream += instrucciones->registro_long+ 1;
+    stream += instrucciones->registro_long + 1;
 
     memcpy(&(instrucciones->direccionLogica), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
@@ -346,11 +350,11 @@ Instruccion2* deserializar_instrucciones(BUFFER* buffer)
     memcpy(&(instrucciones->tiempo), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    memcpy(&(instrucciones->nombreARchivoLength), stream, sizeof(int32_t));
+    memcpy(&(instrucciones->nombreArchivo_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
-    instrucciones->nombreArchivo = malloc(instrucciones->nombreARchivoLength);
-     memcpy(instrucciones->nombreArchivo, stream, instrucciones->nombreARchivoLength);
-    stream += instrucciones->nombreARchivoLength + 1;
+    instrucciones->nombreArchivo = malloc(instrucciones->nombreArchivo_long);
+    memcpy(instrucciones->nombreArchivo, stream, instrucciones->nombreArchivo_long);
+    stream += instrucciones->nombreArchivo_long + 1;
 
     memcpy(&(instrucciones->posicion), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
@@ -358,7 +362,7 @@ Instruccion2* deserializar_instrucciones(BUFFER* buffer)
     memcpy(&(instrucciones->cantBytes), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    memcpy(&(instrucciones->recurso), stream, sizeof(int32_t));
+    memcpy(&(instrucciones->recurso_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
     instrucciones->recurso = malloc(instrucciones->recurso_long);
     memcpy(instrucciones->recurso, stream, instrucciones->recurso_long);

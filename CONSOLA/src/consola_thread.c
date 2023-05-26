@@ -18,7 +18,7 @@ void enviar_instrucciones_a_kernel()
         instrucciones->direccionLogica = 123;
         instrucciones->tiempo = 456;
         instrucciones->nombreArchivo = "archivo.txt";
-        instrucciones->nombreARchivoLength = strlen(instrucciones->nombreArchivo);
+        instrucciones->nombreArchivo_long = 11;
         instrucciones->posicion = 789;
         instrucciones->cantBytes = 10;
         instrucciones->recurso = "memoria";

@@ -95,7 +95,7 @@ typedef struct
     int32_t direccionLogica;
     int32_t tiempo;
     char* nombreArchivo;
-    int32_t nombreARchivoLength;
+    int32_t nombreArchivo_long;
     int32_t posicion;
     int32_t cantBytes;
     char* recurso;
@@ -115,7 +115,7 @@ typedef struct
     int32_t direccionLogica;
     int32_t tiempo;
     char* nombreArchivo;
-    int32_t nombreARchivoLength;
+    int32_t nombreArchivo_long;
     int32_t posicion;
     int32_t cantBytes;
     char* recurso;
