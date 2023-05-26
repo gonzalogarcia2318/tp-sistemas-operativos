@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     char *pseudocodigo_path = argv[2];
 
     // SETEAR PATH ACA PARA PROBAR MAS FACIL. SACAR.
-    pseudocodigo_path = "pseudocodigo.txt";
+    pseudocodigo_path = "pseudocodigo2.txt";
     
     inicializar_config_consola(config_path);
 
@@ -26,7 +26,7 @@ int main(int argc, char** argv)
         // CHILY >>>>
         sleep(5);
         // ENVIAR UN PAQUETE CON LAS INSTRUCCIONES A KERNEL
-        enviar_instrucciones_a_kernel();
+        enviar_instrucciones_a_kernel(instrucciones);
 
         // RECIBIR QUE LLEGARON LAS INSTRUCCIONES BIEN A KERNEL (bloqueante)
         //escuchar_kernel();

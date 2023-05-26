@@ -52,7 +52,11 @@ void manejar_paquete_consola(int socketConsola)
             break;
 
         case INSTRUCCIONES:
-             obtener_paquete_estructura_dinamica(socketConsola);        
+             t_list *instrucciones = obtener_paquete_estructura_dinamica(socketConsola);
+             	for(int i = 0; i < list_size(instrucciones); i++){
+                    Instruccion2* instruccion = list_get(instrucciones, i);
+                    log_info(logger, "Instruccion %d: nombre: %s - registro: %s", i, instruccion->nombreInstruccion, instruccion->registro);
+	            }
             break;
 
         default:

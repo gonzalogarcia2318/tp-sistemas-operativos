@@ -129,8 +129,10 @@ typedef struct
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);
 
-BUFFER *serializar_instrucciones(Instruccion2 *instrucciones);
-Instruccion2 *deserializar_instrucciones(BUFFER *buffer);
+BUFFER *serializar_instruccion(Instruccion2 *instruccion);
+Instruccion2 *deserializar_instruccion(BUFFER *buffer, int stream_offset);
+BUFFER *serializar_instrucciones(t_list *instrucciones);
+t_list* deserializar_instrucciones(BUFFER* buffer);
 
 void imprimir_buffer( BUFFER* buffer);
 
