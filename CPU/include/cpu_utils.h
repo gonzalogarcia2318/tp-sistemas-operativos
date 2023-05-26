@@ -43,6 +43,8 @@ void ejecutar_instruccion(); //EXECUTE
     void asignar_a_registro (char*, char*, PCB*);
     bool comprobar_segmentation_fault(int32_t, int32_t);
 
+    void ejecutar_mov_in(PAQUETE*,Instruccion*,PCB*);
+
 
 
 #endif

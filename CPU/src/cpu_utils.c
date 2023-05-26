@@ -118,6 +118,7 @@ void decode_instruccion(Instruccion* Instruccion){
 void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA INSTRUCCIÓN DEBE TENER SU log_warning(PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>)
 { 
     char* nombre_instru = string_duplicate(Instruccion->nombreInstruccion);
+    PAQUETE* paquete = crear_paquete(INSTRUCCION);
 
     if(!strcmp(nombre_instru,"SET"))
     {
@@ -126,7 +127,7 @@ void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA I
     }
     else if(!strcmp(nombre_instru,"MOV_IN")) //TOM
     {
-        //Traducir Dirección
+        ejecutar_mov_in(paquete,Instruccion,pcb);
         //Comunicación con Memoria: Memoria -> Registro
     }
     else if(!strcmp(nombre_instru,"MOV_OUT")) //TOM
@@ -200,6 +201,7 @@ void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA I
         log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
     } 
 
+    eliminar_paquete(paquete);
 }
  
 void asignar_a_registro (char* valor , char* registro_instr, PCB* pcb)
@@ -293,4 +295,33 @@ bool comprobar_segmentation_fault(int32_t dir_logica, int32_t tam_leer_escribir)
     int desplazamiento_segmento = (dir_logica % CPUConfig.TAM_MAX_SEGMENTO);
 
     return desplazamiento_segmento + tam_leer_escribir > CPUConfig.TAM_MAX_SEGMENTO;
+}
+
+void ejecutar_mov_in(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    Lista* lista_recepcion;
+
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <MOV_IN> - <REGISTRO:%s , DIRECCIÓN LÓGICA: %d>",
+                    pcb->PID,
+                    instruccion->registro, 
+                    instruccion->direccionLogica);
+    agregar_a_paquete(paquete,MOV_IN,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int32_t));
+    enviar_paquete_a_servidor(paquete,socket_memoria);
+    lista_recepcion = obtener_paquete_como_lista(socket_memoria);
+    
+    //... SE BLOQUEA HASTA QUE RESPONDA
+
+    char* valor = string_duplicate((char*)list_get(lista_recepcion,0));
+    int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
+
+    log_warning(logger,"CPU: PID: <%d> - Acción: <LEER> - Segmento: <%d> - Dirección Física: <%d> - Valor: <%s>",
+                    pcb->PID,
+                    num_segmento,
+                    instruccion->direccionFisica,
+                    valor);
+    
+    asignar_a_registro(valor,instruccion->registro,pcb);
+
+    list_destroy(lista_recepcion);
 }
