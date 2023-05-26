@@ -6,8 +6,9 @@ void esperar_consola(int socketKernel)
 {
     while (true)
     {
-
+            
         log_info(logger, "[KERNEL]: Esperando conexiones de Consola...");
+
         int socketConsola = esperar_cliente(socketKernel);
 
         if (socketConsola < 0)
@@ -48,6 +49,10 @@ void manejar_paquete_consola(int socketConsola)
         case PAQUETE_2:
             // Recibir info consola
             manejar_proceso_consola();
+            break;
+
+        case INSTRUCCIONES:
+             obtener_paquete_estructura_dinamica(socketConsola);        
             break;
 
         default:

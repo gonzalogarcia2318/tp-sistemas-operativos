@@ -24,14 +24,16 @@ int main(int argc, char** argv)
     {
         //  -------------------------
         // CHILY >>>>
-
+        sleep(5);
         // ENVIAR UN PAQUETE CON LAS INSTRUCCIONES A KERNEL
         enviar_instrucciones_a_kernel();
 
         // RECIBIR QUE LLEGARON LAS INSTRUCCIONES BIEN A KERNEL (bloqueante)
+        //escuchar_kernel();
 
         // QUEDARSE ESPERANDO A QUE KERNEL ENVIE UN MENSAJE TERMINANDO LA EJECUCION PARA SALIR (bloqueante)
-        // escuchar_kernel();
+
+         escuchar_kernel();
 
         desconectar_con_kernel();
     }

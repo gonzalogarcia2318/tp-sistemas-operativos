@@ -18,10 +18,10 @@ int main()
 
         conectar_con_cpu();
 
-        conectar_con_consola();
+        conectar_con_consola(); 
+
     }
 
-    
 
     // trabarse hasta que exista un pcb para planificar
     // nos destrabamos cuando kernel_thead.c avisa que se creo un pcb
@@ -54,7 +54,7 @@ int main()
 
         }
     */
-    // manejar_proceso_consola();
+     //manejar_proceso_consola();
 
     terminar_ejecucion();
 

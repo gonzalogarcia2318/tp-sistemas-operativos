@@ -26,6 +26,7 @@ typedef enum
     MENSAJE,
     PAQUETE_2, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
     OP_PCB,
+    INSTRUCCIONES,
     FINALIZAR_PROCESO
 } CODIGO_OPERACION;
 
@@ -60,6 +61,7 @@ void *obtener_buffer_del_cliente(int *tamanio, int socketCliente);
 char *obtener_mensaje_del_cliente(int socketCliente);
 Lista *obtener_paquete_como_lista(int socketCliente);
 char *obtener_mensaje_del_servidor(int socketServidor);
+void * obtener_paquete_estructura_dinamica(int socketCliente);
 
 BUFFER* recibir_buffer(int socket);
 
@@ -98,11 +100,38 @@ typedef struct
     int32_t cantBytes;
     char* recurso;
     int32_t idSegmento;
+    
 } Instruccion;
+
+typedef struct 
+{
+    char* nombreInstruccion;
+    int32_t nombreInstruccion_long;
+    int32_t valor;
+    char* valorChar;
+    int32_t valorChar_long; 
+    char* registro; 
+    int32_t registro_long;
+    int32_t direccionLogica;
+    int32_t tiempo;
+    char* nombreArchivo;
+    int32_t nombreARchivoLength;
+    int32_t posicion;
+    int32_t cantBytes;
+    char* recurso;
+    int32_t recurso_long;
+    int32_t idSegmento;
+
+} Instruccion2;
 
 
 
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);
+
+BUFFER *serializar_instrucciones(Instruccion2 *instrucciones);
+Instruccion2 *deserializar_instrucciones(BUFFER *buffer);
+
+void imprimir_buffer( BUFFER* buffer);
 
 #endif
