@@ -50,6 +50,10 @@ int ejecutar_instruccion(); //EXECUTE
     void ejecutar_IO(PAQUETE*,Instruccion*,PCB*);
     void ejecutar_f_open(PAQUETE*,Instruccion*,PCB*);
     void ejecutar_f_close(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_wait(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_signal(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_create_segment(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_delete_segment(PAQUETE*,Instruccion*,PCB*);
     //...
     void ejecutar_yield(PAQUETE*,PCB*);
     void ejecutar_exit(PAQUETE*,PCB*);

@@ -182,27 +182,25 @@ int ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA IN
     }
     else if(!strcmp(nombre_instru,"WAIT")) //CAMIL
     {
+        ejecutar_wait(paquete, Instruccion, pcb);
         return 0;
-        //Avisarle a Kernel que se bloquee
-        //Devolver Contexto de Ejecución
+
     }
     else if(!strcmp(nombre_instru,"SIGNAL")) //CAMIL
     {
+        ejecutar_signal(paquete, Instruccion, pcb);
         return 0;
-        //Avisarle a Kernel que se libere
-        //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"CREATE_SEGMENT")) //CAMIL
     {
+        ejecutar_create_segment(paquete, Instruccion, pcb);
         return 0;
-        //solicita al kernel la creación del segmento con el Id y tamaño.
-        //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"DELETE_SEGMENT ")) //CAMIL
     {
+        ejecutar_delete_segment(paquete, Instruccion, pcb);
         return 0;
-        //solicita al kernel que se elimine el segmento cuyo Id se pasa por parámetro.
-        //Devolver Contexto de Ejecución
+
     }
     else if(!strcmp(nombre_instru,"YIELD"))
     {
@@ -477,6 +475,54 @@ void ejecutar_f_close(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
     enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
     agregar_a_paquete(paquete,F_CLOSE,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+
+void ejecutar_wait(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb) {
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <WAIT> - <RECURSO: %s>",
+                   pcb->PID,
+                   instruccion->recurso
+               );
+    enviar_pcb(pcb);
+    agregar_a_paquete(paquete,WAIT,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->recurso,sizeof(char*));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+void ejecutar_signal(PAQUETE* paquete, Instruccion* instruccion, PCB* pcb) {
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <SIGNAL> - <RECURSO: %s>",
+                   pcb->PID,
+                   instruccion->recurso
+               );
+    enviar_pcb(pcb);
+    agregar_a_paquete(paquete,SIGNAL,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->recurso,sizeof(char*));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+
+void ejecutar_create_segment(PAQUETE* paquete, Instruccion* instruccion, PCB* pcb) {
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <CREATE_SEGMENT> - <ID_SEGMENTO: %d> - <TAMANIO: %d>",
+                   pcb->PID,
+                   instruccion->idSegmento,
+                   instruccion->tamanioSegmento
+               ); 
+    enviar_pcb(pcb);
+    agregar_a_paquete(paquete,CREATE_SEGMENT,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->idSegmento, sizeof(int));
+    agregar_a_paquete(paquete,instruccion->tamanioSegmento, sizeof(int));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+void ejecutar_delete_segment(PAQUETE* paquete, Instruccion* instruccion, PCB* pcb) {
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <DELETE_SEGMENT> - <ID_SEGMENTO: %d> ",
+                   pcb->PID,
+                   instruccion->idSegmento
+               ); 
+    enviar_pcb(pcb);
+    agregar_a_paquete(paquete,DELETE_SEGMENT,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->idSegmento, sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
 }
