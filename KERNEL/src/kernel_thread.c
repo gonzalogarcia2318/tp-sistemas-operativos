@@ -6,8 +6,9 @@ void esperar_consola(int socketKernel)
 {
     while (true)
     {
-
+            
         log_info(logger, "[KERNEL]: Esperando conexiones de Consola...");
+
         int socketConsola = esperar_cliente(socketKernel);
 
         if (socketConsola < 0)
@@ -43,11 +44,20 @@ void manejar_paquete_consola(int socketConsola)
         case DESCONEXION:
             log_warning(logger, "[KERNEL]: Conexión de Consola terminada.");
             return;
+        case INSTRUCCIONES:
+            t_list *instrucciones = obtener_paquete_estructura_dinamica(socketConsola);
+            
+            // Para testear . Borrar.
+            for(int i = 0; i < list_size(instrucciones); i++){
+                Instruccion2* instruccion = list_get(instrucciones, i);
+                log_info(logger, "Instruccion %d: nombre: %s", i, instruccion->nombreInstruccion);
+            }
 
-        //TODO_A: RECIBIR INSTRUCCIONES DE CONSOLA
-        case PAQUETE_2:
-            // Recibir info consola
-            manejar_proceso_consola();
+            manejar_proceso_consola(instrucciones);
+
+
+
+
             break;
 
             default:
@@ -57,28 +67,28 @@ void manejar_paquete_consola(int socketConsola)
     }
 }
 
-void manejar_proceso_consola()
+void manejar_proceso_consola(t_list *instrucciones)
 {
     log_info(logger, "[KERNEL]: Creando PCB");
 
     PCB pcb;
-    t_list *instrucciones = list_create();
-    list_add(instrucciones, "Instruccion1");
-    list_add(instrucciones, "Instruccion1");
 
     pcb.PID = PROCESO_ID++;
     pcb.instrucciones = instrucciones;
     pcb.program_counter = 1;
 
     log_info(logger, "[KERNEL]: PCB Creada: %d", pcb.PID);
-    // pcb.registros_cpu;  //Tipo struct REGISTROS_CPU
-    // pcb.tabla_segmentos; //Lista de Struct TABLA_SEGMENTOS
-    // pcb.proxima_rafaga;
-    // pcb.tiempo_ready;
-    // pcb.archivos_abiertos; //Lista de struct ARCHIVOS_ABIERTOS
-
+    
     // METER PCB A LISTA procesos
     // TODO_A: AVISAR QUE SE CREO EL PCB
+    Proceso proceso;
+    proceso.estado = NEW;
+    proceso.pcb = pcb;
+
+    list_add(procesos, proceso);
+
+    sem_post(&semaforo_new);
+
 
 
     enviar_pcb_a_cpu(&pcb);

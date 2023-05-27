@@ -39,4 +39,4 @@ clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ $(PROCESS_NAME) $(SHARED_ODIR)/*.o ../shared/libcommons.so
 
 run: all
-	./$(PROCESS_NAME)
+	./$(PROCESS_NAME) config/consola.config ./pseudocodigo2.txt

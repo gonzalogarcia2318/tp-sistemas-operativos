@@ -5,8 +5,8 @@
 #define FAILURE -1
 
 #define ARCHIVO_LOGGER "config/consola.log"
-#define ARCHIVO_CONFIG "config/consola.config"
-#define ARCHIVO_CODIGO "pseudocodigo.txt"
+// #define ARCHIVO_CONFIG "config/consola.config"
+// #define ARCHIVO_CODIGO "pseudocodigo.txt"
 
 #include "protocolo.h"
 #include "consola_config.h"
@@ -25,5 +25,8 @@ void inicializar_config_consola();
 int conectar_con_kernel(void);
 int desconectar_con_kernel(void);
 void terminar_consola(void);
+
+Instruccion2 *parsear_instruccion_por_linea(char *linea);
+t_list *leer_instrucciones(char *path_instrucciones);
 
 #endif

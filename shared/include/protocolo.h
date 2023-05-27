@@ -4,9 +4,14 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include <math.h>
+#include <commons/string.h>
+#include <commons/collections/list.h>
+#include <commons/collections/queue.h>
+
 // #include <list.h>
 #include <commons/string.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include "cliente.h"
 #include "server.h"
 #include "socket.h"
@@ -25,8 +30,10 @@ typedef enum
     MENSAJE,
     PAQUETE_2, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
     OP_PCB,
-    FINALIZAR_PROCESO,
-    INSTRUCCION
+    INSTRUCCION,
+    INSTRUCCIONES,
+    FINALIZAR_PROCESO
+
 } CODIGO_OPERACION;
 
 typedef enum
@@ -78,6 +85,7 @@ void *obtener_buffer_del_cliente(int *tamanio, int socketCliente);
 char *obtener_mensaje_del_cliente(int socketCliente);
 Lista *obtener_paquete_como_lista(int socketCliente);
 char *obtener_mensaje_del_servidor(int socketServidor);
+void * obtener_paquete_estructura_dinamica(int socketCliente);
 
 BUFFER* recibir_buffer(int socket);
 
@@ -114,20 +122,51 @@ typedef struct
 {
     char* nombreInstruccion;
     char* valor;
+    char* valorChar; // TODO: Chequear. SET AX HOLA
     char* registro; //Recibe nombr de registro, comparo y asigno al registro del PCB
     int32_t direccionLogica;
     int32_t direccionFisica;
     int32_t tiempo;
     char* nombreArchivo;
+    int32_t nombreArchivo_long;
     int32_t posicion;
     int32_t cantBytes;
     char* recurso;
     int32_t idSegmento;
+    
 } Instruccion;
+
+typedef struct 
+{
+    char* nombreInstruccion;
+    int32_t nombreInstruccion_long;
+    int32_t valor;
+    char* valorChar;
+    int32_t valorChar_long; 
+    char* registro; 
+    int32_t registro_long;
+    int32_t direccionLogica;
+    int32_t tiempo;
+    char* nombreArchivo;
+    int32_t nombreArchivo_long;
+    int32_t posicion;
+    int32_t cantBytes;
+    char* recurso;
+    int32_t recurso_long;
+    int32_t idSegmento;
+
+} Instruccion2;
 
 
 
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);
+
+BUFFER *serializar_instruccion(Instruccion2 *instruccion);
+Instruccion2 *deserializar_instruccion(BUFFER *buffer, int stream_offset);
+BUFFER *serializar_instrucciones(t_list *instrucciones);
+t_list* deserializar_instrucciones(BUFFER* buffer);
+
+void imprimir_buffer( BUFFER* buffer);
 
 #endif

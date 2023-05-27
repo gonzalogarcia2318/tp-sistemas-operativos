@@ -1,40 +1,40 @@
 #include "consola_utils.h"
 
-int main()
+int main(int argc, char** argv)
 {
 
-    // TODO_A: RECIBIR PATHS DE CONFIG Y PSEUDOCODIGO POR ARGUMENTOS
-
     inicializar_logger_consola();
-    inicializar_config_consola();
+    
+    if(argc != 3){
+        log_error(logger, "[CONSOLA]: Error. Se requiere el path de configuracion y pseudocodigo.");
+        return EXIT_FAILURE;
+    }
 
-    log_info(logger, "IP_KERNEL: %s", config_get_string_value(config, "IP_KERNEL"));
+    char *config_path = argv[1];
+    char *pseudocodigo_path = argv[2];
 
-    if(conectar_con_kernel() == SUCCESS)
+    // SETEAR PATH ACA PARA PROBAR MAS FACIL. SACAR.
+    pseudocodigo_path = "pseudocodigo.txt";
+    
+    inicializar_config_consola(config_path);
+
+    t_list *instrucciones = leer_instrucciones(pseudocodigo_path);
+
+    if (conectar_con_kernel() == SUCCESS)
     {
-        // TODO_A
-        // LEER INSTRUCCIONES DEL ARCHIVO
-
-        // PARSEAR INSTRUCCIONES
-        // vamos a parsear cada instruccion a un struct propio nuestro
-        // SET A 2
-        // por ejemplo: {instruccion: SET, parametro1: A, parametro2: 2]}
-
-
-        // GONZI <<<<
         //  -------------------------
         // CHILY >>>>
-        
+        sleep(5);
         // ENVIAR UN PAQUETE CON LAS INSTRUCCIONES A KERNEL
-        enviar_instrucciones_a_kernel();
+        enviar_instrucciones_a_kernel(instrucciones);
 
         // RECIBIR QUE LLEGARON LAS INSTRUCCIONES BIEN A KERNEL (bloqueante)
-
-        // QUEDARSE ESPERANDO A QUE KERNEL ENVIE UN MENSAJE TERMINANDO LA EJECUCION PARA SALIR (bloqueante)
         //escuchar_kernel();
 
+        // QUEDARSE ESPERANDO A QUE KERNEL ENVIE UN MENSAJE TERMINANDO LA EJECUCION PARA SALIR (bloqueante)
 
-        
+         escuchar_kernel();
+
         desconectar_con_kernel();
     }
 
