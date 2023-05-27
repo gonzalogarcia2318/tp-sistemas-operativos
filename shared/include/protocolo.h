@@ -3,11 +3,13 @@
 
 #include <commons/config.h>
 #include <commons/log.h>
+#include <math.h>
 #include <commons/string.h>
 #include <commons/collections/list.h>
 #include <commons/collections/queue.h>
+
 // #include <list.h>
-#include <string.h>
+#include <commons/string.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include "cliente.h"
@@ -28,10 +30,30 @@ typedef enum
     MENSAJE,
     PAQUETE_2, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
     OP_PCB,
+    INSTRUCCION,
     INSTRUCCIONES,
     FINALIZAR_PROCESO
+
 } CODIGO_OPERACION;
 
+typedef enum
+{
+    MOV_IN,
+    MOV_OUT,
+    IO,
+    F_OPEN,
+    F_CLOSE,
+    F_SEEK,
+    F_READ,
+    F_WRITE,
+    F_TRUNCATE,
+    WAIT,
+    SIGNAL,
+    CREATE_SEGMENT,
+    DELETE_SEGMENT,
+    YIELD,
+    EXIT
+} CODIGO_INSTRUCCION;
 typedef struct
 {
     int size;
@@ -71,16 +93,24 @@ BUFFER* recibir_buffer(int socket);
 // TODO: MOVER A OTRO ARCHIVO
 typedef struct 
 {
-    int32_t valor_AX;
-    int32_t valor_BX;
-    int32_t valor_CX;
-    int32_t valor_DX;
+    char* valor_AX;
+    char* valor_BX;
+    char* valor_CX;
+    char* valor_DX;
+    char* valor_EAX;
+    char* valor_EBX;
+    char* valor_ECX;
+    char* valor_EDX;
+    char* valor_RAX;
+    char* valor_RBX;
+    char* valor_RCX;
+    char* valor_RDX;
 } Registro_CPU;
 typedef struct
 {
     int32_t PID;
     t_list *instrucciones;
-    int32_t program_counter;
+    int32_t program_counter; //DEBE INICIALIZARSE EN 0.
     Registro_CPU *registros_cpu;   // Tipo struct REGISTROS_CPU
     char *tabla_segmentos; // Lista de Struct TABLA_SEGMENTOS
     double proxima_rafaga;
@@ -91,10 +121,11 @@ typedef struct
 typedef struct 
 {
     char* nombreInstruccion;
-    int32_t valor;
+    char* valor;
     char* valorChar; // TODO: Chequear. SET AX HOLA
     char* registro; //Recibe nombr de registro, comparo y asigno al registro del PCB
     int32_t direccionLogica;
+    int32_t direccionFisica;
     int32_t tiempo;
     char* nombreArchivo;
     int32_t nombreArchivo_long;

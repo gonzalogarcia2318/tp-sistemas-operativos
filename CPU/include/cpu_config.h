@@ -10,7 +10,7 @@ typedef struct CPU_CONFIG
   char *IP_MEMORIA;
   char *PUERTO_MEMORIA;
   char *PUERTO_ESCUCHA;
-  int32_t *TAM_MAX_SEGMENTO;
+  int32_t TAM_MAX_SEGMENTO;
 } CPU_CONFIG;
 
 extern CPU_CONFIG CPUConfig;

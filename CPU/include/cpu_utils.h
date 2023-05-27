@@ -37,8 +37,21 @@ void recibir_instrucciones(PCB*); //RECIBE PCB, ES GENERAL PARA TODAS, INCLUYE F
     bool esSet(Instruccion*);
 void decode_instruccion();//RECIBE INSTRUCCION
     void aplicar_retardo(int32_t);
-void ejecutar_instruccion(); //EXECUTE
-    void asignar_a_registro (int32_t, char*, PCB*);
+    bool requiere_traduccion(Instruccion*);
+    int32_t realizar_traduccion(int32_t);
+int ejecutar_instruccion(); //EXECUTE
+    void asignar_a_registro (char*, char*, PCB*);
+    char* obtener_valor_registro(Registro_CPU*,char*);
+    bool comprobar_segmentation_fault(int32_t, int32_t);
 
+    void ejecutar_set(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_mov_in(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_mov_out(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_IO(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_f_open(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_f_close(PAQUETE*,Instruccion*,PCB*);
+    //...
+    void ejecutar_yield(PAQUETE*,PCB*);
+    void ejecutar_exit(PAQUETE*,PCB*);
 
 #endif

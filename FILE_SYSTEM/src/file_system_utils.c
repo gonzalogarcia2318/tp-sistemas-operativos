@@ -54,7 +54,6 @@ void conectar_con_memoria(){
   {
     log_info(logger, "[FILESYSTEM]: Error al conectar con Memoria. Finalizando Ejecucion");
     log_error(logger, "[FILESYSTEM]: Memoria no está disponible");
-    return FAILURE;
   }
   log_info(logger, "[FILESYSTEM]: Conexion con Memoria: OK");
   enviar_mensaje_a_servidor("HOLA! SOY FILE SYSTEM (●'◡'●)",socket_memoria);

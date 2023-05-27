@@ -3,9 +3,9 @@
 
 #include "cpu_utils.h"
 
-//void esperar_kernel(int socket_cpu);
+PCB* recibir_pcb(int);
+void enviar_pcb(PCB*);
 void manejar_paquete_kernel(int socket_kernel);
-//Cambiar de void a estructura de PCB //todo
-void manejar_instruccion();
+
 
 #endif

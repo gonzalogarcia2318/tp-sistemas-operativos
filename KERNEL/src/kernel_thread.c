@@ -60,7 +60,7 @@ void manejar_paquete_consola(int socketConsola)
 
             break;
 
-        default:
+            default:
             log_warning(logger, "[KERNEL]: Operacion desconocida desde consola.");
             break;
         }
