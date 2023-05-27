@@ -102,7 +102,7 @@ typedef struct
 {
     int32_t PID;
     t_list *instrucciones;
-    int32_t program_counter;
+    int32_t program_counter; //DEBE INICIALIZARSE EN 0.
     Registro_CPU *registros_cpu;   // Tipo struct REGISTROS_CPU
     char *tabla_segmentos; // Lista de Struct TABLA_SEGMENTOS
     double proxima_rafaga;

@@ -44,10 +44,14 @@ int ejecutar_instruccion(); //EXECUTE
     char* obtener_valor_registro(Registro_CPU*,char*);
     bool comprobar_segmentation_fault(int32_t, int32_t);
 
+    void ejecutar_set(PAQUETE*,Instruccion*,PCB*);
     void ejecutar_mov_in(PAQUETE*,Instruccion*,PCB*);
     void ejecutar_mov_out(PAQUETE*,Instruccion*,PCB*);
     void ejecutar_IO(PAQUETE*,Instruccion*,PCB*);
     void ejecutar_f_open(PAQUETE*,Instruccion*,PCB*);
     void ejecutar_f_close(PAQUETE*,Instruccion*,PCB*);
+    //...
+    void ejecutar_yield(PAQUETE*,PCB*);
+    void ejecutar_exit(PAQUETE*,PCB*);
 
 #endif

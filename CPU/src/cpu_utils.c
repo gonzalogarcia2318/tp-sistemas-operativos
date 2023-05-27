@@ -122,84 +122,91 @@ int ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA IN
 
     if(!strcmp(nombre_instru,"SET"))
     {
-        log_info(logger,"CPU: Leí la instrucción SET en ejecutar_instruccion");
-        asignar_a_registro(Instruccion->valor,Instruccion->registro, pcb);
+        ejecutar_set(paquete,Instruccion,pcb);
         return 1;
     }
     else if(!strcmp(nombre_instru,"MOV_IN"))
     {
         ejecutar_mov_in(paquete,Instruccion,pcb);
         return 1;
-        //Comunicación con Memoria: Memoria -> Registro
     }
     else if(!strcmp(nombre_instru,"MOV_OUT"))
     {
         ejecutar_mov_out(paquete,Instruccion,pcb);
         return 1;
-        //Comunicación con Memoria: Registro -> Memoria
     }
-    else if(!strcmp(nombre_instru,"I/O")) //TOM
+    else if(!strcmp(nombre_instru,"I/O"))
     {
         ejecutar_IO(paquete,Instruccion,pcb);
         return 0;
-        //Comunicación con Kernel: Unidades de tiempo que se bloquea. 
-		//Devolver Contexto de Ejecución
     }
-    else if(!strcmp(nombre_instru,"F_OPEN")) //TOM
+    else if(!strcmp(nombre_instru,"F_OPEN"))
     {
-        //Comunicación con Kernel: nombre_archivo
-        //Devolver Contexto de Ejecución
+        ejecutar_f_open(paquete,Instruccion,pcb);
+        return 0;
     }
-    else if(!strcmp(nombre_instru,"F_CLOSE")) //TOM
+    else if(!strcmp(nombre_instru,"F_CLOSE"))
     {
-        //Comunicación con Kernel: nombre_archivo
-		//Devolver Contexto de Ejecución
+        ejecutar_f_close(paquete,Instruccion,pcb);
+        return 0;
     }
     else if(!strcmp(nombre_instru,"F_SEEK")) //DIEGO
     {
+        return 0;
         //Comunicación con Kernel: nombre_archivo, posición
         //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"F_READ")) //DIEGO
     {
+        return 0;
         //Comunicación con Kernel: nombre_archivo, dire_lógica, cant_bytes
         //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"F_WRITE"))//DIEGO
     {
+        return 0;
         //Comunicación con Kernel: nombre_archivo, dire_lógica, cant_bytes
         //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"F_TRUNCATE ")) //DIEGO
     {
+        return 0;
         //Comunicación con Kernel: nombre_archivo, tamaño
         //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"WAIT")) //CAMIL
     {
+        return 0;
         //Avisarle a Kernel que se bloquee
         //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"SIGNAL")) //CAMIL
     {
+        return 0;
         //Avisarle a Kernel que se libere
         //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"CREATE_SEGMENT")) //CAMIL
     {
+        return 0;
         //solicita al kernel la creación del segmento con el Id y tamaño.
+        //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"DELETE_SEGMENT ")) //CAMIL
     {
+        return 0;
         //solicita al kernel que se elimine el segmento cuyo Id se pasa por parámetro.
+        //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"YIELD"))
     {
-        log_info(logger,"CPU: Leí la instrucción YIELD en ejecutar_instruccion");
+        ejecutar_yield(paquete,pcb);
+        return 0;
     }
     else if(!strcmp(nombre_instru,"EXIT"))
     {
-        log_info(logger,"CPU: Leí la instrucción EXIT en ejecutar_instruccion");
+        ejecutar_exit(paquete,pcb);
+        return 0;
     }
     else
     {
@@ -360,6 +367,16 @@ bool comprobar_segmentation_fault(int32_t dir_logica, int32_t tam_leer_escribir)
     return desplazamiento_segmento + tam_leer_escribir > CPUConfig.TAM_MAX_SEGMENTO;
 }
 
+void ejecutar_set(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <SET> - <REGISTRO:%s , VALOR: %d>",
+                    pcb->PID,
+                    instruccion->registro, 
+                    instruccion->valor
+                );
+    asignar_a_registro(instruccion->valor,instruccion->registro, pcb);
+}
+
 void ejecutar_mov_in(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
 {
 
@@ -419,8 +436,7 @@ void ejecutar_IO(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     pcb->PID,
                     instruccion->tiempo
                 );
-    //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
-    enviar_pcb(pcb); 
+    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
     agregar_a_paquete(paquete,IO,sizeof(int));
     agregar_a_paquete(paquete,instruccion->tiempo,sizeof(int32_t));
     enviar_paquete_a_cliente(paquete,socket_kernel);
@@ -432,6 +448,7 @@ void ejecutar_f_open(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     pcb->PID,
                     instruccion->nombreArchivo
                 );
+    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
     agregar_a_paquete(paquete,F_OPEN,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     enviar_paquete_a_cliente(paquete, socket_kernel);
@@ -443,7 +460,28 @@ void ejecutar_f_close(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     pcb->PID,
                     instruccion->nombreArchivo
                 );
+    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
     agregar_a_paquete(paquete,F_CLOSE,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+}
+
+void ejecutar_yield(PAQUETE* paquete,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <YIELD>",
+                    pcb->PID
+                );
+    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
+    agregar_a_paquete(paquete,YIELD,sizeof(int));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+}
+
+void ejecutar_exit(PAQUETE* paquete,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <EXIT>",
+                    pcb->PID
+                );
+    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
+    agregar_a_paquete(paquete,EXIT,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
 }
