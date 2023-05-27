@@ -123,31 +123,37 @@ int ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA IN
     if(!strcmp(nombre_instru,"SET"))
     {
         ejecutar_set(paquete,Instruccion,pcb);
+        free(nombre_instru);
         return 1;
     }
     else if(!strcmp(nombre_instru,"MOV_IN"))
     {
         ejecutar_mov_in(paquete,Instruccion,pcb);
+        free(nombre_instru);
         return 1;
     }
     else if(!strcmp(nombre_instru,"MOV_OUT"))
     {
         ejecutar_mov_out(paquete,Instruccion,pcb);
+        free(nombre_instru);
         return 1;
     }
     else if(!strcmp(nombre_instru,"I/O"))
     {
         ejecutar_IO(paquete,Instruccion,pcb);
+        free(nombre_instru);
         return 0;
     }
     else if(!strcmp(nombre_instru,"F_OPEN"))
     {
         ejecutar_f_open(paquete,Instruccion,pcb);
+        free(nombre_instru);
         return 0;
     }
     else if(!strcmp(nombre_instru,"F_CLOSE"))
     {
         ejecutar_f_close(paquete,Instruccion,pcb);
+        free(nombre_instru);
         return 0;
     }
     else if(!strcmp(nombre_instru,"F_SEEK")) //DIEGO
@@ -201,19 +207,22 @@ int ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA IN
     else if(!strcmp(nombre_instru,"YIELD"))
     {
         ejecutar_yield(paquete,pcb);
+        free(nombre_instru);
         return 0;
     }
     else if(!strcmp(nombre_instru,"EXIT"))
     {
         ejecutar_exit(paquete,pcb);
+        free(nombre_instru);
         return 0;
     }
     else
     {
         log_error(logger,"[CPU]: Codigo de Instruccion no encontrado");
+        free(nombre_instru);
+        eliminar_paquete(paquete);
+        return 0;
     } 
-
-    eliminar_paquete(paquete);
 }
  
 void asignar_a_registro (char* valor , char* registro_instr, PCB* pcb)
@@ -369,12 +378,13 @@ bool comprobar_segmentation_fault(int32_t dir_logica, int32_t tam_leer_escribir)
 
 void ejecutar_set(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
 {
-    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <SET> - <REGISTRO:%s , VALOR: %d>",
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <SET> - <REGISTRO:%s , VALOR: %s>",
                     pcb->PID,
                     instruccion->registro, 
                     instruccion->valor
                 );
     asignar_a_registro(instruccion->valor,instruccion->registro, pcb);
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_mov_in(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
@@ -401,7 +411,7 @@ void ejecutar_mov_in(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     valor
                 );
     asignar_a_registro(valor,instruccion->registro,pcb);
-
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_mov_out(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
@@ -427,7 +437,9 @@ void ejecutar_mov_out(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     pcb->PID,
                     num_segmento,
                     instruccion->direccionFisica,
-                    valor_registro);
+                    valor_registro
+                );
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_IO(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
@@ -440,6 +452,7 @@ void ejecutar_IO(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
     agregar_a_paquete(paquete,IO,sizeof(int));
     agregar_a_paquete(paquete,instruccion->tiempo,sizeof(int32_t));
     enviar_paquete_a_cliente(paquete,socket_kernel);
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_f_open(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
@@ -452,6 +465,7 @@ void ejecutar_f_open(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
     agregar_a_paquete(paquete,F_OPEN,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_f_close(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
@@ -464,6 +478,7 @@ void ejecutar_f_close(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
     agregar_a_paquete(paquete,F_CLOSE,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_yield(PAQUETE* paquete,PCB* pcb)
@@ -474,6 +489,7 @@ void ejecutar_yield(PAQUETE* paquete,PCB* pcb)
     enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
     agregar_a_paquete(paquete,YIELD,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_exit(PAQUETE* paquete,PCB* pcb)
@@ -484,4 +500,5 @@ void ejecutar_exit(PAQUETE* paquete,PCB* pcb)
     enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
     agregar_a_paquete(paquete,EXIT,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
 }
