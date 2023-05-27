@@ -11,6 +11,10 @@ sem_t semaforo_planificador;
 
 sem_t semaforo_ejecutando;
 
+sem_t semaforo_new;
+
+t_list * procesos;
+
 
 int main()
 {
@@ -43,7 +47,7 @@ int main()
 
     Hilo hilo_planificador;
     pthread_create(&hilo_planificador, NULL, (void *)planificar, NULL);
-    pthread_join(hilo_planificador);
+    pthread_join(hilo_planificador,NULL);
 
      //manejar_proceso_consola();
 
@@ -63,26 +67,26 @@ void planificar(){
     
         sem_wait(&semaforo_planificador);
 
-        bool en_new(Proceso proceso){
-            return proceso.estado == NEW;
+        bool en_new(Proceso * proceso){
+            return proceso->estado == NEW;
         }
 
-        t_list* procesos_en_new = list_filter((void*) en_new);
+        t_list* procesos_en_new = list_filter(procesos,(void*) en_new);
 
         if(list_size(procesos_en_new) > 0){
-            Proceso proceso_para_ready = list_get(procesos_en_new, 0);
-            proceso_para_ready.estado = READY;
-            queue_push(cola_ready, proceso_para_ready);
-            log_info("Poner en ready proceso %d", proceso_para_ready.pcb.PID);
+            Proceso * proceso_para_ready = (Proceso * ) list_get(procesos_en_new, 0);
+            proceso_para_ready->estado = READY;
+            queue_push(cola_ready, (Proceso *) proceso_para_ready);
+            log_info("Poner en ready proceso %d", (proceso_para_ready->pcb)->PID);
         }
 
         sem_wait(&semaforo_ejecutando);
 
         if(!queue_is_empty(cola_ready)){
-            Proceso proceso_a_ejecutar = queue_pop(cola_ready);
-            proceso_a_ejecutar.estado = EXEC;
+            Proceso*  proceso_a_ejecutar = (Proceso*) queue_pop(cola_ready);
+            proceso_a_ejecutar->estado = EXEC;
             // destrabar ready
-            log_info("Ejecutar proceso %d", proceso_a_ejecutar.pcb.PID);
+            log_info("Ejecutar proceso %d", (proceso_a_ejecutar->pcb)->PID);
             sleep(5);
             // destrabar semaforo ejecutar
         } else {

@@ -9,17 +9,14 @@ typedef enum
     READY,
     EXEC,
     BLOCK,
-    EXIT
+    FINISHED
 } ESTADO;
 
 typedef struct
 {
-    PCB pcb;
+    PCB * pcb;
     ESTADO estado;
 } Proceso;
-
-sem_t semaforo_new;
-t_list *procesos;
 
 void esperar_consola(int socket_kernel);
 void manejar_paquete_consola(int socket_consola);

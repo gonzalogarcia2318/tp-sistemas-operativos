@@ -228,13 +228,13 @@ PCB *deserializar_pcb(BUFFER *buffer)
 }
 
 
-BUFFER *serializar_instruccion(Instruccion2 *instruccion)
+BUFFER *serializar_instruccion(Instruccion *instruccion)
 {
     BUFFER* buffer = malloc(sizeof(BUFFER));
 
       // Calcula el tamaño total necesario para la serialización
       buffer->size = sizeof(int32_t) * 11       
-                  + strlen(instruccion->valorChar) + 1
+                  + strlen(instruccion->valor) + 1
                   + strlen(instruccion->nombreInstruccion) + 1
                   + strlen(instruccion->registro) + 1
                   + strlen(instruccion->nombreArchivo) + 1
@@ -256,12 +256,12 @@ BUFFER *serializar_instruccion(Instruccion2 *instruccion)
     memcpy(stream + offset, &(instruccion->valor), sizeof(int32_t));
     offset += sizeof(int32_t);
 
-    //ValorChar longitud y palabra
-    instruccion->valorChar_long = strlen(instruccion->valorChar);
-    memcpy(stream + offset, &(instruccion->valorChar_long), sizeof(int32_t));
+    //valor longitud y palabra
+    instruccion->valor_long = strlen(instruccion->valor);
+    memcpy(stream + offset, &(instruccion->valor_long), sizeof(int32_t));
     offset += sizeof(int32_t);
-    memcpy(stream + offset, instruccion->valorChar, strlen(instruccion->valorChar) + 1);
-    offset += strlen(instruccion->valorChar) + 1;
+    memcpy(stream + offset, instruccion->valor, strlen(instruccion->valor) + 1);
+    offset += strlen(instruccion->valor) + 1;
 
     //Registro longitud y palabra
     instruccion->registro_long = strlen(instruccion->registro);
@@ -305,9 +305,9 @@ BUFFER *serializar_instruccion(Instruccion2 *instruccion)
     return buffer;
 }
 
-Instruccion2* deserializar_instruccion(BUFFER* buffer, int stream_offset)
+Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
 {
-    Instruccion2* instruccion = (Instruccion2*)malloc(sizeof(Instruccion2));
+    Instruccion* instruccion = (Instruccion*)malloc(sizeof(Instruccion));
     void* stream = buffer->stream;
     stream += stream_offset;
 
@@ -325,12 +325,12 @@ Instruccion2* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     memcpy(&(instruccion->valor), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    memcpy(&(instruccion->valorChar_long), stream, sizeof(int32_t));
+    memcpy(&(instruccion->valor_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
-    instruccion->valorChar = malloc(instruccion->valorChar_long+1);
-    memcpy(instruccion->valorChar, stream, instruccion->valorChar_long);
-    instruccion->valorChar[instruccion->valorChar_long] = '\0';
-    stream += instruccion->valorChar_long + 1;
+    instruccion->valor = malloc(instruccion->valor_long+1);
+    memcpy(instruccion->valor, stream, instruccion->valor_long);
+    instruccion->valor[instruccion->valor_long] = '\0';
+    stream += instruccion->valor_long + 1;
 
     memcpy(&(instruccion->registro_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
@@ -378,9 +378,9 @@ BUFFER *serializar_instrucciones(t_list *instrucciones){
 	// Calcular tamaño total del buffer
 	int i = 0;
 	for(i = 0; i < list_size(instrucciones); i++){
-		Instruccion2* instruccion = list_get(instrucciones, i);
+		Instruccion* instruccion = list_get(instrucciones, i);
         int tamanio = sizeof(int32_t) * 11       
-            + strlen(instruccion->valorChar) + 1
+            + strlen(instruccion->valor) + 1
             + strlen(instruccion->nombreInstruccion) + 1
             + strlen(instruccion->registro) + 1
             + strlen(instruccion->nombreArchivo) + 1
@@ -393,7 +393,7 @@ BUFFER *serializar_instrucciones(t_list *instrucciones){
 
 	i = 0;
 	for(i = 0; i < list_size(instrucciones); i++){
-		Instruccion2* instruccion = list_get(instrucciones, i);
+		Instruccion* instruccion = list_get(instrucciones, i);
 		BUFFER* buffer_instruccion = serializar_instruccion(instruccion);
 		memcpy(stream + offset, buffer_instruccion->stream, buffer_instruccion->size);
 		offset += buffer_instruccion->size;
@@ -409,9 +409,9 @@ t_list* deserializar_instrucciones(BUFFER* buffer){
 
 	int size_instrucciones_acumulado = 0;
 	do {
-		Instruccion2* instruccion = deserializar_instruccion(buffer, size_instrucciones_acumulado);
+		Instruccion* instruccion = deserializar_instruccion(buffer, size_instrucciones_acumulado);
 		size_instrucciones_acumulado += sizeof(int32_t) * 11       
-            + strlen(instruccion->valorChar) + 1
+            + strlen(instruccion->valor) + 1
             + strlen(instruccion->nombreInstruccion) + 1
             + strlen(instruccion->registro) + 1
             + strlen(instruccion->nombreArchivo) + 1
