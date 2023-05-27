@@ -84,7 +84,7 @@ t_list *leer_instrucciones(char *path_instrucciones)
     {
         log_info(logger, "Linea leida22: %s", linea);
 
-        Instruccion2 *instruccion = parsear_instruccion_por_linea(linea);
+        Instruccion *instruccion = parsear_instruccion_por_linea(linea);
 
         list_add(instrucciones, instruccion);
     }
@@ -96,15 +96,15 @@ t_list *leer_instrucciones(char *path_instrucciones)
     return instrucciones;
 }
 
-Instruccion2 *parsear_instruccion_por_linea(char *linea)
+Instruccion *parsear_instruccion_por_linea(char *linea)
 {
     char **linea_splitted = string_split(linea, " ");
 
     // TODO: free(instruccion) cuando se termine de usar
-    Instruccion2 *instruccion = malloc(sizeof(Instruccion2));
+    Instruccion *instruccion = malloc(sizeof(Instruccion));
     instruccion->nombreArchivo = "";
     instruccion->nombreInstruccion = "";
-    instruccion->valorChar = "";
+    instruccion->valor = "";
     instruccion->registro = "";
     instruccion->recurso = "";
 
@@ -113,7 +113,7 @@ Instruccion2 *parsear_instruccion_por_linea(char *linea)
     if (strcmp(instruccion->nombreInstruccion, "SET") == 0)
     {
         instruccion->registro = linea_splitted[1];
-        instruccion->valorChar = linea_splitted[2];
+        instruccion->valor = linea_splitted[2];
     }
     else if (strcmp(instruccion->nombreInstruccion, "MOV_IN") == 0)
     {

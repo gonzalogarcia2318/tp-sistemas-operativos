@@ -49,7 +49,7 @@ void manejar_paquete_consola(int socketConsola)
             
             // Para testear . Borrar.
             for(int i = 0; i < list_size(instrucciones); i++){
-                Instruccion2* instruccion = list_get(instrucciones, i);
+                Instruccion* instruccion = list_get(instrucciones, i);
                 log_info(logger, "Instruccion %d: nombre: %s", i, instruccion->nombreInstruccion);
             }
 
@@ -71,27 +71,23 @@ void manejar_proceso_consola(t_list *instrucciones)
 {
     log_info(logger, "[KERNEL]: Creando PCB");
 
-    PCB pcb;
+    PCB * pcb=malloc(sizeof(PCB));
 
-    pcb.PID = PROCESO_ID++;
-    pcb.instrucciones = instrucciones;
-    pcb.program_counter = 1;
+    pcb->PID = PROCESO_ID++;
+    pcb->instrucciones = instrucciones;
+    pcb->program_counter = 1;
 
-    log_info(logger, "[KERNEL]: PCB Creada: %d", pcb.PID);
+    log_info(logger, "[KERNEL]: PCB Creada: %d", pcb->PID);
     
     // METER PCB A LISTA procesos
     // TODO_A: AVISAR QUE SE CREO EL PCB
-    Proceso proceso;
-    proceso.estado = NEW;
-    proceso.pcb = pcb;
+    Proceso * proceso = malloc(sizeof(Proceso));
+    proceso->estado = NEW;
+    proceso->pcb = pcb;
 
     list_add(procesos, proceso);
 
     sem_post(&semaforo_new);
-
-
-
-    enviar_pcb_a_cpu(&pcb);
 }
 
 void enviar_pcb_a_cpu(PCB *pcb)

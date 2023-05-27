@@ -121,49 +121,31 @@ typedef struct
 typedef struct 
 {
     char* nombreInstruccion;
-    char* valor;
-    char* valorChar; // TODO: Chequear. SET AX HOLA
+    char* valor; // TODO: Chequear. SET AX HOLA
     char* registro; //Recibe nombr de registro, comparo y asigno al registro del PCB
     int32_t direccionLogica;
     int32_t direccionFisica;
     int32_t tiempo;
     char* nombreArchivo;
-    int32_t nombreArchivo_long;
     int32_t posicion;
     int32_t cantBytes;
     char* recurso;
-    int32_t idSegmento;
+    int32_t idSegmento;    
+    
+    int32_t nombreInstruccion_long;
+    int32_t valor_long; 
+    int32_t registro_long;
+    int32_t recurso_long;
+    int32_t nombreArchivo_long;
     
 } Instruccion;
-
-typedef struct 
-{
-    char* nombreInstruccion;
-    int32_t nombreInstruccion_long;
-    int32_t valor;
-    char* valorChar;
-    int32_t valorChar_long; 
-    char* registro; 
-    int32_t registro_long;
-    int32_t direccionLogica;
-    int32_t tiempo;
-    char* nombreArchivo;
-    int32_t nombreArchivo_long;
-    int32_t posicion;
-    int32_t cantBytes;
-    char* recurso;
-    int32_t recurso_long;
-    int32_t idSegmento;
-
-} Instruccion2;
-
 
 
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);
 
-BUFFER *serializar_instruccion(Instruccion2 *instruccion);
-Instruccion2 *deserializar_instruccion(BUFFER *buffer, int stream_offset);
+BUFFER *serializar_instruccion(Instruccion *instruccion);
+Instruccion *deserializar_instruccion(BUFFER *buffer, int stream_offset);
 BUFFER *serializar_instrucciones(t_list *instrucciones);
 t_list* deserializar_instrucciones(BUFFER* buffer);
 
