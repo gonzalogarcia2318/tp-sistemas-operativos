@@ -39,13 +39,15 @@ void decode_instruccion();//RECIBE INSTRUCCION
     void aplicar_retardo(int32_t);
     bool requiere_traduccion(Instruccion*);
     int32_t realizar_traduccion(int32_t);
-void ejecutar_instruccion(); //EXECUTE
+int ejecutar_instruccion(); //EXECUTE
     void asignar_a_registro (char*, char*, PCB*);
     char* obtener_valor_registro(Registro_CPU*,char*);
     bool comprobar_segmentation_fault(int32_t, int32_t);
 
     void ejecutar_mov_in(PAQUETE*,Instruccion*,PCB*);
     void ejecutar_mov_out(PAQUETE*,Instruccion*,PCB*);
-
+    void ejecutar_IO(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_f_open(PAQUETE*,Instruccion*,PCB*);
+    void ejecutar_f_close(PAQUETE*,Instruccion*,PCB*);
 
 #endif

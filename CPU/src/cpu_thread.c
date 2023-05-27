@@ -35,6 +35,14 @@ PCB * recibir_pcb(int socket_kernel){
 	return pcb;
 }
 
+void enviar_pcb(PCB* pcb)
+{
+  PAQUETE* paquete_pcb = crear_paquete(OP_PCB);
+  paquete_pcb->buffer = serializar_pcb(pcb);
+  enviar_paquete_a_cliente(paquete_pcb, socket_kernel);
+  eliminar_paquete(paquete_pcb);
+}
+
 void manejar_paquete_kernel(int socket_kernel)
 {
   
@@ -59,12 +67,7 @@ void manejar_paquete_kernel(int socket_kernel)
       log_info(logger, "[CPU]: PCB Deserializada: con PID:[%d]",pcb->PID);
       
       recibir_instrucciones(pcb);
-      
-      PAQUETE* paq_pcb = crear_paquete(OP_PCB);
-      paq_pcb->buffer = serializar_pcb(pcb);
-      enviar_paquete_a_cliente(paq_pcb, socket_kernel);
-
-      return;
+      break;
     default:
       log_warning(logger, "[CPU]: Operacion desconocida desde kernel.");
       break;

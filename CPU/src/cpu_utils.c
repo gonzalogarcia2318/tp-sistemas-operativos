@@ -72,16 +72,16 @@ void recibir_instrucciones(PCB* pcb)
     t_list* instrucciones = list_duplicate(pcb->instrucciones);
 
     Instruccion* prox_instruccion;
+
+    int seguir = 1; //SI DEBE DEVOLVER CONTEXTO DE EJECUCIÓN => CAMBIAR A 0. CADA INSTRUCCIÓN LO DECIDE.
     
-    while(!esExit(prox_instruccion) && !esYield(prox_instruccion))
+    while(seguir)
     {
         prox_instruccion = list_get(instrucciones,pcb->program_counter); //FORMA PARTE DEL FETCH
         
         decode_instruccion(prox_instruccion);
         
         ejecutar_instruccion(prox_instruccion, pcb);
-
-        //...
 
         pcb->program_counter ++;
     }
@@ -91,7 +91,7 @@ bool esExit(Instruccion* Instruccion){
     bool es = !strcmp(Instruccion->nombreInstruccion,"EXIT");
     return es;
 }
-bool esYield(Instruccion* Instruccion){
+bool esYield(Instruccion* Instruccion){ //MEPA QUE NO VA
     bool es = !strcmp(Instruccion->nombreInstruccion,"YIELD");
     return es;
 }
@@ -115,7 +115,7 @@ void decode_instruccion(Instruccion* Instruccion){
 }
 
 
-void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA INSTRUCCIÓN DEBE TENER SU log_warning(PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>)
+int ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA INSTRUCCIÓN DEBE TENER SU log_warning(PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>)
 { 
     char* nombre_instru = string_duplicate(Instruccion->nombreInstruccion);
     PAQUETE* paquete = crear_paquete(INSTRUCCION);
@@ -124,19 +124,24 @@ void ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA I
     {
         log_info(logger,"CPU: Leí la instrucción SET en ejecutar_instruccion");
         asignar_a_registro(Instruccion->valor,Instruccion->registro, pcb);
+        return 1;
     }
-    else if(!strcmp(nombre_instru,"MOV_IN")) //TOM
+    else if(!strcmp(nombre_instru,"MOV_IN"))
     {
         ejecutar_mov_in(paquete,Instruccion,pcb);
+        return 1;
         //Comunicación con Memoria: Memoria -> Registro
     }
-    else if(!strcmp(nombre_instru,"MOV_OUT")) //TOM
+    else if(!strcmp(nombre_instru,"MOV_OUT"))
     {
         ejecutar_mov_out(paquete,Instruccion,pcb);
+        return 1;
         //Comunicación con Memoria: Registro -> Memoria
     }
     else if(!strcmp(nombre_instru,"I/O")) //TOM
     {
+        ejecutar_IO(paquete,Instruccion,pcb);
+        return 0;
         //Comunicación con Kernel: Unidades de tiempo que se bloquea. 
 		//Devolver Contexto de Ejecución
     }
@@ -406,4 +411,39 @@ void ejecutar_mov_out(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     num_segmento,
                     instruccion->direccionFisica,
                     valor_registro);
+}
+
+void ejecutar_IO(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <I/O> - <TIEMPO: %d>",
+                    pcb->PID,
+                    instruccion->tiempo
+                );
+    //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
+    enviar_pcb(pcb); 
+    agregar_a_paquete(paquete,IO,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->tiempo,sizeof(int32_t));
+    enviar_paquete_a_cliente(paquete,socket_kernel);
+}
+
+void ejecutar_f_open(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <F_OPEN> - <NOMBRE_ARCHIVO: %s>",
+                    pcb->PID,
+                    instruccion->nombreArchivo
+                );
+    agregar_a_paquete(paquete,F_OPEN,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+}
+
+void ejecutar_f_close(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <F_CLOSE> - <NOMBRE_ARCHIVO: %s>",
+                    pcb->PID,
+                    instruccion->nombreArchivo
+                );
+    agregar_a_paquete(paquete,F_CLOSE,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
 }
