@@ -130,7 +130,8 @@ typedef struct
     int32_t posicion;
     int32_t cantBytes;
     char* recurso;
-    int32_t idSegmento;    
+    int32_t idSegmento;
+    int32_t tamanioSegmento;    
     
     int32_t nombreInstruccion_long;
     int32_t valor_long; 
@@ -150,5 +151,4 @@ BUFFER *serializar_instrucciones(t_list *instrucciones);
 t_list* deserializar_instrucciones(BUFFER* buffer);
 
 void imprimir_buffer( BUFFER* buffer);
-
 #endif
