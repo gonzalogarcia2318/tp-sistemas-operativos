@@ -137,6 +137,7 @@ typedef struct
     int32_t registro_long;
     int32_t recurso_long;
     int32_t nombreArchivo_long;
+    int32_t tamanioSegmento;
     
 } Instruccion;
 

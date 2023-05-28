@@ -21,7 +21,8 @@ int main()
 
     // TODO: Destruir la lista al final.
     procesos = list_create();
-
+    cola_ready = queue_create();
+    
     sem_init(&semaforo_new, 0, 0);
 
     iniciar_logger_kernel();
@@ -39,32 +40,23 @@ int main()
         conectar_con_consola(); 
 
     }
-
-
-    // trabarse hasta que exista un pcb para planificar
-    // nos destrabamos cuando kernel_thead.c avisa que se creo un pcb
-    sem_wait(&semaforo_new);
-
+    
+/*
     Hilo hilo_planificador;
     pthread_create(&hilo_planificador, NULL, (void *)planificar, NULL);
     pthread_join(hilo_planificador,NULL);
-
+*/
      //manejar_proceso_consola();
-
-    terminar_ejecucion();
-
-    return EXIT_SUCCESS;
-}
-
-void planificar(){
 
     // grado multiprogramacion
     sem_init(&semaforo_planificador, 0, 1);
 
     sem_init(&semaforo_ejecutando, 0, 1);
 
+    sem_wait(&semaforo_new); //Para que no empiece sin que no haya ningun proceso
+
     while(true){
-    
+log_info(logger,"Semaforo ready");
         sem_wait(&semaforo_planificador);
 
         bool en_new(Proceso * proceso){
@@ -77,48 +69,32 @@ void planificar(){
             Proceso * proceso_para_ready = (Proceso * ) list_get(procesos_en_new, 0);
             proceso_para_ready->estado = READY;
             queue_push(cola_ready, (Proceso *) proceso_para_ready);
-            log_info("Poner en ready proceso %d", (proceso_para_ready->pcb)->PID);
+            log_info(logger,"Poner en ready proceso %d", (proceso_para_ready->pcb)->PID);
         }
-
-        sem_wait(&semaforo_ejecutando);
-
+        log_info(logger,"Semaforo ejecutando");
+        sem_wait(&semaforo_ejecutando); //Ejecuta uno a la vez
+        log_info(logger,"Size cola ready: %d", queue_size(cola_ready));
         if(!queue_is_empty(cola_ready)){
             Proceso*  proceso_a_ejecutar = (Proceso*) queue_pop(cola_ready);
             proceso_a_ejecutar->estado = EXEC;
             // destrabar ready
-            log_info("Ejecutar proceso %d", (proceso_a_ejecutar->pcb)->PID);
+            sem_post(&semaforo_planificador);
+            log_info(logger,"Ejecutar proceso %d", (proceso_a_ejecutar->pcb)->PID);
             sleep(5);
+            //Enviar PCB a CPU
+
+            sem_post(&semaforo_ejecutando);
             // destrabar semaforo ejecutar
         } else {
-            // hay que chequear en que estado esta el resto
-        }
-
-
-        
-
-    /*
-
-        // semaforo: semaforo_ready va a tener tantas instancias como grado_multiprogramacion
-        wait semaforo semaforo_ready {
             
-            agarramos el 1ero de fifo de procesos que esten en NEW
-            marcamos como READY
-
-            wait semaforo semaforo_execute {
-                agarrar el 1ero de fifo de procesos que esten en READY
-                mandamos estructuras a memoria principal
-
-                lo mandamos a ejecutar
-                marcamos como EXEC
-                cuando se termina de ejecutar -> destrabamos -> signal semaforo semaforo_ready 
-
-
-                cuando se termina de ejecutar -> destrabamos -> signal semaforo semaforo_execute
-                
-            }
-            
-
         }
-    */
     }
+
+    terminar_ejecucion();
+
+    return EXIT_SUCCESS;
 }
+
+
+    
+
