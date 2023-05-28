@@ -77,8 +77,6 @@ void manejar_proceso_consola(t_list *instrucciones)
 
     log_info(logger, "[KERNEL]: PCB Creada: %d", pcb->PID);
 
-    // METER PCB A LISTA procesos
-    // TODO_A: AVISAR QUE SE CREO EL PCB
     Proceso *proceso = malloc(sizeof(Proceso));
     proceso->estado = NEW;
     proceso->pcb = pcb;
@@ -98,7 +96,6 @@ void manejar_proceso_consola(t_list *instrucciones)
 
     if (list_size(procesos_en_new) == 0 && (list_size(procesos)-1)!=0)
     {
-        log_info(logger, "[KERNEL]: Estoy destrabando el planificador por size 0");
         sem_post(&semaforo_planificador);
     }
 }

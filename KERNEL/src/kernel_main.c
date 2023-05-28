@@ -42,11 +42,11 @@ int main()
         conectar_con_consola();
     }
 
-    /*
-        Hilo hilo_planificador;
-        pthread_create(&hilo_planificador, NULL, (void *)planificar, NULL);
-        pthread_join(hilo_planificador,NULL);
-    */
+    
+    Hilo hilo_cpu;
+    pthread_create(&hilo_cpu, NULL, (void *)manejar_cpu, NULL);
+    pthread_detach(hilo_cpu);
+    
     // manejar_proceso_consola();
 
     // grado multiprogramacion
@@ -54,11 +54,13 @@ int main()
 
     sem_init(&semaforo_ejecutando, 0, 1);
 
+    sleep(5);
+
     sem_wait(&semaforo_new); // Para que no empiece sin que no haya ningun proceso
 
     while (true)
     {
-        log_info(logger, "Semaforo ready");
+        
         sem_wait(&semaforo_planificador);
 
         bool en_new(Proceso * proceso)
@@ -79,11 +81,10 @@ int main()
         }
         pthread_mutex_unlock(&mx_procesos);
 
-        log_info(logger, "Semaforo ejecutando");
+        
         sem_wait(&semaforo_ejecutando); // Ejecuta uno a la vez
 
-        log_info(logger, "Size cola ready: %d", queue_size(cola_ready));
-
+        log_info(logger, "En ready: %d", queue_size(cola_ready));
         if (!queue_is_empty(cola_ready))
         {
             Proceso *proceso_a_ejecutar = (Proceso *)queue_pop(cola_ready);
@@ -92,11 +93,15 @@ int main()
             // destrabar ready
             sem_post(&semaforo_planificador);
             log_info(logger, "Proceso %d -> EXEC", (proceso_a_ejecutar->pcb)->PID);
-            log_info(logger, "EJECUTANDO proceso %d", (proceso_a_ejecutar->pcb)->PID);
             sleep(5);
-            // Enviar PCB a CPU
 
-            sem_post(&semaforo_ejecutando);
+
+            // Enviar PCB a CPU
+            enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
+
+
+            // 
+            // sem_post(&semaforo_ejecutando);
             // destrabar semaforo ejecutar
         }
         else
@@ -108,4 +113,50 @@ int main()
     terminar_ejecucion();
 
     return EXIT_SUCCESS;
+}
+
+void manejar_paquete_cpu(){
+    while (true)
+    {
+        char *mensaje;
+        switch (obtener_codigo_operacion(socket_cpu))
+        {
+        case MENSAJE:
+            mensaje = obtener_mensaje_del_cliente(socket_cpu);
+            log_info(logger, "[KERNEL]: Mensaje recibido de CPU: %s", mensaje);
+            free(mensaje);
+            break;
+        case DESCONEXION:
+            log_warning(logger, "[KERNEL]: Conexión de CPU terminada.");
+            return;
+
+        case OP_PCB: 
+            PCB *pcb = obtener_paquete_pcb(socket_cpu);
+            log_info(logger, "[KERNEL] Llego PCB %d de CPU", pcb->PID);
+            reemplazar_pcb_en_procesos(pcb);
+
+            switch (obtener_codigo_instruccion(socket_cpu))
+            {
+                case IO:
+                    // hacer lo que tenemos que hacer en io
+                    break;
+                case F_OPEN:
+                    //
+                    break;
+            }
+            
+
+            break;
+        default:
+            log_warning(logger, "[KERNEL]: Operacion desconocida desde CPU.");
+            break;
+        }
+    }
+}
+
+void reemplazar_pcb_en_procesos(PCB* pcb){
+    // mutex para procesos
+    // buscar proceso que corresponda a este pcb
+    // reemplazar proceso->pcb por pcb (id)
+
 }
