@@ -22,10 +22,6 @@ int main(int argc, char** argv)
 
     if (conectar_con_kernel() == SUCCESS)
     {
-        //  -------------------------
-        // CHILY >>>>
-        sleep(5);
-        // ENVIAR UN PAQUETE CON LAS INSTRUCCIONES A KERNEL
         enviar_instrucciones_a_kernel(instrucciones);
 
         // RECIBIR QUE LLEGARON LAS INSTRUCCIONES BIEN A KERNEL (bloqueante)

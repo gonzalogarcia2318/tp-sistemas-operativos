@@ -83,22 +83,22 @@ void manejar_proceso_consola(t_list *instrucciones)
     proceso->estado = NEW;
     proceso->pcb = pcb;
     
-    // TODO: Procesos variable compartida --- MUTEX
-
-    sem_post(&semaforo_new);
-
     bool en_new(Proceso * proceso)
     {
         return proceso->estado == NEW;
     }
 
+    pthread_mutex_lock(&mx_procesos);
     t_list *procesos_en_new = list_filter(procesos, (void *)en_new);
     
     list_add(procesos, proceso);
+    pthread_mutex_unlock(&mx_procesos);
+
+    sem_post(&semaforo_new);
 
     if (list_size(procesos_en_new) == 0 && (list_size(procesos)-1)!=0)
     {
-          log_info(logger, "[KERNEL]: Estoy destrabando el planificador por size 0");
+        log_info(logger, "[KERNEL]: Estoy destrabando el planificador por size 0");
         sem_post(&semaforo_planificador);
     }
 }
