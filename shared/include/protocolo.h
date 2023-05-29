@@ -129,6 +129,7 @@ typedef struct
     char* nombreArchivo;
     int32_t posicion;
     int32_t cantBytes;
+    int32_t tamanioArchivo; 
     char* recurso;
     int32_t idSegmento;
     int32_t tamanioSegmento;    

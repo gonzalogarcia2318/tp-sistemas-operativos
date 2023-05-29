@@ -156,29 +156,26 @@ int ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA IN
         free(nombre_instru);
         return 0;
     }
-    else if(!strcmp(nombre_instru,"F_SEEK")) //DIEGO
+    else if(!strcmp(nombre_instru,"F_SEEK"))
     {
+        ejecutar_f_seek(paquete, Instruccion, pcb);
         return 0;
-        //Comunicación con Kernel: nombre_archivo, posición
-        //Devolver Contexto de Ejecución
     }
-    else if(!strcmp(nombre_instru,"F_READ")) //DIEGO
+    else if(!strcmp(nombre_instru,"F_READ"))
     {
+        ejecutar_f_read(paquete, Instruccion, pcb); //DIR LOGICA?
         return 0;
-        //Comunicación con Kernel: nombre_archivo, dire_lógica, cant_bytes
-        //Devolver Contexto de Ejecución
     }
-    else if(!strcmp(nombre_instru,"F_WRITE"))//DIEGO
+    else if(!strcmp(nombre_instru,"F_WRITE"))
     {
+        ejecutar_f_write(paquete, Instruccion, pcb); //DIR LOGICA?
         return 0;
-        //Comunicación con Kernel: nombre_archivo, dire_lógica, cant_bytes
-        //Devolver Contexto de Ejecución
+
     }
-    else if(!strcmp(nombre_instru,"F_TRUNCATE ")) //DIEGO
+    else if(!strcmp(nombre_instru,"F_TRUNCATE ")) 
     {
+        ejecutar_f_truncate(paquete, Instruccion, pcb);
         return 0;
-        //Comunicación con Kernel: nombre_archivo, tamaño
-        //Devolver Contexto de Ejecución
     }
     else if(!strcmp(nombre_instru,"WAIT")) //CAMIL
     {
@@ -475,6 +472,70 @@ void ejecutar_f_close(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
     enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
     agregar_a_paquete(paquete,F_CLOSE,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+
+void ejecutar_f_seek(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <F_SEEK> - <NOMBRE_ARCHIVO: %s> - <POSICION: %d> ",
+                    pcb->PID,
+                    instruccion->nombreArchivo,
+                    instruccion->posicion
+                );
+    enviar_pcb(pcb); 
+    agregar_a_paquete(paquete,F_SEEK,sizeof(F_SEEK));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->posicion,sizeof(int));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+
+void ejecutar_f_read(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <F_READ> - <NOMBRE_ARCHIVO: %s> - <DIR_FISICA: %d> - <CANT_BYTES %d>",
+                    pcb->PID,
+                    instruccion->nombreArchivo,
+                    instruccion->direccionFisica,
+                    instruccion->cantBytes
+                );
+    enviar_pcb(pcb); 
+    agregar_a_paquete(paquete,F_READ,sizeof(F_READ));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->cantBytes,sizeof(int));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+
+void ejecutar_f_write(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <F_WRITE> - <NOMBRE_ARCHIVO: %s> - <DIR_FISICA: %d> - <CANT_BYTES %d>",
+                    pcb->PID,
+                    instruccion->nombreArchivo,
+                    instruccion->direccionFisica,
+                    instruccion->cantBytes
+                );
+    enviar_pcb(pcb); 
+    agregar_a_paquete(paquete,F_WRITE,sizeof(F_WRITE));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int));
+    agregar_a_paquete(paquete,instruccion->cantBytes,sizeof(int));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+
+void ejecutar_f_truncate(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
+{
+    log_warning(logger,"CPU: PID: <%d> - Ejecutando: <F_TRUNCATE> - <NOMBRE_ARCHIVO: %s> - <TAM_ARCHIVO: %d>",
+                    pcb->PID,
+                    instruccion->nombreArchivo,
+                    instruccion->tamanioArchivo
+                );
+    enviar_pcb(pcb); 
+    agregar_a_paquete(paquete,F_TRUNCATE,sizeof(F_TRUNCATE));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->tamanioArchivo,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
 }
