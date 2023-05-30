@@ -28,34 +28,38 @@ void conectar_con_kernel();
 int conectar_con_memoria();
 void terminar_ejecucion();
 
-//Cambiar de void a estructura de PCB //todo
-//[SET] seria un struct con  la instruccion y los valores que necesite
 
-void recibir_instrucciones(PCB*); //RECIBE PCB, ES GENERAL PARA TODAS, INCLUYE FETCH
-    bool esExit(Instruccion*);
-    bool esYield(Instruccion*);
-    bool esSet(Instruccion*);
-void decode_instruccion();//RECIBE INSTRUCCION
-    void aplicar_retardo(int32_t);
-    bool requiere_traduccion(Instruccion*);
-    int32_t realizar_traduccion(int32_t);
-int ejecutar_instruccion(); //EXECUTE
-    void asignar_a_registro (char*, char*, PCB*);
-    char* obtener_valor_registro(Registro_CPU*,char*);
-    bool comprobar_segmentation_fault(int32_t, int32_t);
+void manejar_instrucciones(PCB*); //ES GENERAL PARA TODAS, INCLUYE FETCH
 
-    void ejecutar_set(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_mov_in(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_mov_out(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_IO(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_f_open(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_f_close(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_wait(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_signal(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_create_segment(PAQUETE*,Instruccion*,PCB*);
-    void ejecutar_delete_segment(PAQUETE*,Instruccion*,PCB*);
-    //...
-    void ejecutar_yield(PAQUETE*,PCB*);
-    void ejecutar_exit(PAQUETE*,PCB*);
+    int decode_instruccion();
+        bool esSet(Instruccion*);
+        void aplicar_retardo(int32_t);
+        bool requiere_traduccion(Instruccion*);
+        int32_t realizar_traduccion(int32_t);
+            int obtener_num_segmento(int32_t);
+            int obtener_desplazamiento_segmento(int32_t);
+        bool comprobar_segmentation_fault(int32_t, int32_t);
+        void avisar_seg_fault_kernel(PCB*, Instruccion*);
+    
+    int ejecutar_instruccion();
+        void asignar_a_registro (char*, char*, PCB*);
+        char* obtener_valor_registro(Registro_CPU*,char*);
+        
+        void ejecutar_set(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_mov_in(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_mov_out(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_IO(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_f_open(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_f_close(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_f_seek(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_f_read(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_f_write(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_f_truncate(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_wait(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_signal(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_create_segment(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_delete_segment(PAQUETE*,Instruccion*,PCB*);
+        void ejecutar_yield(PAQUETE*,PCB*);
+        void ejecutar_exit(PAQUETE*,PCB*);
 
 #endif

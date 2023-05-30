@@ -67,53 +67,115 @@ void terminar_ejecucion(){
 }
 
 
-void recibir_instrucciones(PCB* pcb)
+void manejar_instrucciones(PCB* pcb)
 { 
     t_list* instrucciones = list_duplicate(pcb->instrucciones);
 
     Instruccion* prox_instruccion;
 
-    int seguir = 1; //SI DEBE DEVOLVER CONTEXTO DE EJECUCIÓN => CAMBIAR A 0. CADA INSTRUCCIÓN LO DECIDE.
+    int seguir = 1; //SI DEBE DEVOLVER CONTEXTO DE EJECUCIÓN ó SEG FAULT => CAMBIAR A 0.
     
     while(seguir)
     {
         prox_instruccion = list_get(instrucciones,pcb->program_counter); //FORMA PARTE DEL FETCH
         
-        decode_instruccion(prox_instruccion);
-        
-        ejecutar_instruccion(prox_instruccion, pcb);
+        if(!decode_instruccion(prox_instruccion)) // SI SEGMENTATION FAULT
+        {
+            avisar_seg_fault_kernel(pcb, prox_instruccion);
+            seguir = 0;
+        }
+        if(seguir)
+        {
+            ejecutar_instruccion(prox_instruccion, pcb);
 
-        pcb->program_counter ++;
+            pcb->program_counter ++;
+        } 
     }
 }
 
-bool esExit(Instruccion* Instruccion){
-    bool es = !strcmp(Instruccion->nombreInstruccion,"EXIT");
-    return es;
-}
-bool esYield(Instruccion* Instruccion){ //MEPA QUE NO VA
-    bool es = !strcmp(Instruccion->nombreInstruccion,"YIELD");
-    return es;
+int decode_instruccion(Instruccion* Instruccion)
+{
+    if(esSet(Instruccion))
+    {
+        aplicar_retardo(CPUConfig.RETARDO_INSTRUCCION);
+        return 1;
+    }
+
+    int32_t dire_logica = Instruccion->direccionLogica;
+    if(requiere_traduccion(Instruccion))
+    {
+        if(!comprobar_segmentation_fault(dire_logica, Instruccion->cantBytes))
+        {
+            Instruccion->direccionFisica = realizar_traduccion(dire_logica);
+            return 1; //NO SEG FAULT
+        }
+        else
+        {
+            return 0; //SEG FAULT
+        }  
+    }
+    return 1;
 }
 bool esSet(Instruccion* Instruccion){
     bool es = !strcmp(Instruccion->nombreInstruccion,"SET");
     return es;
 }
+void aplicar_retardo(int32_t retardo)
+{
+    sleep(retardo);
+}
+bool requiere_traduccion(Instruccion* instruccion)
+{
+    char* nombre_instru = string_duplicate(instruccion->nombreInstruccion);
 
-void decode_instruccion(Instruccion* Instruccion){
-    
-    if(esSet(Instruccion))
-    {
-        aplicar_retardo(CPUConfig.RETARDO_INSTRUCCION);
-    }
-    
-    if(requiere_traduccion(Instruccion))
-    {
-        Instruccion->direccionFisica = realizar_traduccion(Instruccion->direccionLogica);
-    }
-    
+    if(!strcmp(nombre_instru,"MOV_IN") ||
+       !strcmp(nombre_instru,"MOV_OUT") ||
+       !strcmp(nombre_instru,"F_READ") ||
+       !strcmp(nombre_instru,"F_WRITE")) 
+           return true;
+        
+    else return false;
+}
+int32_t realizar_traduccion(int32_t dir_logica)
+{ 
+    int num_segmento = obtener_num_segmento(dir_logica);
+    int desplazamiento_segmento = obtener_desplazamiento_segmento(dir_logica);
+
+    int32_t direccion_fisica = num_segmento * CPUConfig.TAM_MAX_SEGMENTO + desplazamiento_segmento;
+
+    return direccion_fisica;
+}
+int obtener_num_segmento(int32_t direccion_logica)
+{
+    return floor(direccion_logica / CPUConfig.TAM_MAX_SEGMENTO);
 }
 
+int obtener_desplazamiento_segmento(int32_t direccion_logica)
+{
+    return direccion_logica % CPUConfig.TAM_MAX_SEGMENTO;
+}
+  
+bool comprobar_segmentation_fault(int32_t dir_logica, int32_t tam_leer_escribir)
+{
+    int desplazamiento_segmento = (dir_logica % CPUConfig.TAM_MAX_SEGMENTO);
+
+    return desplazamiento_segmento + tam_leer_escribir > CPUConfig.TAM_MAX_SEGMENTO;
+}
+
+void avisar_seg_fault_kernel(PCB* pcb, Instruccion* instruccion)
+{
+    PAQUETE* paquete = crear_paquete(SEG_FAULT);
+    int num_segmento = obtener_num_segmento(instruccion->direccionLogica);
+    int desplazamiento = obtener_desplazamiento_segmento(instruccion->direccionLogica);
+    log_error(logger,"PID: <%d>, Error SEG_FAULT - Segmento: <NUMERO SEGMENTO: %d> - Offset: <%d> - Tamaño: <%d>",
+                    pcb->PID,
+                    num_segmento,
+                    desplazamiento,
+                    instruccion->cantBytes
+            );
+    enviar_paquete_a_cliente(paquete,socket_kernel);
+    eliminar_paquete(paquete);
+}
 
 int ejecutar_instruccion(Instruccion* Instruccion, PCB* pcb) //EXECUTE //CADA INSTRUCCIÓN DEBE TENER SU log_warning(PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>)
 { 
@@ -336,41 +398,6 @@ char* obtener_valor_registro(Registro_CPU* registros_pcb,char* registro_buscado)
     return valor;
 }
 
-void aplicar_retardo(int32_t retardo)
-{
-    sleep(retardo);
-}
-
-bool requiere_traduccion(Instruccion* instruccion)
-{
-    char* nombre_instru = string_duplicate(instruccion->nombreInstruccion);
-
-    if(!strcmp(nombre_instru,"MOV_IN") ||
-        !strcmp(nombre_instru,"MOV_OUT") ||
-        !strcmp(nombre_instru,"F_READ") ||
-        !strcmp(nombre_instru,"F_WRITE")) 
-            return true;
-    
-    else return false;
-}
-
-int32_t realizar_traduccion(int32_t dir_logica)
-{ 
-    int num_segmento = floor(dir_logica / CPUConfig.TAM_MAX_SEGMENTO);
-    int desplazamiento_segmento = (dir_logica % CPUConfig.TAM_MAX_SEGMENTO);
-
-    int32_t direccion_fisica = num_segmento * CPUConfig.TAM_MAX_SEGMENTO + desplazamiento_segmento;
-
-    return direccion_fisica;
-}
-
-bool comprobar_segmentation_fault(int32_t dir_logica, int32_t tam_leer_escribir)
-{
-    int desplazamiento_segmento = (dir_logica % CPUConfig.TAM_MAX_SEGMENTO);
-
-    return desplazamiento_segmento + tam_leer_escribir > CPUConfig.TAM_MAX_SEGMENTO;
-}
-
 void ejecutar_set(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
 {
     log_warning(logger,"CPU: PID: <%d> - Ejecutando: <SET> - <REGISTRO:%s , VALOR: %s>",
@@ -395,8 +422,9 @@ void ejecutar_mov_in(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
     enviar_paquete_a_servidor(paquete,socket_memoria);
 
     char* valor = string_duplicate(obtener_mensaje_del_servidor(socket_memoria));
+
     //... SE BLOQUEA HASTA QUE RESPONDA
-    
+
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
 
     log_warning(logger,"CPU: PID: <%d> - Acción: <LEER> - Segmento: <%d> - Dirección Física: <%d> - Valor: <%s>",
@@ -424,7 +452,9 @@ void ejecutar_mov_out(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
     agregar_a_paquete(paquete,valor_registro,sizeof(char*));
     enviar_paquete_a_servidor(paquete,socket_memoria);
     char* mensaje = obtener_mensaje_del_servidor(socket_memoria);
+
     //... SE BLOQUEA HASTA QUE RESPONDA
+
     log_info(logger,"CPU: Recibi un mensaje de MEMORIA como RTA a MOV_OUT: <%s>",mensaje);
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
 
@@ -443,7 +473,7 @@ void ejecutar_IO(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     pcb->PID,
                     instruccion->tiempo
                 );
-    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
+    enviar_pcb(pcb);
     agregar_a_paquete(paquete,IO,sizeof(int));
     agregar_a_paquete(paquete,instruccion->tiempo,sizeof(int32_t));
     enviar_paquete_a_cliente(paquete,socket_kernel);
@@ -456,7 +486,7 @@ void ejecutar_f_open(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     pcb->PID,
                     instruccion->nombreArchivo
                 );
-    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
+    enviar_pcb(pcb); 
     agregar_a_paquete(paquete,F_OPEN,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     enviar_paquete_a_cliente(paquete, socket_kernel);
@@ -469,7 +499,7 @@ void ejecutar_f_close(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     pcb->PID,
                     instruccion->nombreArchivo
                 );
-    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
+    enviar_pcb(pcb); 
     agregar_a_paquete(paquete,F_CLOSE,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     enviar_paquete_a_cliente(paquete, socket_kernel);
@@ -484,7 +514,7 @@ void ejecutar_f_seek(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     instruccion->posicion
                 );
     enviar_pcb(pcb); 
-    agregar_a_paquete(paquete,F_SEEK,sizeof(F_SEEK));
+    agregar_a_paquete(paquete,F_SEEK,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     agregar_a_paquete(paquete,instruccion->posicion,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
@@ -500,7 +530,7 @@ void ejecutar_f_read(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     instruccion->cantBytes
                 );
     enviar_pcb(pcb); 
-    agregar_a_paquete(paquete,F_READ,sizeof(F_READ));
+    agregar_a_paquete(paquete,F_READ,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int));
     agregar_a_paquete(paquete,instruccion->cantBytes,sizeof(int));
@@ -517,7 +547,7 @@ void ejecutar_f_write(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     instruccion->cantBytes
                 );
     enviar_pcb(pcb); 
-    agregar_a_paquete(paquete,F_WRITE,sizeof(F_WRITE));
+    agregar_a_paquete(paquete,F_WRITE,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int));
     agregar_a_paquete(paquete,instruccion->cantBytes,sizeof(int));
@@ -533,7 +563,7 @@ void ejecutar_f_truncate(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                     instruccion->tamanioArchivo
                 );
     enviar_pcb(pcb); 
-    agregar_a_paquete(paquete,F_TRUNCATE,sizeof(F_TRUNCATE));
+    agregar_a_paquete(paquete,F_TRUNCATE,sizeof(int));
     agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
     agregar_a_paquete(paquete,instruccion->tamanioArchivo,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
@@ -593,7 +623,7 @@ void ejecutar_yield(PAQUETE* paquete,PCB* pcb)
     log_warning(logger,"CPU: PID: <%d> - Ejecutando: <YIELD>",
                     pcb->PID
                 );
-    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
+    enviar_pcb(pcb); 
     agregar_a_paquete(paquete,YIELD,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
@@ -604,7 +634,7 @@ void ejecutar_exit(PAQUETE* paquete,PCB* pcb)
     log_warning(logger,"CPU: PID: <%d> - Ejecutando: <EXIT>",
                     pcb->PID
                 );
-    enviar_pcb(pcb); //MANDO DOS PAQUETES, CHECKEAR SI ES CORRECTO.
+    enviar_pcb(pcb); 
     agregar_a_paquete(paquete,EXIT,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
