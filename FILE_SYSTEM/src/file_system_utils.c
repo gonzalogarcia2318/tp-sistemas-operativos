@@ -2,7 +2,9 @@
 
 Logger *logger;
 Config *config;
+Config *config_superbloque;
 Hilo hilo_fileSystem;
+SUPERBLOQUE superbloque;
 int socket_file_system;
 int socket_memoria;
 int socket_kernel;
@@ -18,6 +20,23 @@ void iniciar_config_file_system()
     config = config_create(ARCHIVO_CONFIG);
     rellenar_configuracion_file_system(config);
     log_info(logger,"[FILE_SYSTEM]: Archivo Config creado y rellenado correctamente");
+}
+
+void iniciar_config_superbloque()
+{
+  config_superbloque = config_create(ARCHIVO_SUPERBLOQUE);
+  rellenar_configuracion_superbloque(config_superbloque);
+  log_info(logger, "[FILE_SYSTEM]: Archivo ConfigSuperbloque creado y rellenado correctamente");
+}
+
+void rellenar_configuracion_superbloque(Config* config_sb)
+{
+  superbloque.BLOCK_SIZE = config_get_int_value(config_sb,"BLOCK_SIZE");
+  superbloque.BLOCK_COUNT = config_get_int_value(config_sb,"BLOCK_COUNT");
+  log_info(logger,"SUPERBLOQUE: BLOCK_SIZE:<%d>, BLOCK_COUNT:<%d>",
+                  superbloque.BLOCK_SIZE,
+                  superbloque.BLOCK_COUNT
+          );
 }
 
 int iniciar_servidor_file_system()
@@ -42,7 +61,7 @@ void conectar_con_kernel()
   log_info(logger, "[MEMORIA]: Conexión de Kernel establecida.");
 
   pthread_create(&hilo_fileSystem, NULL, (void *)manejar_paquete_kernel, (void *)socket_kernel);
-  pthread_join(hilo_fileSystem, NULL);
+  //pthread_join(hilo_fileSystem, NULL);
 }
 
 void conectar_con_memoria(){
