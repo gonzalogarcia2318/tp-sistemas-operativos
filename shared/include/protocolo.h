@@ -89,6 +89,9 @@ void * obtener_paquete_estructura_dinamica(int socketCliente);
 
 BUFFER* recibir_buffer(int socket);
 
+void *obtener_paquete_pcb(int socket_cpu);
+CODIGO_INSTRUCCION obtener_codigo_instruccion(int socket_cliente);
+
 
 // TODO: MOVER A OTRO ARCHIVO
 typedef struct 

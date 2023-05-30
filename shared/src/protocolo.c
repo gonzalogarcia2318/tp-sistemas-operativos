@@ -184,6 +184,31 @@ char *obtener_mensaje_del_servidor(int socketServidor)
   return mensaje;
 }
 
+void *obtener_paquete_pcb(int socket_cpu){
+  BUFFER *buffer = recibir_buffer(socket_cpu);
+    
+  PCB* pcb = deserializar_pcb(buffer);
+
+  return pcb;
+}
+
+CODIGO_INSTRUCCION obtener_codigo_instruccion(int socket_cliente)
+{
+  CODIGO_INSTRUCCION codigo_instruccion;
+
+  if (recv(socket_cliente, &codigo_instruccion, sizeof(int), MSG_WAITALL) > 0)
+    return codigo_instruccion;
+  else
+  {
+    close(codigo_instruccion);
+    return DESCONEXION;
+  }
+}
+
+BUFFER *obtener_parametros_instruccion(int socket_cliente){
+  BUFFER *buffer = recibir_buffer(socket_cliente);
+  return buffer;
+}
 
 
 // TODO: MOVER A OTRO ARCHIVO
