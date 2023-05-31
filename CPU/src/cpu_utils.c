@@ -162,10 +162,10 @@ bool comprobar_segmentation_fault(int32_t dir_logica, Instruccion* Inst ,t_list 
 {
     int32_t tam_a_usar;
     if(!strcmp(Inst->nombreInstruccion,"MOV_IN"))
-        tam_a_usar = sizeof(Inst->registro);
+        tam_a_usar = strlen(Inst->registro);
 
     if(!strcmp(Inst->nombreInstruccion,"MOV_OUT"))
-        tam_a_usar = sizeof(Inst->registro);
+        tam_a_usar = strlen(Inst->registro);
 
 
     if(!strcmp(Inst->nombreInstruccion,"F_READ"))
