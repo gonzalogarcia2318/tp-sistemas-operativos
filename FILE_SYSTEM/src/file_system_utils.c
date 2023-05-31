@@ -24,7 +24,7 @@ void iniciar_config_file_system()
 
 void iniciar_config_superbloque()
 {
-  config_superbloque = config_create(ARCHIVO_SUPERBLOQUE);
+  config_superbloque = config_create(FileSystemConfig.PATH_SUPERBLOQUE);
   rellenar_configuracion_superbloque(config_superbloque);
   log_info(logger, "[FILE_SYSTEM]: Archivo ConfigSuperbloque creado y rellenado correctamente");
 }

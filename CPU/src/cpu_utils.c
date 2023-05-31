@@ -181,7 +181,7 @@ bool comprobar_segmentation_fault(int32_t dir_logica, Instruccion* Inst ,t_list 
     int desplazamiento_segmento = obtener_desplazamiento_segmento(dir_logica);
 
     SEGMENTO* segmento = (SEGMENTO*)list_get(tabla_segmentos, num_segmento);
-    int maximo = segmento->tamano;
+    int maximo = segmento->limite;
 
     return desplazamiento_segmento + tam_a_usar > maximo;
 }

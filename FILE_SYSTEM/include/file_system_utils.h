@@ -7,7 +7,6 @@
 
 #define ARCHIVO_LOGGER "config/fileSystem.log"
 #define ARCHIVO_CONFIG "config/file_system.config"
-#define ARCHIVO_SUPERBLOQUE "config/superbloque.config"
 
 #define SUCCESS 0
 #define FAILURE -1

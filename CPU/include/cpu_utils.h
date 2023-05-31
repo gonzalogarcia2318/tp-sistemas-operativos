@@ -35,10 +35,10 @@ void manejar_instrucciones(PCB*); //ES GENERAL PARA TODAS, INCLUYE FETCH
         bool esSet(Instruccion*);
         void aplicar_retardo(int32_t);
         bool requiere_traduccion(Instruccion*);
-        int32_t realizar_traduccion(int32_t);
+        int32_t realizar_traduccion(int32_t, t_list*);
             int obtener_num_segmento(int32_t);
             int obtener_desplazamiento_segmento(int32_t);
-        bool comprobar_segmentation_fault(int32_t, int32_t);
+        bool comprobar_segmentation_fault(int32_t, Instruccion*, t_list*);
         void avisar_seg_fault_kernel(PCB*, Instruccion*);
     
     int ejecutar_instruccion();

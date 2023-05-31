@@ -147,7 +147,7 @@ typedef struct
 {
     int32_t id;
     int32_t base;
-    int32_t tamano;
+    int32_t limite;
 
 } SEGMENTO;
 
