@@ -102,7 +102,6 @@ void manejar_proceso_consola(t_list *instrucciones)
 
 void enviar_pcb_a_cpu(PCB *pcb)
 {
-
     log_info(logger, "[KERNEL]: Enviar PCB a CPU: preparando paquete");
 
     PAQUETE *paquete_pcb = crear_paquete(OP_PCB);
@@ -114,4 +113,6 @@ void enviar_pcb_a_cpu(PCB *pcb)
     log_info(logger, "[KERNEL]: Enviar PCB a CPU: enviar");
 
     enviar_paquete_a_servidor(paquete_pcb, socket_cpu);
+
+    eliminar_paquete(paquete_pcb);
 }

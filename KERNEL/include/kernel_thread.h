@@ -18,6 +18,12 @@ typedef struct
     ESTADO estado;
 } Proceso;
 
+typedef struct
+{
+    int32_t PID;
+    int tiempo_bloqueado;
+} Proceso_IO;
+
 void esperar_consola(int socket_kernel);
 void manejar_paquete_consola(int socket_consola);
 void manejar_proceso_consola();

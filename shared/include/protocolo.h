@@ -109,6 +109,7 @@ typedef struct
     char* valor_RCX;
     char* valor_RDX;
 } Registro_CPU;
+
 typedef struct
 {
     int32_t PID;

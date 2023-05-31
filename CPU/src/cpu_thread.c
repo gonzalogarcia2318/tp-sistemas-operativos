@@ -66,7 +66,6 @@ void manejar_paquete_kernel(int socket_kernel)
       PCB *pcb = recibir_pcb(socket_kernel);
       log_info(logger, "[CPU]: PCB Deserializada: con PID:[%d]",pcb->PID);
       
-      // LAS INSTRUCCIONES ESTAN EN EL PCB. NO HACE FALTA OTRO MENSAJE.
       recibir_instrucciones(pcb);
       break;
     default:
