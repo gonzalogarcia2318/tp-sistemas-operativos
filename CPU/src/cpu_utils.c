@@ -473,7 +473,7 @@ void ejecutar_mov_out(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
 
     agregar_a_paquete(paquete,MOV_OUT,sizeof(int));
     agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int32_t));
-    agregar_a_paquete(paquete,valor_registro,sizeof(char*));
+    agregar_a_paquete(paquete,valor_registro,strlen(valor_registro)+1);
     enviar_paquete_a_servidor(paquete,socket_memoria);
     char* mensaje = obtener_mensaje_del_servidor(socket_memoria);
 
@@ -512,7 +512,7 @@ void ejecutar_f_open(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                 );
     enviar_pcb(pcb); 
     agregar_a_paquete(paquete,F_OPEN,sizeof(int));
-    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,strlen(instruccion->nombreArchivo)+1);
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
 }
@@ -525,7 +525,7 @@ void ejecutar_f_close(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                 );
     enviar_pcb(pcb); 
     agregar_a_paquete(paquete,F_CLOSE,sizeof(int));
-    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,strlen(instruccion->nombreArchivo)+1);
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
 }
@@ -539,7 +539,7 @@ void ejecutar_f_seek(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                 );
     enviar_pcb(pcb); 
     agregar_a_paquete(paquete,F_SEEK,sizeof(int));
-    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,strlen(instruccion->nombreArchivo)+1);
     agregar_a_paquete(paquete,instruccion->posicion,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
@@ -555,7 +555,7 @@ void ejecutar_f_read(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                 );
     enviar_pcb(pcb); 
     agregar_a_paquete(paquete,F_READ,sizeof(int));
-    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,strlen(instruccion->nombreArchivo)+1);
     agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int));
     agregar_a_paquete(paquete,instruccion->cantBytes,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
@@ -572,7 +572,7 @@ void ejecutar_f_write(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                 );
     enviar_pcb(pcb); 
     agregar_a_paquete(paquete,F_WRITE,sizeof(int));
-    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,strlen(instruccion->nombreArchivo)+1);
     agregar_a_paquete(paquete,instruccion->direccionFisica,sizeof(int));
     agregar_a_paquete(paquete,instruccion->cantBytes,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
@@ -588,7 +588,7 @@ void ejecutar_f_truncate(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb)
                 );
     enviar_pcb(pcb); 
     agregar_a_paquete(paquete,F_TRUNCATE,sizeof(int));
-    agregar_a_paquete(paquete,instruccion->nombreArchivo,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->nombreArchivo,strlen(instruccion->nombreArchivo)+1);
     agregar_a_paquete(paquete,instruccion->tamanioArchivo,sizeof(int));
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
@@ -601,7 +601,7 @@ void ejecutar_wait(PAQUETE* paquete,Instruccion* instruccion,PCB* pcb) {
                );
     enviar_pcb(pcb);
     agregar_a_paquete(paquete,WAIT,sizeof(int));
-    agregar_a_paquete(paquete,instruccion->recurso,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->recurso,strlen(instruccion->recurso)+1);
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
 }
@@ -612,7 +612,7 @@ void ejecutar_signal(PAQUETE* paquete, Instruccion* instruccion, PCB* pcb) {
                );
     enviar_pcb(pcb);
     agregar_a_paquete(paquete,SIGNAL,sizeof(int));
-    agregar_a_paquete(paquete,instruccion->recurso,sizeof(char*));
+    agregar_a_paquete(paquete,instruccion->recurso,strlen(instruccion->recurso)+1);
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
 }
