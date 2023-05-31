@@ -113,7 +113,7 @@ typedef struct
     t_list *instrucciones;
     int32_t program_counter; //DEBE INICIALIZARSE EN 0.
     Registro_CPU *registros_cpu;   // Tipo struct REGISTROS_CPU
-    char *tabla_segmentos; // Lista de Struct TABLA_SEGMENTOS
+    t_list *tabla_segmentos;
     double proxima_rafaga;
     char *tiempo_ready;
     char *archivos_abiertos; // Lista de struct ARCHIVOS_ABIERTOS
@@ -132,8 +132,8 @@ typedef struct
     int32_t cantBytes;
     int32_t tamanioArchivo; 
     char* recurso;
-    int32_t idSegmento;
-    int32_t tamanioSegmento;    
+    int32_t idSegmento; //Copiar de la tabla de seg
+    int32_t tamanioSegmento; //Copiar de la tabla de seg   
     
     int32_t nombreInstruccion_long;
     int32_t valor_long; 
@@ -143,6 +143,13 @@ typedef struct
     
 } Instruccion;
 
+typedef struct
+{
+    int32_t id;
+    int32_t base;
+    int32_t tamano;
+
+} SEGMENTO;
 
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);

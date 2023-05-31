@@ -79,7 +79,7 @@ void manejar_instrucciones(PCB* pcb)
     {
         prox_instruccion = list_get(instrucciones,pcb->program_counter); //FORMA PARTE DEL FETCH
         
-        if(!decode_instruccion(prox_instruccion)) // SI SEGMENTATION FAULT
+        if(!decode_instruccion(prox_instruccion, pcb)) // SI SEGMENTATION FAULT
         {
             avisar_seg_fault_kernel(pcb, prox_instruccion);
             seguir = 0;
@@ -93,7 +93,7 @@ void manejar_instrucciones(PCB* pcb)
     }
 }
 
-int decode_instruccion(Instruccion* Instruccion)
+int decode_instruccion(Instruccion* Instruccion, PCB* pcb)
 {
     if(esSet(Instruccion))
     {
@@ -104,9 +104,9 @@ int decode_instruccion(Instruccion* Instruccion)
     int32_t dire_logica = Instruccion->direccionLogica;
     if(requiere_traduccion(Instruccion))
     {
-        if(!comprobar_segmentation_fault(dire_logica, Instruccion->cantBytes))
+        if(!comprobar_segmentation_fault(dire_logica, Instruccion, pcb->tabla_segmentos))
         {
-            Instruccion->direccionFisica = realizar_traduccion(dire_logica);
+            Instruccion->direccionFisica = realizar_traduccion(dire_logica, pcb->tabla_segmentos);
             return 1; //NO SEG FAULT
         }
         else
@@ -136,12 +136,15 @@ bool requiere_traduccion(Instruccion* instruccion)
         
     else return false;
 }
-int32_t realizar_traduccion(int32_t dir_logica)
+int32_t realizar_traduccion(int32_t dir_logica, t_list *tabla_segmentos)
 { 
     int num_segmento = obtener_num_segmento(dir_logica);
+
     int desplazamiento_segmento = obtener_desplazamiento_segmento(dir_logica);
 
-    int32_t direccion_fisica = num_segmento * CPUConfig.TAM_MAX_SEGMENTO + desplazamiento_segmento;
+    SEGMENTO* segmento = (SEGMENTO*)list_get(tabla_segmentos, num_segmento);
+
+    int32_t direccion_fisica = (segmento->base) + desplazamiento_segmento;
 
     return direccion_fisica;
 }
@@ -155,11 +158,32 @@ int obtener_desplazamiento_segmento(int32_t direccion_logica)
     return direccion_logica % CPUConfig.TAM_MAX_SEGMENTO;
 }
   
-bool comprobar_segmentation_fault(int32_t dir_logica, int32_t tam_leer_escribir)
+bool comprobar_segmentation_fault(int32_t dir_logica, Instruccion* Inst ,t_list *tabla_segmentos) //Tengo que usar Free() ?
 {
-    int desplazamiento_segmento = (dir_logica % CPUConfig.TAM_MAX_SEGMENTO);
+    int32_t tam_a_usar;
+    if(!strcmp(Inst->nombreInstruccion,"MOV_IN"))
+        tam_a_usar = sizeof(Inst->registro);
 
-    return desplazamiento_segmento + tam_leer_escribir > CPUConfig.TAM_MAX_SEGMENTO;
+    if(!strcmp(Inst->nombreInstruccion,"MOV_OUT"))
+        tam_a_usar = sizeof(Inst->registro);
+
+
+    if(!strcmp(Inst->nombreInstruccion,"F_READ"))
+        tam_a_usar = Inst->cantBytes;    
+
+
+    if(!strcmp(Inst->nombreInstruccion,"F_WRITE"))
+        tam_a_usar = Inst->cantBytes;    
+
+
+    int num_segmento = obtener_num_segmento(dir_logica);
+
+    int desplazamiento_segmento = obtener_desplazamiento_segmento(dir_logica);
+
+    SEGMENTO* segmento = (SEGMENTO*)list_get(tabla_segmentos, num_segmento);
+    int maximo = segmento->tamano;
+
+    return desplazamiento_segmento + tam_a_usar > maximo;
 }
 
 void avisar_seg_fault_kernel(PCB* pcb, Instruccion* instruccion)
