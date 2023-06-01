@@ -1,8 +1,6 @@
 #include "kernel_utils.h"
 
 // VARIABLE COMPARTIDA: procesos -> [{pcb: 1, estado: new}, {pcb: 2, estado: new}]
-// cola_ready: [1, 2, 3]
-// cola_bloqueados: [5]
 
 t_queue *cola_ready;
 t_queue *cola_io;
@@ -19,7 +17,15 @@ pthread_mutex_t mx_procesos;
 
 t_list *procesos;
 
+t_list *recursos;
+
 void manejar_paquete_cpu();
+void manejar_io();
+
+void reemplazar_pcb_en_procesos(PCB *pcb);
+
+void manejar_wait(Proceso *proceso, char *nombre_recurso);
+void manejar_signal(Proceso *proceso, char *nombre_recurso);
 
 int main()
 {
@@ -35,6 +41,8 @@ int main()
     iniciar_logger_kernel();
 
     iniciar_config_kernel();
+
+    recursos = crear_recursos(KernelConfig.RECURSOS, KernelConfig.INSTANCIAS_RECURSOS);
 
     if (iniciar_servidor_kernel() == SUCCESS)
     {
@@ -104,7 +112,6 @@ int main()
 
             // Enviar PCB a CPU
             enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
-
         }
         else
         {
@@ -147,9 +154,14 @@ void manejar_paquete_cpu()
             Lista *lista_parametros = obtener_paquete_como_lista(socket_cpu);
             CODIGO_INSTRUCCION codigo_instruccion = *(int32_t *)list_get(lista_parametros, 0);
 
+            char *nombre_archivo, recurso;
+            int direccion_fisica, cant_bytes;
+            int id_segmento, tamanio_segmento;
+
             switch (codigo_instruccion)
             {
             case IO:
+                //
                 log_info(logger, "[KERNEL] Llego Instruccion IO");
                 int tiempo_io = *(int32_t *)list_get(lista_parametros, 1);
                 //
@@ -166,59 +178,63 @@ void manejar_paquete_cpu()
                 break;
             case F_OPEN:
                 log_info(logger, "[KERNEL] Llego Instruccion F_OPEN");
-                char *nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
+                nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
                 //
                 break;
             case F_CLOSE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_CLOSE");
-                char *nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
+                nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
                 //
                 break;
             case F_SEEK:
                 log_info(logger, "[KERNEL] Llego Instruccion F_SEEK");
-                char *nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
+                nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
                 int posicion = *(int32_t *)list_get(lista_parametros, 2);
                 //
                 break;
             case F_READ:
                 log_info(logger, "[KERNEL] Llego Instruccion F_READ");
-                char *nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
-                int direccion_fisica = *(int32_t *)list_get(lista_parametros, 2);
-                int cant_bytes = *(int32_t *)list_get(lista_parametros, 3);
+                nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
+                direccion_fisica = *(int32_t *)list_get(lista_parametros, 2);
+                cant_bytes = *(int32_t *)list_get(lista_parametros, 3);
                 //
                 break;
             case F_WRITE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_WRITE");
-                char *nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
-                int direccion_fisica = *(int32_t *)list_get(lista_parametros, 2);
-                int cant_bytes = *(int32_t *)list_get(lista_parametros, 3);
+                nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
+                direccion_fisica = *(int32_t *)list_get(lista_parametros, 2);
+                cant_bytes = *(int32_t *)list_get(lista_parametros, 3);
                 //
                 break;
             case F_TRUNCATE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_TRUNCATE");
-                char *nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
+                nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
                 int tamanio_archivo = *(int32_t *)list_get(lista_parametros, 2);
                 //
                 break;
             case WAIT:
+                //
                 log_info(logger, "[KERNEL] Llego Instruccion WAIT");
-                char *recurso = string_duplicate((char *)list_get(lista_parametros, 1));
+                recurso = string_duplicate((char *)list_get(lista_parametros, 1));
+                manejar_wait(proceso, recurso);
                 //
                 break;
             case SIGNAL:
+                //
                 log_info(logger, "[KERNEL] Llego Instruccion SIGNAL");
-                char *recurso = string_duplicate((char *)list_get(lista_parametros, 1));
+                recurso = string_duplicate((char *)list_get(lista_parametros, 1));
+                manejar_signal(proceso, recurso);
                 //
                 break;
             case CREATE_SEGMENT:
                 log_info(logger, "[KERNEL] Llego Instruccion CREATE_SEGMENT");
-                int id_segmento = *(int32_t *)list_get(lista_parametros, 1);
-                int tamanio_segmento = *(int32_t *)list_get(lista_parametros, 2);
+                id_segmento = *(int32_t *)list_get(lista_parametros, 1);
+                tamanio_segmento = *(int32_t *)list_get(lista_parametros, 2);
                 //
                 break;
             case DELETE_SEGMENT:
                 log_info(logger, "[KERNEL] Llego Instruccion DELETE_SEGMENT");
-                int id_segmento = *(int32_t *)list_get(lista_parametros, 1);
+                id_segmento = *(int32_t *)list_get(lista_parametros, 1);
                 //
                 break;
             case YIELD:
@@ -259,6 +275,8 @@ void reemplazar_pcb_en_procesos(PCB *pcb)
     pthread_mutex_unlock(&mx_procesos);
 }
 
+// duda por lo que dice el enunciado
+// asi esta bien o 1 hilo por proceso y que sleep de ese hilo?
 void manejar_io()
 {
     while (true)
@@ -267,9 +285,54 @@ void manejar_io()
         Proceso_IO *proceso_io = (Proceso_IO *)queue_pop(cola_io);
         sleep(proceso_io->tiempo_bloqueado);
 
-        Proceso *proceso = obtener_proceso_por_pid(pcb->PID);
+        Proceso *proceso = obtener_proceso_por_pid(proceso_io->PID);
         proceso->estado = READY;
 
         queue_push(cola_ready, proceso);
+    }
+}
+
+void manejar_wait(Proceso *proceso, char *nombre_recurso)
+{
+    bool comparar_recurso_por_nombre(Recurso *recurso)
+    {
+        return strcmp(recurso->nombre, nombre_recurso) == 0;
+    }
+
+    Recurso *recurso = list_find(recursos, (void *)comparar_recurso_por_nombre);
+
+    if(recurso == NULL){
+        proceso->estado = EXIT;
+        return;
+    }
+
+    if(recurso->instancias > 0){
+        recurso->instancias -= 1;
+    } else {
+        proceso->estado = BLOCK;
+        queue_push(recurso->cola_block, proceso);
+    }    
+}
+
+void manejar_signal(Proceso *proceso, char *nombre_recurso)
+{
+    bool comparar_recurso_por_nombre(Recurso *recurso)
+    {
+        return strcmp(recurso->nombre, nombre_recurso) == 0;
+    }
+
+    Recurso *recurso = list_find(recursos, (void *)comparar_recurso_por_nombre);
+
+    if(recurso == NULL){
+        proceso->estado = EXIT;
+        return;
+    }
+
+    recurso->instancias += 1;
+
+    if(!queue_is_empty(recurso->cola_block)){
+        Proceso *proceso_bloqueado = (Proceso *) queue_pop(recurso->cola_block);
+        // estado es EXEC? hay que sacarlo de block
+        proceso_bloqueado->estado = EXEC;
     }
 }

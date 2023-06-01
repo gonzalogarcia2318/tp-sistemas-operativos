@@ -89,9 +89,6 @@ void * obtener_paquete_estructura_dinamica(int socketCliente);
 
 BUFFER* recibir_buffer(int socket);
 
-void *obtener_paquete_pcb(int socket_cpu);
-CODIGO_INSTRUCCION obtener_codigo_instruccion(int socket_cliente);
-
 
 // TODO: MOVER A OTRO ARCHIVO
 typedef struct 
@@ -145,6 +142,9 @@ typedef struct
     
 } Instruccion;
 
+PCB *obtener_paquete_pcb(int socket_cpu);
+CODIGO_INSTRUCCION obtener_codigo_instruccion(int socket_cliente);
+
 
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);
@@ -153,6 +153,9 @@ BUFFER *serializar_instruccion(Instruccion *instruccion);
 Instruccion *deserializar_instruccion(BUFFER *buffer, int stream_offset);
 BUFFER *serializar_instrucciones(t_list *instrucciones);
 t_list* deserializar_instrucciones(BUFFER* buffer);
+
+BUFFER *serializar_registros(Registro_CPU *registros);
+Registro_CPU *deserializar_registros(BUFFER *buffer);
 
 void imprimir_buffer( BUFFER* buffer);
 

@@ -32,5 +32,6 @@ void conectar_con_consola();
 void conectar_con_cpu();
 void conectar_con_memoria();
 void terminar_ejecucion();
+t_list* crear_recursos(char** recursos, char** instancias_recursos);
 
 #endif
