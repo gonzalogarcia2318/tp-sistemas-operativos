@@ -235,8 +235,10 @@ BUFFER *serializar_pcb(PCB *pcb)
     offset += sizeof(int32_t);
 
     BUFFER *buffer_instrucciones = serializar_instrucciones(pcb->instrucciones);
-    memcpy(stream + offset, buffer_instrucciones->size, sizeof(int32_t));
-    offset += sizeof(int32_t);
+
+    // memcpy(stream + offset, buffer_instrucciones->size, sizeof(int32_t));
+    // offset += sizeof(int32_t);
+    
     memcpy(stream + offset, buffer_instrucciones->stream, buffer_instrucciones->size);
     offset += buffer_instrucciones->size;
 
@@ -262,8 +264,8 @@ PCB *deserializar_pcb(BUFFER *buffer)
     stream += sizeof(int32_t);
 
     BUFFER* buffer_instrucciones = malloc(sizeof(BUFFER));
-    memcpy(&(buffer_instrucciones->size), stream, sizeof(int32_t));
-    stream += sizeof(int32_t);
+    // memcpy(&(buffer_instrucciones->size), stream, sizeof(int32_t));
+    // stream += sizeof(int32_t);
 
     buffer_instrucciones->stream = stream;
     pcb->instrucciones = deserializar_instrucciones(buffer_instrucciones);
@@ -476,7 +478,7 @@ int calcular_tamanio_instruccion(Instruccion *instruccion){
 int calcular_tamanio_instrucciones(t_list *instrucciones){
     int tamanio_total = 0;
 
-    for(int i = 0; i < list_size(instrucciones), i++;){
+    for(int i = 0; i < list_size(instrucciones); i++){
         tamanio_total += calcular_tamanio_instruccion(list_get(instrucciones, i));
     }
 
@@ -492,6 +494,7 @@ BUFFER *serializar_registros(Registro_CPU *registros)
 
     void* stream = malloc(buffer->size);
     int offset = 0;
+
 
     memcpy(stream + offset, &(registros->valor_AX), 4+1);
     offset += 4+1;

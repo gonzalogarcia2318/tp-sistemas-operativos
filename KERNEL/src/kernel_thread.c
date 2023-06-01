@@ -74,12 +74,18 @@ void manejar_proceso_consola(t_list *instrucciones)
     pcb->PID = PROCESO_ID++;
     pcb->instrucciones = instrucciones;
     pcb->program_counter = 1;
+    
+   
 
-    log_info(logger, "[KERNEL]: PCB Creada: %d", pcb->PID);
+    log_info(logger, "[KERNEL]: PCB Creada - Proceso - PID: <%d>", pcb->PID);
 
     Proceso *proceso = malloc(sizeof(Proceso));
     proceso->estado = NEW;
     proceso->pcb = pcb;
+
+    proceso->pcb->registros_cpu = malloc(112);
+
+ 
     
     bool en_new(Proceso * proceso)
     {

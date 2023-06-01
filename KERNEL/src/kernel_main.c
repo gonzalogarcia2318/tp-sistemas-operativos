@@ -162,10 +162,13 @@ void manejar_paquete_cpu()
             {
             case IO:
                 //
-                log_info(logger, "[KERNEL] Llego Instruccion IO");
+                
                 int tiempo_io = *(int32_t *)list_get(lista_parametros, 1);
+                log_info(logger, "[KERNEL] Llego Instruccion IO - Proceso PID:<%d> - Tiempo IO : <%d>", proceso->pcb->PID,tiempo_io);
                 //
+                log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s>", proceso->pcb->PID, proceso->estado );
                 proceso->estado = BLOCK;
+                log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado );
 
                 Proceso_IO *proceso_io = malloc(sizeof(Proceso_IO));
                 proceso_io->PID = pcb->PID;
@@ -177,13 +180,15 @@ void manejar_paquete_cpu()
                 //
                 break;
             case F_OPEN:
-                log_info(logger, "[KERNEL] Llego Instruccion F_OPEN");
                 nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
+                log_info(logger, "[KERNEL] Llego Instruccion F_OPEN - Proceso PID:<%d> - Archivo: <%s>",proceso->pcb->PID,nombre_archivo );
+
                 //
                 break;
             case F_CLOSE:
-                log_info(logger, "[KERNEL] Llego Instruccion F_CLOSE");
                 nombre_archivo = string_duplicate((char *)list_get(lista_parametros, 1));
+                log_info(logger, "[KERNEL] Llego Instruccion F_CLOSE - Proceso PID:<%d> - Archivo: <%s>",proceso->pcb->PID,nombre_archivo );
+
                 //
                 break;
             case F_SEEK:
@@ -286,7 +291,10 @@ void manejar_io()
         sleep(proceso_io->tiempo_bloqueado);
 
         Proceso *proceso = obtener_proceso_por_pid(proceso_io->PID);
+
+        log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s>", proceso->pcb->PID, proceso->estado );
         proceso->estado = READY;
+        log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado );
 
         queue_push(cola_ready, proceso);
     }
@@ -302,14 +310,19 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
     Recurso *recurso = list_find(recursos, (void *)comparar_recurso_por_nombre);
 
     if(recurso == NULL){
+        log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s>", proceso->pcb->PID, proceso->estado );
         proceso->estado = EXIT;
+        log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado );
         return;
     }
 
     if(recurso->instancias > 0){
         recurso->instancias -= 1;
     } else {
+        log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s>", proceso->pcb->PID, proceso->estado );
         proceso->estado = BLOCK;
+        log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado );
+
         queue_push(recurso->cola_block, proceso);
     }    
 }
@@ -324,7 +337,9 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
     Recurso *recurso = list_find(recursos, (void *)comparar_recurso_por_nombre);
 
     if(recurso == NULL){
+        log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s>", proceso->pcb->PID, proceso->estado );
         proceso->estado = EXIT;
+        log_info(logger,"[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado );
         return;
     }
 
