@@ -33,7 +33,9 @@ extern SUPERBLOQUE superbloque;
 void iniciar_logger_file_system();
 void iniciar_config_file_system();
 void iniciar_config_superbloque();
+
 int iniciar_servidor_file_system();
+int levantar_bitmap(char *path);
 void conectar_con_memoria();
 void conectar_con_kernel();
 void terminar_ejecucion();

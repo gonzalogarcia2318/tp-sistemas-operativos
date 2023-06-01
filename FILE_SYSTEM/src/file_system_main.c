@@ -9,11 +9,17 @@ int main()
     if(iniciar_servidor_file_system() == SUCCESS)
     {
         conectar_con_memoria();
+
+        iniciar_config_superbloque();
+
+        if(levantar_bitmap(FileSystemConfig.PATH_BITMAP) == FAILURE)
+            return EXIT_FAILURE;
         
         conectar_con_kernel();
     }
 
-    iniciar_config_superbloque();
+    
+
 
     //...
 

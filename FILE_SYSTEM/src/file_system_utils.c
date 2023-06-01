@@ -5,6 +5,7 @@ Config *config;
 Config *config_superbloque;
 Hilo hilo_fileSystem;
 SUPERBLOQUE superbloque;
+t_bitarray *bitmap ;
 int socket_file_system;
 int socket_memoria;
 int socket_kernel;
@@ -38,6 +39,34 @@ void rellenar_configuracion_superbloque(Config* config_sb)
                   superbloque.BLOCK_COUNT
           );
 }
+
+int levantar_bitmap(char *path)
+{
+    FILE *file;
+    char* bitarray;
+    size_t size = superbloque.BLOCK_COUNT/8;
+
+    file = fopen(path, "rb+");
+    if (file == NULL) {
+        // Si el archivo no existe, se crea
+        file = fopen(path, "wb+");
+        if (file == NULL) {
+           log_error(logger,"Error al crear el archivo BITMAP");
+            return FAILURE;
+        }
+
+         bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
+         fwrite(&bitmap, sizeof(t_bitarray), 1, file);
+          log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
+    }
+
+    fread(&bitmap, sizeof(t_bitarray), 1, file);
+    fclose(file);
+
+    log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap levantado correctamente");
+    return SUCCESS;
+}
+
 
 int iniciar_servidor_file_system()
 {
