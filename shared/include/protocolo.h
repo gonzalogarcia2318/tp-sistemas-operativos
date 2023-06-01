@@ -7,6 +7,7 @@
 #include <commons/string.h>
 #include <commons/collections/list.h>
 #include <commons/collections/queue.h>
+#include <commons/bitarray.h>
 
 // #include <list.h>
 #include <commons/string.h>
