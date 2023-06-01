@@ -476,13 +476,13 @@ int calcular_tamanio_instruccion(Instruccion *instruccion){
 int calcular_tamanio_instrucciones(t_list *instrucciones){
     int tamanio_total = 0;
 
-    for(int i = 0; i < list_size(instrucciones), i++){
+    for(int i = 0; i < list_size(instrucciones), i++;){
         tamanio_total += calcular_tamanio_instruccion(list_get(instrucciones, i));
     }
 
     return tamanio_total;
 }
-serializar_registros(pcb->registros_cpu);
+
 
 BUFFER *serializar_registros(Registro_CPU *registros)
 {
