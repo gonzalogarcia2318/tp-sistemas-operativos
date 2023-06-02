@@ -41,7 +41,7 @@ void conectar_con_consola()
     // Utiliza socket_kernel
 
     pthread_create(&hilo_consolas, NULL, (void *)esperar_consola, (void *)socket_kernel);
-    pthread_join(hilo_consolas, NULL);
+    pthread_detach(hilo_consolas);
 }
 
 void conectar_con_cpu()
@@ -54,8 +54,6 @@ void conectar_con_cpu()
     {
         log_info(logger, "[KERNEL]: Error al conectar con CPU. Finalizando Ejecucion");
         log_error(logger, "[KERNEL]: CPU no está disponible");
-
-        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con CPU: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL╰(*°▽°*)╯", socket_cpu);
@@ -71,11 +69,9 @@ void conectar_con_memoria()
     {
         log_info(logger, "[KERNEL]: Error al conectar con Memoria. Finalizando Ejecucion");
         log_error(logger, "[KERNEL]: Memoria no está disponible");
-
-        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con Memoria: OK");
-    enviar_mensaje_a_servidor("HOLA! SOY KERNEL ╰(*°▽°*)╯",socket_memoria);
+    enviar_mensaje_a_servidor("HOLA! SOY KERNEL ╰(*°▽°*)╯", socket_memoria);
 }
 
 void conectar_con_file_system()
@@ -89,7 +85,6 @@ void conectar_con_file_system()
         log_info(logger, "[KERNEL]: Error al conectar con FILE SYSTEM. Finalizando Ejecucion");
         log_error(logger, "[KERNEL]: FILE SYSTEM no está disponible");
 
-        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con FILE SYSTEM: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL╰(*°▽°*)╯", socket_file_system);
@@ -100,4 +95,33 @@ void terminar_ejecucion()
     log_warning(logger, "[KERNEL]: Finalizando ejecucion...");
     log_destroy(logger);
     config_destroy(config);
+}
+
+t_list* crear_recursos(char** recursos, char** instancias_recursos){
+    log_info(logger, "[KERNEL]: Crear recursos");
+
+    t_list *lista_recursos = list_create();
+
+    int i = 0;
+    
+    while(recursos[i] != NULL){
+
+        Recurso *recurso = malloc(sizeof(Recurso));
+        recurso->nombre = recursos[i];
+        recurso->instancias = atoi(instancias_recursos[i]);
+        recurso->cola_block = queue_create();
+
+        list_add(lista_recursos, recurso);
+        i++;
+    }    
+
+    return lista_recursos;
+}
+
+void liberar_memoria_recursos(t_list* recursos){
+    for (int i = 0; i < list_size(recursos); i++){
+        Recurso* recurso = list_get(recursos, i);
+        queue_destroy(recurso->cola_block);
+        free(recurso);
+    }
 }

@@ -21,7 +21,10 @@
     ],
     "settings": {
         "files.associations": {
-            "kernel_utils.h": "c"
+            "kernel_utils.h": "c",
+            "config.h": "c",
+            "kernel_thread.h": "c",
+            "protocolo.h": "c"
         }
     }
 }

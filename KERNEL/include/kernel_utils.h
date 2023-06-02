@@ -18,7 +18,12 @@ extern int socket_kernel;
 extern int socket_cpu;
 extern int socket_memoria;
 extern int socket_file_system;
+extern sem_t semaforo_new;
+extern sem_t semaforo_planificador;
+extern t_list *procesos;
+extern pthread_mutex_t mx_procesos;
 
+void planificar();
 void iniciar_logger_kernel();
 void iniciar_config_kernel();
 int iniciar_servidor_kernel();
@@ -27,5 +32,6 @@ void conectar_con_consola();
 void conectar_con_cpu();
 void conectar_con_memoria();
 void terminar_ejecucion();
+t_list* crear_recursos(char** recursos, char** instancias_recursos);
 
 #endif

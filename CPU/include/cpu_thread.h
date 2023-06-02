@@ -3,7 +3,9 @@
 
 #include "cpu_utils.h"
 
-//void esperar_kernel(int socket_cpu);
+PCB* recibir_pcb(int);
+void enviar_pcb(PCB*);
 void manejar_paquete_kernel(int socket_kernel);
+
 
 #endif
