@@ -7,6 +7,7 @@
 #include <commons/string.h>
 #include <commons/collections/list.h>
 #include <commons/collections/queue.h>
+#include <commons/bitarray.h>
 
 // #include <list.h>
 #include <commons/string.h>
@@ -32,7 +33,8 @@ typedef enum
     OP_PCB,
     INSTRUCCION,
     INSTRUCCIONES,
-    FINALIZAR_PROCESO
+    FINALIZAR_PROCESO,
+    SEG_FAULT
 
 } CODIGO_OPERACION;
 
@@ -113,7 +115,7 @@ typedef struct
     t_list *instrucciones;
     int32_t program_counter; //DEBE INICIALIZARSE EN 0.
     Registro_CPU *registros_cpu;   // Tipo struct REGISTROS_CPU
-    char *tabla_segmentos; // Lista de Struct TABLA_SEGMENTOS
+    t_list *tabla_segmentos;
     double proxima_rafaga;
     char *tiempo_ready;
     char *archivos_abiertos; // Lista de struct ARCHIVOS_ABIERTOS
@@ -130,8 +132,10 @@ typedef struct
     char* nombreArchivo;
     int32_t posicion;
     int32_t cantBytes;
+    int32_t tamanioArchivo; 
     char* recurso;
-    int32_t idSegmento;    
+    int32_t idSegmento; //Copiar de la tabla de seg
+    int32_t tamanioSegmento; //Copiar de la tabla de seg   
     
     int32_t nombreInstruccion_long;
     int32_t valor_long; 
@@ -142,8 +146,18 @@ typedef struct
     
 } Instruccion;
 
+
+typedef struct
+{
+    int32_t id;
+    int32_t base;
+    int32_t limite;
+
+} SEGMENTO;
+
 PCB *obtener_paquete_pcb(int socket_cpu);
 CODIGO_INSTRUCCION obtener_codigo_instruccion(int socket_cliente);
+
 
 
 BUFFER *serializar_pcb(PCB *pcb);
@@ -158,5 +172,4 @@ BUFFER *serializar_registros(Registro_CPU *registros);
 Registro_CPU *deserializar_registros(BUFFER *buffer);
 
 void imprimir_buffer( BUFFER* buffer);
-
 #endif
