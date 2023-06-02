@@ -80,12 +80,19 @@ void manejar_proceso_consola(t_list *instrucciones)
     log_info(logger, "[KERNEL]: PCB Creada - Proceso - PID: <%d>", pcb->PID);
 
     Proceso *proceso = malloc(sizeof(Proceso));
+    SEGMENTO * segmento0 = malloc (sizeof(SEGMENTO));
+
+    segmento0->base = 0;
+    segmento0->id =0;
+    segmento0->limite=100;
+
     proceso->estado = NEW;
     proceso->pcb = pcb;
 
     proceso->pcb->registros_cpu = malloc(112);
-
- 
+    
+    proceso->pcb->tabla_segmentos = list_create();
+    list_add(proceso->pcb->tabla_segmentos, segmento0);
     
     bool en_new(Proceso * proceso)
     {

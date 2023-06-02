@@ -246,10 +246,74 @@ BUFFER *serializar_pcb(PCB *pcb)
     memcpy(stream + offset, buffer_registros->stream, buffer_registros->size);
     offset += buffer_registros->size;
 
+   BUFFER *buffer_segmentos = serializar_segmentos(pcb->tabla_segmentos);
+    memcpy(stream + offset, buffer_segmentos->stream, buffer_segmentos->size);
+    offset += buffer_segmentos->size;
+
     buffer->stream = stream;
 
     return buffer;
 }
+BUFFER *serializar_segmentos(t_list *segmentos){
+    BUFFER* buffer = malloc(sizeof(BUFFER));
+	buffer->size = 0;
+
+	// Calcular tamaño total del buffer
+	int i = 0;
+	for(i = 0; i < list_size(segmentos); i++){
+		SEGMENTO* segmento = list_get(segmentos, i);
+        buffer->size += calcular_tamanio_segmento(segmento);
+	}
+
+	void* stream = malloc(buffer->size);
+	int offset = 0;
+
+	i = 0;
+	for(i = 0; i < list_size(segmentos); i++){
+		SEGMENTO* segmento = list_get(segmentos, i);
+		BUFFER* buffer_segmento = serializar_segmento(segmento);
+		memcpy(stream + offset, buffer_segmento->stream, buffer_segmento->size);
+		offset += buffer_segmento->size;
+	}
+
+	buffer->stream = stream;
+
+	return buffer;
+}
+
+BUFFER *serializar_segmento(SEGMENTO *segmento)
+{
+    BUFFER* buffer = malloc(sizeof(BUFFER));
+
+    // Calcula el tamaño total necesario para la serialización
+    buffer->size = calcular_tamanio_segmento(segmento);
+
+    void* stream = malloc(buffer->size);
+    int offset = 0; // Desplazamiento
+
+    
+    
+    memcpy(stream + offset, &(segmento->base), sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+ 
+    memcpy(stream + offset, &(segmento->id), sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    
+    memcpy(stream + offset, &(segmento->limite), sizeof(int32_t));
+    offset += sizeof(int32_t);
+ 
+
+    // Guarda el tamaño y los datos serializados en la estructura BUFFER
+    buffer->stream = stream;
+
+    return buffer;
+}
+
+
+
+
 
 
 PCB *deserializar_pcb(BUFFER *buffer)
@@ -273,14 +337,22 @@ PCB *deserializar_pcb(BUFFER *buffer)
     pcb->instrucciones = deserializar_instrucciones(buffer_instrucciones);
     stream += buffer_instrucciones->size;
 
-    
-
     BUFFER* buffer_registros = malloc(sizeof(BUFFER));
     buffer_registros->stream = stream;
     buffer_registros->size = 4*4 + 4*8 + 4*16;
     pcb->registros_cpu = deserializar_registros(buffer_registros);
     stream += buffer_registros->size;
 
+    BUFFER* buffer_segmentos = malloc(sizeof(BUFFER));
+    memcpy(&(buffer_segmentos->size), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    buffer_segmentos->stream = stream;
+    pcb->instrucciones = deserializar_segmentos(buffer_segmentos);
+    stream += buffer_segmentos->size;
+
+
+    free(buffer_segmentos);
     free(buffer_registros);
     free(buffer_instrucciones);
 
@@ -426,6 +498,25 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
 }
 
 
+SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
+{
+    SEGMENTO* segmento = (SEGMENTO*)malloc(sizeof(SEGMENTO));
+    void* stream = buffer->stream;
+    stream += stream_offset;
+
+    memcpy(&(segmento->id), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    memcpy(&(segmento->limite), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+
+    memcpy(&(segmento->base), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    return segmento;
+}
+
 BUFFER *serializar_instrucciones(t_list *instrucciones){
     BUFFER* buffer = malloc(sizeof(BUFFER));
 	buffer->size = 0;
@@ -468,6 +559,21 @@ t_list* deserializar_instrucciones(BUFFER* buffer){
 	return instrucciones;
 }
 
+t_list* deserializar_segmentos(BUFFER* buffer){
+	t_list* segmentos = list_create();
+
+	int size_segmento_acumulado = 0;
+	do {
+		SEGMENTO* segmento = deserializar_segmento(buffer, size_segmento_acumulado);
+		size_segmento_acumulado += calcular_tamanio_segmento(segmento);
+		list_add(segmentos, segmento);
+	} while(size_segmento_acumulado < buffer->size);
+	// Repetir mientras lo que ya se leyo no sea lo que trajo el buffer entero,
+	// porque quiere decir que hay mas instrucciones por leer
+
+	return segmentos;
+}
+
 int calcular_tamanio_instruccion(Instruccion *instruccion){
     int tamanio = sizeof(int32_t) * 11       
             + strlen(instruccion->valor) + 1
@@ -477,6 +583,13 @@ int calcular_tamanio_instruccion(Instruccion *instruccion){
             + strlen(instruccion->recurso) + 1; 
     return tamanio;
 }
+
+int calcular_tamanio_segmento(SEGMENTO *segmento){
+    int tamanio = sizeof(int32_t) * 3                
+    return tamanio;
+}
+
+
 
 int calcular_tamanio_instrucciones(t_list *instrucciones){
     int tamanio_total = 0;

@@ -134,9 +134,7 @@ typedef struct
     int32_t cantBytes;
     int32_t tamanioArchivo; 
     char* recurso;
-    int32_t idSegmento; //Copiar de la tabla de seg
-    int32_t tamanioSegmento; //Copiar de la tabla de seg   
-    
+    int32_t idSegmento; //Copiar de la tabla de seg   
     int32_t nombreInstruccion_long;
     int32_t valor_long; 
     int32_t registro_long;
@@ -170,6 +168,8 @@ t_list* deserializar_instrucciones(BUFFER* buffer);
 
 BUFFER *serializar_registros(Registro_CPU *registros);
 Registro_CPU *deserializar_registros(BUFFER *buffer);
+
+int calcular_tamanio_instruccion(Instruccion *instruccion);
 
 void imprimir_buffer( BUFFER* buffer);
 #endif
