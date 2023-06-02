@@ -147,7 +147,7 @@ Instruccion *parsear_instruccion_por_linea(char *linea)
     else if (strcmp(instruccion->nombreInstruccion, "F_TRUNCATE") == 0)
     {
         instruccion->nombreArchivo = linea_splitted[1];
-        instruccion->valor = atoi(linea_splitted[2]);
+        instruccion->valor = linea_splitted[2];
     }
     else if (strcmp(instruccion->nombreInstruccion, "WAIT") == 0 || strcmp(instruccion->nombreInstruccion, "SIGNAL") == 0)
     {
@@ -156,7 +156,7 @@ Instruccion *parsear_instruccion_por_linea(char *linea)
     else if (strcmp(instruccion->nombreInstruccion, "CREATE_SEGMENT") == 0)
     {
         instruccion->idSegmento = atoi(linea_splitted[1]);
-        instruccion->valor = atoi(linea_splitted[2]);
+        instruccion->valor = linea_splitted[2];
     }
     else if (strcmp(instruccion->nombreInstruccion, "DELETE_SEGMENT") == 0)
     {

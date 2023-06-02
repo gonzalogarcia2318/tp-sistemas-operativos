@@ -184,6 +184,33 @@ char *obtener_mensaje_del_servidor(int socketServidor)
   return mensaje;
 }
 
+PCB *obtener_paquete_pcb(int socket_cpu){
+  BUFFER *buffer = recibir_buffer(socket_cpu);
+    
+  PCB* pcb = deserializar_pcb(buffer);
+
+  free(buffer);
+
+  return pcb;
+}
+
+CODIGO_INSTRUCCION obtener_codigo_instruccion(int socket_cliente)
+{
+  CODIGO_INSTRUCCION codigo_instruccion;
+
+  if (recv(socket_cliente, &codigo_instruccion, sizeof(int), MSG_WAITALL) > 0)
+    return codigo_instruccion;
+  else
+  {
+    close(codigo_instruccion);
+    return DESCONEXION;
+  }
+}
+
+BUFFER *obtener_parametros_instruccion(int socket_cliente){
+  BUFFER *buffer = recibir_buffer(socket_cliente);
+  return buffer;
+}
 
 
 // TODO: MOVER A OTRO ARCHIVO
@@ -191,10 +218,12 @@ char *obtener_mensaje_del_servidor(int socketServidor)
 
 BUFFER *serializar_pcb(PCB *pcb)
 {
-
     BUFFER *buffer = malloc(sizeof(PCB));
 
-    buffer->size = sizeof(int32_t) * 2;
+    buffer->size = sizeof(int32_t) * 3
+                    + 4 * 4 + 4 * 8 + 4 * 16  // 4 registros de 4 bytes, 4 de 8, 4 de 16
+                    + calcular_tamanio_instrucciones(pcb->instrucciones);
+
 
     void *stream = malloc(buffer->size);
     int offset = 0;
@@ -205,24 +234,55 @@ BUFFER *serializar_pcb(PCB *pcb)
     memcpy(stream + offset, &pcb->program_counter, sizeof(int32_t));
     offset += sizeof(int32_t);
 
+    BUFFER *buffer_instrucciones = serializar_instrucciones(pcb->instrucciones);
+
+    memcpy(stream + offset, &buffer_instrucciones->size, sizeof(int32_t));
+    offset += sizeof(int32_t);
+    
+    memcpy(stream + offset, buffer_instrucciones->stream, buffer_instrucciones->size);
+    offset += buffer_instrucciones->size;
+
+    BUFFER *buffer_registros = serializar_registros(pcb->registros_cpu);
+    memcpy(stream + offset, buffer_registros->stream, buffer_registros->size);
+    offset += buffer_registros->size;
+
     buffer->stream = stream;
 
     return buffer;
 }
 
 
-
 PCB *deserializar_pcb(BUFFER *buffer)
 {
     PCB *pcb = malloc(sizeof(PCB));
+
+    pcb->registros_cpu = malloc(112);
 
     void *stream = buffer->stream;
 
     memcpy(&(pcb->PID), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
-
     memcpy(&(pcb->program_counter), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
+
+    BUFFER* buffer_instrucciones = malloc(sizeof(BUFFER));
+    memcpy(&(buffer_instrucciones->size), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    buffer_instrucciones->stream = stream;
+    pcb->instrucciones = deserializar_instrucciones(buffer_instrucciones);
+    stream += buffer_instrucciones->size;
+
+    
+
+    BUFFER* buffer_registros = malloc(sizeof(BUFFER));
+    buffer_registros->stream = stream;
+    buffer_registros->size = 4*4 + 4*8 + 4*16;
+    pcb->registros_cpu = deserializar_registros(buffer_registros);
+    stream += buffer_registros->size;
+
+    free(buffer_registros);
+    free(buffer_instrucciones);
 
     return pcb;
 }
@@ -232,16 +292,11 @@ BUFFER *serializar_instruccion(Instruccion *instruccion)
 {
     BUFFER* buffer = malloc(sizeof(BUFFER));
 
-      // Calcula el tamaño total necesario para la serialización
-      buffer->size = sizeof(int32_t) * 11       
-                  + strlen(instruccion->valor) + 1
-                  + strlen(instruccion->nombreInstruccion) + 1
-                  + strlen(instruccion->registro) + 1
-                  + strlen(instruccion->nombreArchivo) + 1
-                  + strlen(instruccion->recurso) + 1; 
+    // Calcula el tamaño total necesario para la serialización
+    buffer->size = calcular_tamanio_instruccion(instruccion);
 
-      void* stream = malloc(buffer->size);
-      int offset = 0; // Desplazamiento
+    void* stream = malloc(buffer->size);
+    int offset = 0; // Desplazamiento
 
     // Copia cada miembro de la estructura en el búfer
 
@@ -379,13 +434,7 @@ BUFFER *serializar_instrucciones(t_list *instrucciones){
 	int i = 0;
 	for(i = 0; i < list_size(instrucciones); i++){
 		Instruccion* instruccion = list_get(instrucciones, i);
-        int tamanio = sizeof(int32_t) * 11       
-            + strlen(instruccion->valor) + 1
-            + strlen(instruccion->nombreInstruccion) + 1
-            + strlen(instruccion->registro) + 1
-            + strlen(instruccion->nombreArchivo) + 1
-            + strlen(instruccion->recurso) + 1; 
-        buffer->size += tamanio;
+        buffer->size += calcular_tamanio_instruccion(instruccion);
 	}
 
 	void* stream = malloc(buffer->size);
@@ -410,16 +459,109 @@ t_list* deserializar_instrucciones(BUFFER* buffer){
 	int size_instrucciones_acumulado = 0;
 	do {
 		Instruccion* instruccion = deserializar_instruccion(buffer, size_instrucciones_acumulado);
-		size_instrucciones_acumulado += sizeof(int32_t) * 11       
-            + strlen(instruccion->valor) + 1
-            + strlen(instruccion->nombreInstruccion) + 1
-            + strlen(instruccion->registro) + 1
-            + strlen(instruccion->nombreArchivo) + 1
-            + strlen(instruccion->recurso) + 1; 
+		size_instrucciones_acumulado += calcular_tamanio_instruccion(instruccion);
 		list_add(instrucciones, instruccion);
 	} while(size_instrucciones_acumulado < buffer->size);
 	// Repetir mientras lo que ya se leyo no sea lo que trajo el buffer entero,
 	// porque quiere decir que hay mas instrucciones por leer
 
 	return instrucciones;
+}
+
+int calcular_tamanio_instruccion(Instruccion *instruccion){
+    int tamanio = sizeof(int32_t) * 11       
+            + strlen(instruccion->valor) + 1
+            + strlen(instruccion->nombreInstruccion) + 1
+            + strlen(instruccion->registro) + 1
+            + strlen(instruccion->nombreArchivo) + 1
+            + strlen(instruccion->recurso) + 1; 
+    return tamanio;
+}
+
+int calcular_tamanio_instrucciones(t_list *instrucciones){
+    int tamanio_total = 0;
+
+    for(int i = 0; i < list_size(instrucciones); i++){
+        tamanio_total += calcular_tamanio_instruccion(list_get(instrucciones, i));
+    }
+
+    return tamanio_total;
+}
+
+
+BUFFER *serializar_registros(Registro_CPU *registros)
+{
+    BUFFER* buffer = malloc(sizeof(BUFFER));
+
+    buffer->size = 4*4 + 4*8 + 4*16;
+
+    void* stream = malloc(buffer->size);
+    int offset = 0;
+
+
+    memcpy(stream + offset, &(registros->valor_AX), 4+1);
+    offset += 4+1;
+    memcpy(stream + offset, &(registros->valor_BX), 4+1);
+    offset += 4+1;
+    memcpy(stream + offset, &(registros->valor_CX), 4+1);
+    offset += 4+1;
+    memcpy(stream + offset, &(registros->valor_DX), 4+1);
+    offset += 4+1;
+
+    memcpy(stream + offset, &(registros->valor_EAX), 8+1);
+    offset += 8+1;
+    memcpy(stream + offset, &(registros->valor_EBX), 8+1);
+    offset += 8+1;
+    memcpy(stream + offset, &(registros->valor_ECX), 8+1);
+    offset += 8+1;
+    memcpy(stream + offset, &(registros->valor_EDX), 8+1);
+    offset += 8+1;
+
+    memcpy(stream + offset, &(registros->valor_RAX), 16+1);
+    offset += 16+1;
+    memcpy(stream + offset, &(registros->valor_RBX), 16+1);
+    offset += 16+1;
+    memcpy(stream + offset, &(registros->valor_RCX), 16+1);
+    offset += 16+1;
+    memcpy(stream + offset, &(registros->valor_RDX), 16+1);
+    offset += 16+1;
+
+    buffer->stream = stream;
+
+    return buffer;
+}
+
+Registro_CPU *deserializar_registros(BUFFER *buffer)
+{
+    Registro_CPU *registros = (Registro_CPU*) malloc(sizeof(Registro_CPU));
+    void* stream = buffer->stream;
+
+    memcpy(&(registros->valor_AX), stream, 4+1);
+    stream += 4+1;
+    memcpy(&(registros->valor_BX), stream, 4+1);
+    stream += 4+1;
+    memcpy(&(registros->valor_CX), stream, 4+1);
+    stream += 4+1;
+    memcpy(&(registros->valor_DX), stream, 4+1);
+    stream += 4+1;
+
+    memcpy(&(registros->valor_EAX), stream, 8+1);
+    stream += 8+1;
+    memcpy(&(registros->valor_EBX), stream, 8+1);
+    stream += 8+1;
+    memcpy(&(registros->valor_ECX), stream, 8+1);
+    stream += 8+1;
+    memcpy(&(registros->valor_EDX), stream, 8+1);
+    stream += 8+1;
+
+    memcpy(&(registros->valor_RAX), stream, 16+1);
+    stream += 16+1;
+    memcpy(&(registros->valor_RBX), stream, 16+1);
+    stream += 16+1;
+    memcpy(&(registros->valor_RCX), stream, 16+1);
+    stream += 16+1;
+    memcpy(&(registros->valor_RDX), stream, 16+1);
+    stream += 16+1;
+
+    return registros;
 }

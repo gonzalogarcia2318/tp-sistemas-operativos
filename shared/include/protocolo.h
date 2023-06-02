@@ -108,6 +108,7 @@ typedef struct
     char* valor_RCX;
     char* valor_RDX;
 } Registro_CPU;
+
 typedef struct
 {
     int32_t PID;
@@ -141,8 +142,10 @@ typedef struct
     int32_t registro_long;
     int32_t recurso_long;
     int32_t nombreArchivo_long;
+    int32_t tamanioSegmento;
     
 } Instruccion;
+
 
 typedef struct
 {
@@ -152,6 +155,11 @@ typedef struct
 
 } SEGMENTO;
 
+PCB *obtener_paquete_pcb(int socket_cpu);
+CODIGO_INSTRUCCION obtener_codigo_instruccion(int socket_cliente);
+
+
+
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);
 
@@ -159,6 +167,9 @@ BUFFER *serializar_instruccion(Instruccion *instruccion);
 Instruccion *deserializar_instruccion(BUFFER *buffer, int stream_offset);
 BUFFER *serializar_instrucciones(t_list *instrucciones);
 t_list* deserializar_instrucciones(BUFFER* buffer);
+
+BUFFER *serializar_registros(Registro_CPU *registros);
+Registro_CPU *deserializar_registros(BUFFER *buffer);
 
 void imprimir_buffer( BUFFER* buffer);
 #endif

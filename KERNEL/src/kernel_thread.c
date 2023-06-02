@@ -6,7 +6,7 @@ void esperar_consola(int socketKernel)
 {
     while (true)
     {
-            
+
         log_info(logger, "[KERNEL]: Esperando conexiones de Consola...");
 
         int socketConsola = esperar_cliente(socketKernel);
@@ -46,21 +46,19 @@ void manejar_paquete_consola(int socketConsola)
             return;
         case INSTRUCCIONES:
             t_list *instrucciones = obtener_paquete_estructura_dinamica(socketConsola);
-            
+
             // Para testear . Borrar.
-            for(int i = 0; i < list_size(instrucciones); i++){
-                Instruccion* instruccion = list_get(instrucciones, i);
+            for (int i = 0; i < list_size(instrucciones); i++)
+            {
+                Instruccion *instruccion = list_get(instrucciones, i);
                 log_info(logger, "Instruccion %d: nombre: %s", i, instruccion->nombreInstruccion);
             }
 
             manejar_proceso_consola(instrucciones);
 
-
-
-
             break;
 
-            default:
+        default:
             log_warning(logger, "[KERNEL]: Operacion desconocida desde consola.");
             break;
         }
@@ -71,28 +69,45 @@ void manejar_proceso_consola(t_list *instrucciones)
 {
     log_info(logger, "[KERNEL]: Creando PCB");
 
-    PCB * pcb=malloc(sizeof(PCB));
+    PCB *pcb = malloc(sizeof(PCB));
 
     pcb->PID = PROCESO_ID++;
     pcb->instrucciones = instrucciones;
     pcb->program_counter = 1;
-
-    log_info(logger, "[KERNEL]: PCB Creada: %d", pcb->PID);
     
-    // METER PCB A LISTA procesos
-    // TODO_A: AVISAR QUE SE CREO EL PCB
-    Proceso * proceso = malloc(sizeof(Proceso));
+   
+
+    log_info(logger, "[KERNEL]: PCB Creada - Proceso - PID: <%d>", pcb->PID);
+
+    Proceso *proceso = malloc(sizeof(Proceso));
     proceso->estado = NEW;
     proceso->pcb = pcb;
 
+    proceso->pcb->registros_cpu = malloc(112);
+
+ 
+    
+    bool en_new(Proceso * proceso)
+    {
+        return proceso->estado == NEW;
+    }
+
+    pthread_mutex_lock(&mx_procesos);
+    t_list *procesos_en_new = list_filter(procesos, (void *)en_new);
+    
     list_add(procesos, proceso);
+    pthread_mutex_unlock(&mx_procesos);
 
     sem_post(&semaforo_new);
+
+    if (list_size(procesos_en_new) == 0 && (list_size(procesos)-1)!=0)
+    {
+        sem_post(&semaforo_planificador);
+    }
 }
 
 void enviar_pcb_a_cpu(PCB *pcb)
 {
-
     log_info(logger, "[KERNEL]: Enviar PCB a CPU: preparando paquete");
 
     PAQUETE *paquete_pcb = crear_paquete(OP_PCB);
@@ -104,4 +119,6 @@ void enviar_pcb_a_cpu(PCB *pcb)
     log_info(logger, "[KERNEL]: Enviar PCB a CPU: enviar");
 
     enviar_paquete_a_servidor(paquete_pcb, socket_cpu);
+
+    eliminar_paquete(paquete_pcb);
 }
