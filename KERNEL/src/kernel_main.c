@@ -154,16 +154,16 @@ void manejar_paquete_cpu()
 
             Proceso *proceso = obtener_proceso_por_pid(pcb->PID);
 
-            //Lista *lista_parametros = obtener_paquete_como_lista(socket_cpu);
-            //char* c = (char *)list_get(lista_parametros, 0);
-            t_list* lista_parametros;
-            CODIGO_INSTRUCCION codigo_instruccion ;//= *(int32_t *)list_get(lista_parametros, 0);
+            Lista *lista_parametros = obtener_paquete_como_lista(socket_cpu);
+            char* c = (char *)list_get(lista_parametros, 0);
+            
+            CODIGO_INSTRUCCION codigo_instruccion = *(int32_t *)list_get(lista_parametros, 0);
 
             char *nombre_archivo, recurso;
             int direccion_fisica, cant_bytes;
             int id_segmento, tamanio_segmento;
 
-            //PAQUETE *paquete_instruccion = crear_paquete(INSTRUCCION);
+            PAQUETE *paquete_instruccion = crear_paquete(INSTRUCCION);
 
             switch (codigo_instruccion)
             {

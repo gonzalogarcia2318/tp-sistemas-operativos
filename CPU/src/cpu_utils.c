@@ -644,12 +644,14 @@ void ejecutar_yield(PAQUETE *paquete, PCB *pcb)
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <YIELD>",
                 pcb->PID);
+
     enviar_mensaje_a_cliente("YIELD", socket_kernel);
+
     enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION yield = YIELD;
-    char* yield = "YIELD";
-    //agregar_a_paquete(paquete, &yield, strlen(yield)+1);
-    //enviar_paquete_a_cliente(paquete, socket_kernel);
+    CODIGO_INSTRUCCION yield = YIELD;
+  
+    agregar_a_paquete(paquete, &yield, sizeof(CODIGO_INSTRUCCION));
+    enviar_paquete_a_cliente(paquete, socket_kernel);
     
     eliminar_paquete(paquete);
 }
