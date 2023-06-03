@@ -86,6 +86,8 @@ void manejar_proceso_consola(t_list *instrucciones)
     segmento0->id =0;
     segmento0->limite=100;
 
+    memset(&proceso->pcb->registros_cpu,0,(112)); //Blanquea todos los registros con 0
+
     proceso->estado = NEW;
     proceso->pcb = pcb;
 

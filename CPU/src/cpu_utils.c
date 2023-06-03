@@ -201,7 +201,9 @@ void avisar_seg_fault_kernel(PCB *pcb, Instruccion *instruccion)
 int ejecutar_instruccion(Instruccion *Instruccion, PCB *pcb) // EXECUTE //CADA INSTRUCCIÓN DEBE TENER SU log_warning(PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>)
 {
     char *nombre_instru = string_duplicate(Instruccion->nombreInstruccion);
+
     PAQUETE *paquete = crear_paquete(INSTRUCCION);
+
     quitar_salto_de_linea(nombre_instru);
 
     if (!strcmp(nombre_instru, "SET"))
@@ -307,51 +309,51 @@ void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
 
     if(!strcmp(registro_instr,"AX"))
     {
-        reg_cpu->valor_AX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_AX,valor);
     }
     else if(!strcmp(registro_instr,"BX"))
     {
-        reg_cpu->valor_BX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_BX, valor);
     }
     else if(!strcmp(registro_instr,"CX"))
     {
-        reg_cpu->valor_CX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_CX , valor);
     }
     else if(!strcmp(registro_instr,"DX"))
     {
-        reg_cpu->valor_DX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_DX ,valor);
     }
     else if(!strcmp(registro_instr,"EAX"))
     {
-        reg_cpu->valor_EAX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_EAX,valor);
     }
     else if(!strcmp(registro_instr,"EBX"))
     {
-        reg_cpu->valor_EBX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_EBX = string_duplicate(valor);
     }
     else if(!strcmp(registro_instr,"ECX"))
     {
-        reg_cpu->valor_ECX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_ECX = string_duplicate(valor);
     }
     else if(!strcmp(registro_instr,"EDX"))
     {
-        reg_cpu->valor_EDX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_EDX = string_duplicate(valor);
     }
     else if(!strcmp(registro_instr,"RAX"))
     {
-        reg_cpu->valor_RAX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_RAX = string_duplicate(valor);
     }
     else if(!strcmp(registro_instr,"RBX"))
     {
-        reg_cpu->valor_RBX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_RBX = string_duplicate(valor);
     }
     else if(!strcmp(registro_instr,"RCX"))
     {
-        reg_cpu->valor_RCX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_RCX = string_duplicate(valor);
     }
     else if(!strcmp(registro_instr,"RDX"))
     {
-        reg_cpu->valor_RDX = string_duplicate(valor);
+        rstrcpy(eg_cpu->valor_RDX = string_duplicate(valor);
     }
     else
     {
@@ -435,8 +437,9 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
                 pcb->PID,
                 instruccion->registro,
                 instruccion->direccionLogica);
-    agregar_a_paquete(paquete, MOV_IN, sizeof(int));
-    agregar_a_paquete(paquete, instruccion->direccionFisica, sizeof(int32_t));
+    CODIGO_INSTRUCCION mov_in = MOV_IN; 
+    agregar_a_paquete(paquete, &mov_in, sizeof(int));
+    agregar_a_paquete(paquete, &instruccion->direccionFisica, sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
 
     char *valor = string_duplicate(obtener_mensaje_del_servidor(socket_memoria));

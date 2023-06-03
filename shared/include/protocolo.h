@@ -95,18 +95,18 @@ BUFFER* recibir_buffer(int socket);
 // TODO: MOVER A OTRO ARCHIVO
 typedef struct 
 {
-    char* valor_AX;
-    char* valor_BX;
-    char* valor_CX;
-    char* valor_DX;
-    char* valor_EAX;
-    char* valor_EBX;
-    char* valor_ECX;
-    char* valor_EDX;
-    char* valor_RAX;
-    char* valor_RBX;
-    char* valor_RCX;
-    char* valor_RDX;
+    char valor_AX[4];
+    char valor_BX[4];
+    char valor_CX[4];
+    char valor_DX[4];
+    char valor_EAX[8];
+    char valor_EBX[8];
+    char valor_ECX[8];
+    char valor_EDX[8];
+    char valor_RAX[16];
+    char valor_RBX[16];
+    char valor_RCX[16];
+    char valor_RDX[16];
 } Registro_CPU;
 
 typedef struct
@@ -155,8 +155,6 @@ typedef struct
 
 PCB *obtener_paquete_pcb(int socket_cpu);
 CODIGO_INSTRUCCION obtener_codigo_instruccion(int socket_cliente);
-
-
 
 BUFFER *serializar_pcb(PCB *pcb);
 PCB *deserializar_pcb(BUFFER *buffer);

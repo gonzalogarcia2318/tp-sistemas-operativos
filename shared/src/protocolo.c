@@ -240,23 +240,17 @@ BUFFER *serializar_pcb(PCB *pcb)
     BUFFER *buffer_instrucciones = serializar_instrucciones(pcb->instrucciones);
     memcpy(stream + offset, &buffer_instrucciones->size, sizeof(int32_t));
     offset += sizeof(int32_t);
-    
     memcpy(stream + offset, buffer_instrucciones->stream, buffer_instrucciones->size);
     offset += buffer_instrucciones->size;
 
     BUFFER *buffer_segmentos = serializar_segmentos(pcb->tabla_segmentos);
     memcpy(stream + offset, &buffer_segmentos->size, sizeof(int32_t));
     offset += sizeof(int32_t);
-
     memcpy(stream + offset, buffer_segmentos->stream, buffer_segmentos->size);
     offset += buffer_segmentos->size;
 
-
-    BUFFER *buffer_registros = serializar_registros(pcb->registros_cpu);
-    memcpy(stream + offset, buffer_registros->stream, buffer_registros->size);
-    offset += buffer_registros->size;
-
-   
+    memcpy(stream + offset, &pcb->registros_cpu, (4*4+4*8+4*16));
+    offset += (4*4+4*8+4*16);
 
     buffer->stream = stream;
 
@@ -323,8 +317,6 @@ PCB *deserializar_pcb(BUFFER *buffer)
 {
     PCB *pcb = malloc(sizeof(PCB));
 
-    pcb->registros_cpu = malloc(112);
-
     void *stream = buffer->stream;
 
     memcpy(&(pcb->PID), stream, sizeof(int32_t));
@@ -346,14 +338,12 @@ PCB *deserializar_pcb(BUFFER *buffer)
     pcb->tabla_segmentos = deserializar_segmentos(buffer_segmentos);
     stream += buffer_segmentos->size;
 
-    BUFFER* buffer_registros = malloc(sizeof(BUFFER));
-    buffer_registros->stream = stream;
-    buffer_registros->size = 4*4 + 4*8 + 4*16;
-    pcb->registros_cpu = deserializar_registros(buffer_registros);
-    stream += buffer_registros->size;
+    memcpy(&(pcb->registros_cpu), stream, 112);
+    stream += 112;
 
+    
+  
     free(buffer_segmentos);
-    free(buffer_registros);
     free(buffer_instrucciones);
 
     return pcb;
