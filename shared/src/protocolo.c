@@ -222,7 +222,8 @@ BUFFER *serializar_pcb(PCB *pcb)
 
     buffer->size = sizeof(int32_t) * 3
                     + 4 * 4 + 4 * 8 + 4 * 16  // 4 registros de 4 bytes, 4 de 8, 4 de 16
-                    + calcular_tamanio_instrucciones(pcb->instrucciones);
+                    + calcular_tamanio_instrucciones(pcb->instrucciones)
+                    + calcular_tamanio_segmentos(pcb->tabla_segmentos);
 
 
     void *stream = malloc(buffer->size);
@@ -235,20 +236,25 @@ BUFFER *serializar_pcb(PCB *pcb)
     offset += sizeof(int32_t);
 
     BUFFER *buffer_instrucciones = serializar_instrucciones(pcb->instrucciones);
-
     memcpy(stream + offset, &buffer_instrucciones->size, sizeof(int32_t));
     offset += sizeof(int32_t);
     
     memcpy(stream + offset, buffer_instrucciones->stream, buffer_instrucciones->size);
     offset += buffer_instrucciones->size;
 
+    BUFFER *buffer_segmentos = serializar_segmentos(pcb->tabla_segmentos);
+    memcpy(stream + offset, &buffer_segmentos->size, sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    memcpy(stream + offset, buffer_segmentos->stream, buffer_segmentos->size);
+    offset += buffer_segmentos->size;
+
+
     BUFFER *buffer_registros = serializar_registros(pcb->registros_cpu);
     memcpy(stream + offset, buffer_registros->stream, buffer_registros->size);
     offset += buffer_registros->size;
 
-   BUFFER *buffer_segmentos = serializar_segmentos(pcb->tabla_segmentos);
-    memcpy(stream + offset, buffer_segmentos->stream, buffer_segmentos->size);
-    offset += buffer_segmentos->size;
+   
 
     buffer->stream = stream;
 
@@ -311,11 +317,6 @@ BUFFER *serializar_segmento(SEGMENTO *segmento)
     return buffer;
 }
 
-
-
-
-
-
 PCB *deserializar_pcb(BUFFER *buffer)
 {
     PCB *pcb = malloc(sizeof(PCB));
@@ -332,10 +333,16 @@ PCB *deserializar_pcb(BUFFER *buffer)
     BUFFER* buffer_instrucciones = malloc(sizeof(BUFFER));
     memcpy(&(buffer_instrucciones->size), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
-
     buffer_instrucciones->stream = stream;
     pcb->instrucciones = deserializar_instrucciones(buffer_instrucciones);
     stream += buffer_instrucciones->size;
+
+    BUFFER* buffer_segmentos = malloc(sizeof(BUFFER));
+    memcpy(&(buffer_segmentos->size), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+    buffer_segmentos->stream = stream;
+    pcb->tabla_segmentos = deserializar_segmentos(buffer_segmentos);
+    stream += buffer_segmentos->size;
 
     BUFFER* buffer_registros = malloc(sizeof(BUFFER));
     buffer_registros->stream = stream;
@@ -343,22 +350,12 @@ PCB *deserializar_pcb(BUFFER *buffer)
     pcb->registros_cpu = deserializar_registros(buffer_registros);
     stream += buffer_registros->size;
 
-    BUFFER* buffer_segmentos = malloc(sizeof(BUFFER));
-    memcpy(&(buffer_segmentos->size), stream, sizeof(int32_t));
-    stream += sizeof(int32_t);
-
-    buffer_segmentos->stream = stream;
-    pcb->instrucciones = deserializar_segmentos(buffer_segmentos);
-    stream += buffer_segmentos->size;
-
-
     free(buffer_segmentos);
     free(buffer_registros);
     free(buffer_instrucciones);
 
     return pcb;
 }
-
 
 BUFFER *serializar_instruccion(Instruccion *instruccion)
 {
@@ -497,7 +494,6 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     return instruccion;
 }
 
-
 SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
 {
     SEGMENTO* segmento = (SEGMENTO*)malloc(sizeof(SEGMENTO));
@@ -585,11 +581,9 @@ int calcular_tamanio_instruccion(Instruccion *instruccion){
 }
 
 int calcular_tamanio_segmento(SEGMENTO *segmento){
-    int tamanio = sizeof(int32_t) * 3                
+    int tamanio = sizeof(int32_t) * 3;                
     return tamanio;
 }
-
-
 
 int calcular_tamanio_instrucciones(t_list *instrucciones){
     int tamanio_total = 0;
@@ -601,6 +595,15 @@ int calcular_tamanio_instrucciones(t_list *instrucciones){
     return tamanio_total;
 }
 
+int calcular_tamanio_segmentos(t_list *segmentos){
+    int tamanio_total = 0;
+
+    for(int i = 0; i < list_size(segmentos); i++){
+        tamanio_total += calcular_tamanio_segmento(list_get(segmentos, i));
+    }
+
+    return tamanio_total;
+}
 
 BUFFER *serializar_registros(Registro_CPU *registros)
 {

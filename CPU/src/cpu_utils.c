@@ -81,8 +81,8 @@ void manejar_instrucciones(PCB* pcb)
         
         if(!decode_instruccion(prox_instruccion, pcb)) // SI SEGMENTATION FAULT
         {
-            avisar_seg_fault_kernel(pcb, prox_instruccion);
-            seguir = 0;
+            // avisar_seg_fault_kernel(pcb, prox_instruccion);
+            // seguir = 0;
         }
         if(seguir)
         {

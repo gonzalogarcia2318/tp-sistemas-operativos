@@ -73,7 +73,7 @@ void manejar_proceso_consola(t_list *instrucciones)
 
     pcb->PID = PROCESO_ID++;
     pcb->instrucciones = instrucciones;
-    pcb->program_counter = 1;
+    pcb->program_counter = 0;
     
    
 
