@@ -146,9 +146,10 @@ Lista *obtener_paquete_como_lista(int socketCliente)
   int desplazamiento = 0;
 
   Lista *contenido = list_create();
-  void *buffer = obtener_buffer_del_cliente(&tamanioBuffer, socketCliente);
+  //void *buffer = obtener_buffer_del_cliente(&tamanioBuffer, socketCliente);
+  BUFFER *buffer = recibir_buffer(socketCliente);
 
-  while (desplazamiento < tamanioBuffer)
+  while (desplazamiento < buffer->size)
   {
     memcpy(&tamanioContenido, buffer + desplazamiento, sizeof(int));
     desplazamiento += sizeof(int);
@@ -174,7 +175,8 @@ char *obtener_mensaje_del_servidor(int socketServidor)
   case MENSAJE:
     listaMensaje = obtener_paquete_como_lista(socketServidor);
     mensaje = ((char *)list_get(listaMensaje, 0));
-    list_destroy_and_destroy_elements(listaMensaje, &free);
+    list_destroy(listaMensaje);
+    //list_destroy_and_destroy_elements(listaMensaje, &free);
     break;
 
   default:

@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     char *pseudocodigo_path = argv[2];
 
     // SETEAR PATH ACA PARA PROBAR MAS FACIL. SACAR.
-    pseudocodigo_path = "pseudocodigo.txt";
+    pseudocodigo_path = "base1.txt";
     
     inicializar_config_consola(config_path);
 
