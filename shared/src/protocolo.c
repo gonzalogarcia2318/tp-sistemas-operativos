@@ -341,7 +341,7 @@ PCB *deserializar_pcb(BUFFER *buffer)
     memcpy(&(pcb->registros_cpu), stream, 112);
     stream += 112;
 
-    
+
   
     free(buffer_segmentos);
     free(buffer_instrucciones);

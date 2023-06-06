@@ -36,6 +36,7 @@ int main()
     // TODO: Destruir la lista al final.
     procesos = list_create();
     cola_ready = queue_create();
+    cola_io = queue_create();
 
     sem_init(&semaforo_new, 0, 0);
     pthread_mutex_init(&mx_procesos, NULL);
@@ -153,14 +154,58 @@ void manejar_paquete_cpu()
 
             PCB *pcb = malloc(sizeof(PCB));
 
-            memcpy(&(pcb->PID), buffer->stream, sizeof(int32_t));
-            buffer->stream += sizeof(int32_t);
-            memcpy(&(pcb->program_counter), buffer->stream, sizeof(int32_t));
-            buffer->stream += sizeof(int32_t);
+            memcpy(&(pcb->PID), buffer->stream+sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t)*2);
+            memcpy(&(pcb->program_counter), buffer->stream+sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t)*2);         
 
-            int32_t tiempo = 0;
-            memcpy(&(tiempo), buffer->stream, sizeof(int32_t));
-            buffer->stream += sizeof(int32_t);
+            printf("Valor recibido para PCB->PID: %d\n", pcb->PID);
+            printf("Valor recibido para PCB->program_counter: %d\n", pcb->program_counter);  
+
+            Proceso *proceso = obtener_proceso_por_pid(pcb->PID);     
+
+            Instruccion * instruccion = buscar_instruccion_por_counter(pcb);       
+
+            switch (obtener_Codigo_Instruccion_numero(instruccion->nombreInstruccion))
+            {
+            case IO:
+                log_info(logger,"Llego IO ATRRRRR!!!");
+
+                int32_t tiempo = 0;
+                memcpy(&(tiempo), buffer->stream+sizeof(int32_t), sizeof(int32_t));
+                buffer->stream += (sizeof(int32_t)*2);
+
+                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%d>", proceso->pcb->PID, proceso->estado);
+                proceso->estado = BLOCK;
+                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Actual: <%d>", proceso->pcb->PID, proceso->estado);
+
+                Proceso_IO *proceso_io = malloc(sizeof(Proceso_IO));
+                proceso_io->PID = pcb->PID;
+                proceso_io->tiempo_bloqueado = tiempo;
+
+                queue_push(cola_io, proceso_io);
+
+                sem_post(&semaforo_io);
+                break;
+            
+            case WAIT:
+                break;
+
+            case SIGNAL:
+                log_info(logger, "[KERNEL] Llego Instruccion SIGNAL");
+                // recurso = string_duplicate((char *)list_get(lista_parametros, 1));
+                // manejar_signal(proceso, recurso);
+                break;
+
+            case YIELD:
+                break;
+
+            case EXIT:
+                break;
+
+            default:
+                break;
+            }
 
 
 
@@ -196,9 +241,9 @@ void manejar_paquete_cpu()
                 int tiempo_io = *(int32_t *)list_get(lista_parametros, 1);
                 log_info(logger, "[KERNEL] Llego Instruccion IO - Proceso PID:<%d> - Tiempo IO : <%d>", proceso->pcb->PID, tiempo_io);
                 //
-                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s>", proceso->pcb->PID, proceso->estado);
+                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%d>", proceso->pcb->PID, proceso->estado);
                 proceso->estado = BLOCK;
-                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado);
+                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Actual: <%d>", proceso->pcb->PID, proceso->estado);
 
                 Proceso_IO *proceso_io = malloc(sizeof(Proceso_IO));
                 proceso_io->PID = pcb->PID;
@@ -327,9 +372,9 @@ void manejar_paquete_cpu2()
                 int tiempo_io = *(int32_t *)list_get(lista_parametros, 1);
                 log_info(logger, "[KERNEL] Llego Instruccion IO - Proceso PID:<%d> - Tiempo IO : <%d>", proceso->pcb->PID, tiempo_io);
                 //
-                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s>", proceso->pcb->PID, proceso->estado);
+                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%d>", proceso->pcb->PID, proceso->estado);
                 proceso->estado = BLOCK;
-                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado);
+                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Actual: <%d>", proceso->pcb->PID, proceso->estado);
 
                 Proceso_IO *proceso_io = malloc(sizeof(Proceso_IO));
                 proceso_io->PID = pcb->PID;
@@ -460,9 +505,9 @@ void manejar_paquete_cpu2()
                 int tiempo_io = *(int32_t *)list_get(lista_parametros, 1);
                 log_info(logger, "[KERNEL] Llego Instruccion IO - Proceso PID:<%d> - Tiempo IO : <%d>", proceso->pcb->PID, tiempo_io);
                 //
-                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s>", proceso->pcb->PID, proceso->estado);
+                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%d>", proceso->pcb->PID, proceso->estado);
                 proceso->estado = BLOCK;
-                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado);
+                log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Actual: <%d>", proceso->pcb->PID, proceso->estado);
 
                 Proceso_IO *proceso_io = malloc(sizeof(Proceso_IO));
                 proceso_io->PID = pcb->PID;
@@ -665,7 +710,7 @@ Instruccion *buscar_instruccion_por_counter(PCB *pcb)
 
     Proceso *proceso = obtener_proceso_por_pid(pcb->PID);
 
-    Instruccion *instruccion = (proceso->pcb->instrucciones, pcb->program_counter);
+    Instruccion *instruccion = list_get(proceso->pcb->instrucciones, pcb->program_counter);
 
     return instruccion;
 }
@@ -686,4 +731,40 @@ void manejar_exit(Proceso *proceso)
     proceso->estado = EXIT;
     log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Actual: <%s>", proceso->pcb->PID, proceso->estado);
     // liberar recursos
+}
+
+int obtener_Codigo_Instruccion_numero(char* instruccion) {
+    if (strcmp(instruccion, "MOV_IN") == 0)
+        return MOV_IN;
+    else if (strcmp(instruccion, "MOV_OUT") == 0)
+        return MOV_OUT;
+    else if (strcmp(instruccion, "I/O") == 0)
+        return IO;
+    else if (strcmp(instruccion, "F_OPEN") == 0)
+        return F_OPEN;
+    else if (strcmp(instruccion, "F_CLOSE") == 0)
+        return F_CLOSE;
+    else if (strcmp(instruccion, "F_SEEK") == 0)
+        return F_SEEK;
+    else if (strcmp(instruccion, "F_READ") == 0)
+        return F_READ;
+    else if (strcmp(instruccion, "F_WRITE") == 0)
+        return F_WRITE;
+    else if (strcmp(instruccion, "F_TRUNCATE") == 0)
+        return F_TRUNCATE;
+    else if (strcmp(instruccion, "WAIT") == 0)
+        return WAIT;
+    else if (strcmp(instruccion, "SIGNAL") == 0)
+        return SIGNAL;
+    else if (strcmp(instruccion, "CREATE_SEGMENT") == 0)
+        return CREATE_SEGMENT;
+    else if (strcmp(instruccion, "DELETE_SEGMENT") == 0)
+        return DELETE_SEGMENT;
+    else if (strcmp(instruccion, "YIELD") == 0)
+        return YIELD;
+    else if (strcmp(instruccion, "EXIT") == 0)
+        return EXIT;
+
+    // Valor por defecto en caso de que la instrucción no coincida con ninguna del enum
+    return EXIT; // Podrías elegir cualquier valor de CODIGO_INSTRUCCION aquí
 }

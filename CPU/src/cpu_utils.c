@@ -88,6 +88,11 @@ void manejar_instrucciones(PCB *pcb)
             ejecutar_instruccion(prox_instruccion, pcb);
 
             pcb->program_counter++;
+            
+            if(pcb->program_counter == 2){
+                seguir =0;
+            }
+            
         }
     }
 }
@@ -370,54 +375,54 @@ char *obtener_valor_registro(Registro_CPU registros_pcb, char *registro_buscado)
     {
         valor = string_duplicate(registros_pcb.valor_AX);
     }
-    /*else if (!strcmp(registro_buscado, "BX"))
+    else if (!strcmp(registro_buscado, "BX"))
     {
-        valor = string_duplicate(registros_pcb->valor_BX);
+        valor = string_duplicate(registros_pcb.valor_BX);
     }
     else if (!strcmp(registro_buscado, "CX"))
     {
-        valor = string_duplicate(registros_pcb->valor_CX);
+        valor = string_duplicate(registros_pcb.valor_CX);
     }
     else if (!strcmp(registro_buscado, "DX"))
     {
-        valor = string_duplicate(registros_pcb->valor_DX);
+        valor = string_duplicate(registros_pcb.valor_DX);
     }
     else if (!strcmp(registro_buscado, "EAX"))
     {
-        valor = string_duplicate(registros_pcb->valor_EAX);
+        valor = string_duplicate(registros_pcb.valor_EAX);
     }
     else if (!strcmp(registro_buscado, "EBX"))
     {
-        valor = string_duplicate(registros_pcb->valor_EBX);
+        valor = string_duplicate(registros_pcb.valor_EBX);
     }
     else if (!strcmp(registro_buscado, "ECX"))
     {
-        valor = string_duplicate(registros_pcb->valor_ECX);
+        valor = string_duplicate(registros_pcb.valor_ECX);
     }
     else if (!strcmp(registro_buscado, "EDX"))
     {
-        valor = string_duplicate(registros_pcb->valor_EDX);
+        valor = string_duplicate(registros_pcb.valor_AX);
     }
     else if (!strcmp(registro_buscado, "RAX"))
     {
-        valor = string_duplicate(registros_pcb->valor_RAX);
+        valor = string_duplicate(registros_pcb.valor_RAX);
     }
     else if (!strcmp(registro_buscado, "RBX"))
     {
-        valor = string_duplicate(registros_pcb->valor_RBX);
+        valor = string_duplicate(registros_pcb.valor_RBX);
     }
     else if (!strcmp(registro_buscado, "RCX"))
     {
-        valor = string_duplicate(registros_pcb->valor_RCX);
+        valor = string_duplicate(registros_pcb.valor_RCX);
     }
     else if (!strcmp(registro_buscado, "RDX"))
     {
-        valor = string_duplicate(registros_pcb->valor_RDX);
+        valor = string_duplicate(registros_pcb.valor_RDX);
     }
     else
     {
         log_error(logger, "CPU: ERROR AL BUSCAR REGISTRO, NOMBRE DESCONOCIDO");
-    }*/
+    }
     return valor;
 }
 
