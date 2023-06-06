@@ -329,31 +329,31 @@ void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
     }
     else if(!strcmp(registro_instr,"EBX"))
     {
-        strcpy(reg_cpu->valor_EBX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_EBX,valor);
     }
     else if(!strcmp(registro_instr,"ECX"))
     {
-        strcpy(reg_cpu->valor_ECX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_ECX,valor);
     }
     else if(!strcmp(registro_instr,"EDX"))
     {
-        strcpy(reg_cpu->valor_EDX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_EDX ,valor);
     }
     else if(!strcmp(registro_instr,"RAX"))
     {
-        strcpy(reg_cpu->valor_RAX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_RAX ,valor);
     }
     else if(!strcmp(registro_instr,"RBX"))
     {
-        strcpy(reg_cpu->valor_RBX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_RBX ,valor);
     }
     else if(!strcmp(registro_instr,"RCX"))
     {
-        strcpy(reg_cpu->valor_RCX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_RCX ,valor);
     }
     else if(!strcmp(registro_instr,"RDX"))
     {
-        rstrcpy(eg_cpu->valor_RDX = string_duplicate(valor);
+        strcpy(reg_cpu->valor_RDX,valor);
     }
     else
     {
