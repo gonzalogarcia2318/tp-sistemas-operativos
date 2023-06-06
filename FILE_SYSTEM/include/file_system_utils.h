@@ -36,7 +36,7 @@ void iniciar_config_superbloque();
 
 int iniciar_servidor_file_system();
 int levantar_bitmap(char *path);
-void conectar_con_memoria();
+int conectar_con_memoria();
 void conectar_con_kernel();
 void terminar_ejecucion();
 void rellenar_configuracion_superbloque(Config*);

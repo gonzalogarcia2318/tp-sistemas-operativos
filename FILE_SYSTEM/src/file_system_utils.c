@@ -93,18 +93,20 @@ void conectar_con_kernel()
   //pthread_join(hilo_fileSystem, NULL);
 }
 
-void conectar_con_memoria(){
+int conectar_con_memoria(){
 
   log_info(logger, "[FILESYSTEM] conectando con Memoria...");
   socket_memoria = crear_conexion_con_servidor(FileSystemConfig.IP_MEMORIA, FileSystemConfig.PUERTO_MEMORIA);
 
   if (socket_memoria < 0)
   {
-    log_info(logger, "[FILESYSTEM]: Error al conectar con Memoria. Finalizando Ejecucion");
+    log_error(logger, "[FILESYSTEM]: Error al conectar con Memoria. Finalizando Ejecucion");
     log_error(logger, "[FILESYSTEM]: Memoria no está disponible");
+    return FAILURE;
   }
   log_info(logger, "[FILESYSTEM]: Conexion con Memoria: OK");
   enviar_mensaje_a_servidor("HOLA! SOY FILE SYSTEM (●'◡'●)",socket_memoria);
+  return SUCCESS;
 }
 
 void terminar_ejecucion(){

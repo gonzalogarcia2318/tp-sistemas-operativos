@@ -172,7 +172,7 @@ BUFFER *serializar_segmento(SEGMENTO *segmento);
 SEGMENTO * deserializar_segmento(BUFFER* buffer, int stream_offset);
 t_list * deserializar_segmentos(BUFFER* buffer);
 
-int calcular_tamanio_instruccions(Instruccion *instruccion);
+int calcular_tamanio_instrucciones(t_list* instruccion);
 int calcular_tamanio_instruccion(Instruccion *instruccion);
 int calcular_tamanio_segmento(SEGMENTO *segmento);
 int calcular_tamanio_segmentos(t_list *segmentos);

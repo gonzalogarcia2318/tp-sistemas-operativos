@@ -141,7 +141,7 @@ char *obtener_mensaje_del_cliente(int socketCliente)
 
 Lista *obtener_paquete_como_lista(int socketCliente)
 {
-  int tamanioBuffer;
+  //int tamanioBuffer; NO SE ESTA USANDO. ELIMINAR?
   int tamanioContenido;
   int desplazamiento = 0;
 
@@ -577,7 +577,7 @@ int calcular_tamanio_segmento(SEGMENTO *segmento){
     return tamanio;
 }
 
-int calcular_tamanio_instrucciones(t_list *instrucciones){
+int calcular_tamanio_instrucciones(t_list* instrucciones){
     int tamanio_total = 0;
 
     for(int i = 0; i < list_size(instrucciones); i++){
