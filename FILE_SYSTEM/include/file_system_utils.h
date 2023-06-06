@@ -4,6 +4,7 @@
 #include "protocolo.h"
 #include "file_system_config.h"
 #include "file_system_thread.h"
+#include <unistd.h>
 
 #define ARCHIVO_LOGGER "config/fileSystem.log"
 #define ARCHIVO_CONFIG "config/file_system.config"
@@ -30,15 +31,18 @@ extern int socket_memoria;
 extern int socket_kernel;
 extern SUPERBLOQUE superbloque;
 
-void iniciar_logger_file_system();
-void iniciar_config_file_system();
-void iniciar_config_superbloque();
-
+int iniciar_logger_file_system();
+int iniciar_config_file_system();
 int iniciar_servidor_file_system();
+
+int iniciar_config_superbloque();
+    void rellenar_configuracion_superbloque(Config*);
 int levantar_bitmap(char *path);
+int iniciar_archivo_de_bloques(char*);
+
 int conectar_con_memoria();
 void conectar_con_kernel();
 void terminar_ejecucion();
-void rellenar_configuracion_superbloque(Config*);
+
 
 #endif
