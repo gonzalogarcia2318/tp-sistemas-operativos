@@ -507,7 +507,7 @@ void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     //enviar_paquete_a_cliente(paquete, socket_kernel);
     //eliminar_paquete(paquete);
 
-    PAQUETE *paquete2 = crear_paquete(PAQUETE_2);
+    PAQUETE *paquete2 = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete2, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete2, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete2, &instruccion->tiempo, sizeof(int32_t));
