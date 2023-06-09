@@ -7,6 +7,10 @@ t_queue *cola_io;
 
 sem_t semaforo_planificador;
 sem_t semaforo_ejecutando;
+
+sem_t semaforo_multiprogramacion;
+
+
 sem_t semaforo_new;
 sem_t semaforo_io;
 
@@ -25,8 +29,8 @@ Instruccion *buscar_instruccion_por_counter(Proceso *proceso, PCB *pcb);
 void manejar_io(Proceso *proceso, int32_t PID, int tiempo);
 void manejar_wait(Proceso *proceso, char *nombre_recurso);
 void manejar_signal(Proceso *proceso, char *nombre_recurso);
-void manejar_yield(Proceso *proceso, PCB* pcb);
-void manejar_exit(Proceso *proceso, PCB* pcb);
+void manejar_yield(Proceso *proceso, PCB *pcb);
+void manejar_exit(Proceso *proceso, PCB *pcb);
 
 void quitar_salto_de_linea(char *cadena);
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion);
@@ -70,13 +74,16 @@ int main()
 
     // manejar_proceso_consola();
 
-    // grado multiprogramacion
     sem_init(&semaforo_planificador, 0, 1);
 
     sem_init(&semaforo_ejecutando, 0, 1);
 
+    // grado multiprogramacion
+    sem_init(&semaforo_multiprogramacion, 0, KernelConfig.GRADO_MAX_MULTIPROGRAMACION);
+
     sem_wait(&semaforo_new); // Para que no empiece sin que no haya ningun proceso
 
+    
     while (true)
     {
 
@@ -93,6 +100,7 @@ int main()
         log_info(logger, "En NEW: %d", list_size(procesos_en_new));
         if (list_size(procesos_en_new) > 0)
         {
+            sem_wait(&semaforo_multiprogramacion);
             Proceso *proceso_para_ready = (Proceso *)list_get(procesos_en_new, 0);
             proceso_para_ready->estado = READY;
             queue_push(cola_ready, (Proceso *)proceso_para_ready);
@@ -111,9 +119,10 @@ int main()
             // destrabar ready
             sem_post(&semaforo_planificador);
             log_info(logger, "Proceso %d -> EXEC", (proceso_a_ejecutar->pcb)->PID);
-            //sleep(5);
-            // Tomar el time ejecucion HRRN
-            //  Enviar PCB a CPU
+            // sleep(5);
+            //  Tomar el time ejecucion HRRN
+            //   Enviar PCB a CPU
+            log_info(logger, "Enviando %d - con program counter = %d", (proceso_a_ejecutar->pcb)->PID, (proceso_a_ejecutar->pcb)->program_counter);
             enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
         }
         else
@@ -144,8 +153,7 @@ void manejar_paquete_cpu()
             return;
 
         case PAQUETE_CPU:
-            log_info(logger, "[KERNEL] Llego PCB 2");
-
+            log_info(logger, "[KERNEL] Llego PCB");
 
             BUFFER *buffer = recibir_buffer(socket_cpu);
 
@@ -179,29 +187,28 @@ void manejar_paquete_cpu()
                 break;
 
             case WAIT:
-                log_info(logger, "[KERNEL] Llego Instruccion WAIT");
+                log_info(logger, "[KERNEL] Llego Instruccion WAIT  - %d", proceso->pcb->PID);
                 manejar_wait(proceso, instruccion->recurso);
                 break;
 
             case SIGNAL:
-                log_info(logger, "[KERNEL] Llego Instruccion SIGNAL");
+                log_info(logger, "[KERNEL] Llego Instruccion SIGNAL - %d", proceso->pcb->PID);
                 manejar_signal(proceso, instruccion->recurso);
                 break;
 
             case YIELD:
                 log_info(logger, "[KERNEL] Llego Instruccion YIELD");
 
-                
-                memcpy(&(pcb->registros_cpu), buffer->stream+sizeof(int32_t), sizeof(Registro_CPU));
+                memcpy(&(pcb->registros_cpu), buffer->stream + sizeof(int32_t), sizeof(Registro_CPU));
                 buffer->stream += (sizeof(int32_t) + sizeof(Registro_CPU));
-            
+
                 manejar_yield(proceso, pcb);
                 break;
 
             case EXIT:
                 log_info(logger, "[KERNEL] Llego Instruccion EXIT");
 
-                memcpy(&(pcb->registros_cpu), buffer->stream+sizeof(int32_t), sizeof(Registro_CPU));
+                memcpy(&(pcb->registros_cpu), buffer->stream + sizeof(int32_t), sizeof(Registro_CPU));
                 buffer->stream += (sizeof(int32_t) + sizeof(Registro_CPU));
 
                 manejar_exit(proceso, pcb);
@@ -331,7 +338,11 @@ void manejar_hilo_io()
 
         Proceso *proceso = obtener_proceso_por_pid(proceso_io->PID);
 
+        log_error(logger, "[KERNEL] poner ready %d ", proceso->pcb->PID);
         cambiar_estado(proceso, READY);
+
+        sem_post(&semaforo_planificador);
+        //sem_post(&semaforo_ejecutando);
 
         queue_push(cola_ready, proceso);
     }
@@ -339,6 +350,8 @@ void manejar_hilo_io()
 
 void manejar_wait(Proceso *proceso, char *nombre_recurso)
 {
+    quitar_salto_de_linea(nombre_recurso);
+
     bool comparar_recurso_por_nombre(Recurso * recurso)
     {
         return strcmp(recurso->nombre, nombre_recurso) == 0;
@@ -354,7 +367,12 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
 
     if (recurso->instancias > 0)
     {
+        log_info(logger, "[KERNEL] Descontar recurso %s - %d", nombre_recurso, recurso->instancias);
         recurso->instancias -= 1;
+
+        proceso->pcb->program_counter++;
+        cambiar_estado(proceso, READY);
+        queue_push(cola_ready, proceso);
     }
     else
     {
@@ -366,6 +384,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
 
 void manejar_signal(Proceso *proceso, char *nombre_recurso)
 {
+    quitar_salto_de_linea(nombre_recurso);
     bool comparar_recurso_por_nombre(Recurso * recurso)
     {
         return strcmp(recurso->nombre, nombre_recurso) == 0;
@@ -379,14 +398,20 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
         return;
     }
 
+    log_info(logger, "[KERNEL] Sumar recurso %s - %d", nombre_recurso, recurso->instancias);
     recurso->instancias += 1;
 
     if (!queue_is_empty(recurso->cola_block))
     {
+        log_info(logger, "[KERNEL] desbloquear %s ", nombre_recurso);
         Proceso *proceso_bloqueado = (Proceso *)queue_pop(recurso->cola_block);
         // estado es EXEC? hay que sacarlo de block
         proceso_bloqueado->estado = EXEC;
     }
+
+    proceso->pcb->program_counter++;
+    cambiar_estado(proceso, READY);
+    queue_push(cola_ready, proceso);
 }
 
 Instruccion *buscar_instruccion_por_counter(Proceso *proceso, PCB *pcb)
@@ -396,7 +421,7 @@ Instruccion *buscar_instruccion_por_counter(Proceso *proceso, PCB *pcb)
     return instruccion;
 }
 
-void manejar_yield(Proceso *proceso, PCB* pcb)
+void manejar_yield(Proceso *proceso, PCB *pcb)
 {
     pthread_mutex_lock(&mx_procesos);
 
@@ -404,17 +429,19 @@ void manejar_yield(Proceso *proceso, PCB* pcb)
 
     proceso->pcb->registros_cpu = pcb->registros_cpu;
 
+    log_error(logger, "[KERNEL] poner en ready POR YIELD %d", proceso->pcb->PID);
     cambiar_estado(proceso, READY);
     queue_push(cola_ready, proceso);
 
     pthread_mutex_unlock(&mx_procesos);
 }
 
-void manejar_exit(Proceso *proceso, PCB* pcb)
+void manejar_exit(Proceso *proceso, PCB *pcb)
 {
     proceso->pcb->registros_cpu = pcb->registros_cpu;
 
     cambiar_estado(proceso, FINISHED);
+    sem_post(&semaforo_multiprogramacion);
     // liberar recursos asignados
     // avisar a memoria para que libere estructuras
     // avisar a consola que finalizo
@@ -427,6 +454,9 @@ void manejar_io(Proceso *proceso, int32_t PID, int tiempo)
     Proceso_IO *proceso_io = malloc(sizeof(Proceso_IO));
     proceso_io->PID = PID;
     proceso_io->tiempo_bloqueado = tiempo;
+
+    proceso->pcb->program_counter++;
+
 
     queue_push(cola_io, proceso_io);
 
@@ -491,10 +521,11 @@ void cambiar_estado(Proceso *proceso, ESTADO estado)
 {
     ESTADO anterior = proceso->estado;
     proceso->estado = estado;
-    log_info(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s> - Estado Actual: <%s>", proceso->pcb->PID, descripcion_estado(anterior), descripcion_estado(proceso->estado));
+    log_warning(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s> - Estado Actual: <%s>", proceso->pcb->PID, descripcion_estado(anterior), descripcion_estado(proceso->estado));
 }
 
-void quitar_salto_de_linea(char *cadena) {
+void quitar_salto_de_linea(char *cadena)
+{
     int longitud = strcspn(cadena, "\n");
     cadena[longitud] = '\0';
 }

@@ -14,11 +14,14 @@ int main(int argc, char** argv)
     char *pseudocodigo_path = argv[2];
 
     // SETEAR PATH ACA PARA PROBAR MAS FACIL. SACAR.
-    pseudocodigo_path = "base1.txt";
+    //pseudocodigo_path = "deadlock1.txt";
     
     inicializar_config_consola(config_path);
 
     t_list *instrucciones = leer_instrucciones(pseudocodigo_path);
+
+    log_info(logger, "[CONSOLA]: %s.", pseudocodigo_path);
+
 
     if (conectar_con_kernel() == SUCCESS)
     {

@@ -39,4 +39,19 @@ clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ $(PROCESS_NAME) $(SHARED_ODIR)/*.o ../shared/libcommons.so
 
 run: all
-	./$(PROCESS_NAME) config/consola.config ./pseudocodigo2.txt
+	./$(PROCESS_NAME) config/consola.config ./base1.txt
+
+runb2: all
+	./$(PROCESS_NAME) config/consola.config ./base2.txt
+
+rund1: all
+	./$(PROCESS_NAME) config/consola.config ./deadlock1.txt
+
+rund2: all
+	./$(PROCESS_NAME) config/consola.config ./deadlock2.txt
+
+rund3: all
+	./$(PROCESS_NAME) config/consola.config ./deadlock3.txt
+
+rund4: all
+	./$(PROCESS_NAME) config/consola.config ./deadlock4.txt

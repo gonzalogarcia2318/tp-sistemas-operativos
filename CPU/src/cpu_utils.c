@@ -76,13 +76,7 @@ void manejar_instrucciones(PCB *pcb)
 
     while (seguir)
     {
-
-        if(list_size(instrucciones) == pcb->program_counter){
-            return;
-        }
-
         prox_instruccion = list_get(instrucciones, pcb->program_counter); // FORMA PARTE DEL FETCH
-
 
         if (!decode_instruccion(prox_instruccion, pcb)) // SI SEGMENTATION FAULT
         {
@@ -91,16 +85,9 @@ void manejar_instrucciones(PCB *pcb)
         }
         if (seguir)
         {
-            
-
             seguir = ejecutar_instruccion(prox_instruccion, pcb);
 
-            pcb->program_counter++;
-            
-            //if(pcb->program_counter == 2){
-            //    seguir =0;
-            //}
-            
+            pcb->program_counter++;    
         }
     }
 }
@@ -619,24 +606,41 @@ void ejecutar_wait(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <WAIT> - <RECURSO: %s>",
                 pcb->PID,
                 instruccion->recurso);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION wait = WAIT;
-    agregar_a_paquete(paquete, &wait, sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->recurso), strlen(instruccion->recurso) + 1);
-    enviar_paquete_a_cliente(paquete, socket_kernel);
-    eliminar_paquete(paquete);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION wait = WAIT;
+    //agregar_a_paquete(paquete, &wait, sizeof(int));
+    //agregar_a_paquete(paquete, &(instruccion->recurso), strlen(instruccion->recurso) + 1);
+    //enviar_paquete_a_cliente(paquete, socket_kernel);
+    //eliminar_paquete(paquete);
+
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+
+    eliminar_paquete(paquete_kernel);
 }
 void ejecutar_signal(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <SIGNAL> - <RECURSO: %s>",
                 pcb->PID,
                 instruccion->recurso);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION signal = SIGNAL;
-    agregar_a_paquete(paquete, &signal, sizeof(CODIGO_INSTRUCCION));
-    agregar_a_paquete(paquete, &(instruccion->recurso), strlen(instruccion->recurso) + 1);
-    enviar_paquete_a_cliente(paquete, socket_kernel);
-    eliminar_paquete(paquete);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION signal = SIGNAL;
+    //agregar_a_paquete(paquete, &signal, sizeof(CODIGO_INSTRUCCION));
+    //agregar_a_paquete(paquete, &(instruccion->recurso), strlen(instruccion->recurso) + 1);
+    //enviar_paquete_a_cliente(paquete, socket_kernel);
+    //eliminar_paquete(paquete);
+
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+
+    eliminar_paquete(paquete_kernel);
+
 }
 
 void ejecutar_create_segment(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)

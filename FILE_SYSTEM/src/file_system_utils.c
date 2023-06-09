@@ -135,9 +135,9 @@ int iniciar_servidor_file_system()
 
 void conectar_con_kernel()
 {
-  log_info(logger, "[MEMORIA]: Esperando conexiones de Kernel...");
+  log_info(logger, "[FILE_SYSTEM]: Esperando conexiones de Kernel...");
   socket_kernel = esperar_cliente(socket_file_system);
-  log_info(logger, "[MEMORIA]: Conexión de Kernel establecida.");
+  log_info(logger, "[FILE_SYSTEM]: Conexión de Kernel establecida.");
 
   pthread_create(&hilo_fileSystem, NULL, (void *)manejar_paquete_kernel, (void *)socket_kernel);
   //pthread_join(hilo_fileSystem, NULL);
