@@ -368,6 +368,7 @@ void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
     else if(!strcmp(registro_instr,"RDX"))
     {
         strncpy(reg_cpu->valor_RDX, valor, 16);
+
     }
     else
     {

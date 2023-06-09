@@ -2,24 +2,30 @@
 
 int main()
 {
-    iniciar_logger_file_system();
+    if(iniciar_logger_file_system() == FAILURE)
+        return EXIT_FAILURE;
 
-    iniciar_config_file_system();
+    if(iniciar_config_file_system() == FAILURE)
+        return EXIT_FAILURE;
 
     if(iniciar_servidor_file_system() == SUCCESS)
     {
-        conectar_con_memoria();
+        if(conectar_con_memoria() == SUCCESS)
+        {
+            if(iniciar_config_superbloque() == FAILURE)
+                return EXIT_FAILURE;
+
+            if(levantar_bitmap(FileSystemConfig.PATH_BITMAP) == FAILURE)
+                return EXIT_FAILURE;
         
-        conectar_con_kernel();
-    }
-    iniciar_config_superbloque();
+            if(iniciar_archivo_de_bloques(FileSystemConfig.PATH_BLOQUES) == FAILURE)
+                return EXIT_FAILURE;
 
-        if(levantar_bitmap(FileSystemConfig.PATH_BITMAP) == FAILURE)
+            conectar_con_kernel();
+        }
+        else
             return EXIT_FAILURE;
-    
-
-
-    //...
+    }
 
     pthread_join(hilo_fileSystem, NULL); //LO PASO PARA ACA PARA QUE NO FINALICE EL MÓDULO SI DETACH NI SE BLOQUEE ANTES DE INICIALIZAR LAS ESTRUCTURAS NECESARIAS
     
