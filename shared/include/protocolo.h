@@ -29,7 +29,7 @@ typedef enum
 {
     DESCONEXION = -1,
     MENSAJE,
-    PAQUETE_2, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
+    PAQUETE_CPU, // TODO: CHEQUEAR NOMBRE REDEFINIDOS ?
     OP_PCB,
     INSTRUCCION,
     INSTRUCCIONES,
@@ -114,7 +114,7 @@ typedef struct
     int32_t PID;
     t_list *instrucciones;
     int32_t program_counter; //DEBE INICIALIZARSE EN 0.
-    Registro_CPU *registros_cpu;   // Tipo struct REGISTROS_CPU
+    Registro_CPU registros_cpu;   // Tipo struct REGISTROS_CPU
     t_list *tabla_segmentos;
     double proxima_rafaga;
     char *tiempo_ready;

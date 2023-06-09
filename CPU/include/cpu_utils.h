@@ -43,7 +43,7 @@ void manejar_instrucciones(PCB*); //ES GENERAL PARA TODAS, INCLUYE FETCH
     
     int ejecutar_instruccion();
         void asignar_a_registro (char*, char*, PCB*);
-        char* obtener_valor_registro(Registro_CPU*,char*);
+        char* obtener_valor_registro(Registro_CPU,char*);
         
         void ejecutar_set(PAQUETE*,Instruccion*,PCB*);
         void ejecutar_mov_in(PAQUETE*,Instruccion*,PCB*);

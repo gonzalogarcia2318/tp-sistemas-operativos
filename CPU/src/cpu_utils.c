@@ -34,9 +34,9 @@ int iniciar_servidor_cpu()
 // Conectar con cliente de cpu? - esperar kernel
 void conectar_con_kernel()
 {
-    log_info(logger, "[MEMORIA]: Esperando conexiones de KERNEL..");
+    log_info(logger, "[CPU]: Esperando conexiones de KERNEL..");
     socket_kernel = esperar_cliente(socket_cpu);
-    log_info(logger, "[MEMORIA]: Conexión de KERNEL establecida.");
+    log_info(logger, "[CPU]: Conexión de KERNEL establecida.");
 
     pthread_create(&hilo_kernel, NULL, (void *)manejar_paquete_kernel, (void *)socket_kernel);
     pthread_join(hilo_kernel, NULL);
@@ -76,7 +76,13 @@ void manejar_instrucciones(PCB *pcb)
 
     while (seguir)
     {
+
+        if(list_size(instrucciones) == pcb->program_counter){
+            return;
+        }
+
         prox_instruccion = list_get(instrucciones, pcb->program_counter); // FORMA PARTE DEL FETCH
+
 
         if (!decode_instruccion(prox_instruccion, pcb)) // SI SEGMENTATION FAULT
         {
@@ -85,9 +91,16 @@ void manejar_instrucciones(PCB *pcb)
         }
         if (seguir)
         {
-            ejecutar_instruccion(prox_instruccion, pcb);
+            
+
+            seguir = ejecutar_instruccion(prox_instruccion, pcb);
 
             pcb->program_counter++;
+            
+            //if(pcb->program_counter == 2){
+            //    seguir =0;
+            //}
+            
         }
     }
 }
@@ -305,113 +318,115 @@ int ejecutar_instruccion(Instruccion *Instruccion, PCB *pcb) // EXECUTE //CADA I
 
 void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
 {
-    Registro_CPU *reg_cpu = pcb->registros_cpu;
+    Registro_CPU *reg_cpu = &pcb->registros_cpu;
+    quitar_salto_de_linea(valor);
 
     if(!strcmp(registro_instr,"AX"))
     {
-        strcpy(reg_cpu->valor_AX,valor);
+        strncpy(reg_cpu->valor_AX, valor, 4);
     }
     else if(!strcmp(registro_instr,"BX"))
     {
-        strcpy(reg_cpu->valor_BX, valor);
+        strncpy(reg_cpu->valor_BX, valor, 4);
     }
     else if(!strcmp(registro_instr,"CX"))
     {
-        strcpy(reg_cpu->valor_CX , valor);
+        strncpy(reg_cpu->valor_CX, valor, 4);
     }
     else if(!strcmp(registro_instr,"DX"))
     {
-        strcpy(reg_cpu->valor_DX ,valor);
+        strncpy(reg_cpu->valor_DX, valor, 4);
     }
     else if(!strcmp(registro_instr,"EAX"))
     {
-        strcpy(reg_cpu->valor_EAX,valor);
+        strncpy(reg_cpu->valor_EAX, valor, 8);
     }
     else if(!strcmp(registro_instr,"EBX"))
     {
-        strcpy(reg_cpu->valor_EBX,valor);
+        strncpy(reg_cpu->valor_EBX, valor, 8);
     }
     else if(!strcmp(registro_instr,"ECX"))
     {
-        strcpy(reg_cpu->valor_ECX,valor);
+        strncpy(reg_cpu->valor_ECX, valor, 8);
     }
     else if(!strcmp(registro_instr,"EDX"))
     {
-        strcpy(reg_cpu->valor_EDX ,valor);
+        strncpy(reg_cpu->valor_EDX, valor, 8);
     }
     else if(!strcmp(registro_instr,"RAX"))
     {
-        strcpy(reg_cpu->valor_RAX ,valor);
+        strncpy(reg_cpu->valor_RAX, valor, 16);
     }
     else if(!strcmp(registro_instr,"RBX"))
     {
-        strcpy(reg_cpu->valor_RBX ,valor);
+        strncpy(reg_cpu->valor_RBX, valor, 16);
     }
     else if(!strcmp(registro_instr,"RCX"))
     {
-        strcpy(reg_cpu->valor_RCX ,valor);
+        strncpy(reg_cpu->valor_RCX, valor, 16);
     }
     else if(!strcmp(registro_instr,"RDX"))
     {
-        strcpy(reg_cpu->valor_RDX,valor);
+        strncpy(reg_cpu->valor_RDX, valor, 16);
+
     }
     else
     {
         log_error(logger, "CPU: ERROR AL ASIGNAR REGISTRO, NOMBRE DESCONOCIDO");
     }
 }
-char *obtener_valor_registro(Registro_CPU *registros_pcb, char *registro_buscado)
+char *obtener_valor_registro(Registro_CPU registros_pcb, char *registro_buscado)
 {
     char *valor = string_itoa(0); // solo lo inicializo, se tiene q pisar
     quitar_salto_de_linea(registro_buscado);
 
     if (!strcmp(registro_buscado, "AX"))
     {
-        valor = string_duplicate(registros_pcb->valor_AX);
+        valor = string_duplicate(registros_pcb.valor_AX);
     }
     else if (!strcmp(registro_buscado, "BX"))
     {
-        valor = string_duplicate(registros_pcb->valor_BX);
+        valor = string_duplicate(registros_pcb.valor_BX);
     }
     else if (!strcmp(registro_buscado, "CX"))
     {
-        valor = string_duplicate(registros_pcb->valor_CX);
+        valor = string_duplicate(registros_pcb.valor_CX);
     }
     else if (!strcmp(registro_buscado, "DX"))
     {
-        valor = string_duplicate(registros_pcb->valor_DX);
+        valor = string_duplicate(registros_pcb.valor_DX);
     }
     else if (!strcmp(registro_buscado, "EAX"))
     {
-        valor = string_duplicate(registros_pcb->valor_EAX);
+        valor = string_duplicate(registros_pcb.valor_EAX);
     }
     else if (!strcmp(registro_buscado, "EBX"))
     {
-        valor = string_duplicate(registros_pcb->valor_EBX);
+        valor = string_duplicate(registros_pcb.valor_EBX);
     }
     else if (!strcmp(registro_buscado, "ECX"))
     {
-        valor = string_duplicate(registros_pcb->valor_ECX);
+        valor = string_duplicate(registros_pcb.valor_ECX);
     }
     else if (!strcmp(registro_buscado, "EDX"))
     {
-        valor = string_duplicate(registros_pcb->valor_EDX);
+        valor = string_duplicate(registros_pcb.valor_AX);
     }
     else if (!strcmp(registro_buscado, "RAX"))
     {
-        valor = string_duplicate(registros_pcb->valor_RAX);
+        valor = string_duplicate(registros_pcb.valor_RAX);
     }
     else if (!strcmp(registro_buscado, "RBX"))
     {
-        valor = string_duplicate(registros_pcb->valor_RBX);
+        valor = string_duplicate(registros_pcb.valor_RBX);
     }
     else if (!strcmp(registro_buscado, "RCX"))
     {
-        valor = string_duplicate(registros_pcb->valor_RCX);
+        valor = string_duplicate(registros_pcb.valor_RCX);
     }
     else if (!strcmp(registro_buscado, "RDX"))
     {
-        valor = string_duplicate(registros_pcb->valor_RDX);
+        valor = string_duplicate(registros_pcb.valor_RDX);
     }
     else
     {
@@ -492,13 +507,21 @@ void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <I/O> - <TIEMPO: %d>",
                 pcb->PID,
                 instruccion->tiempo);
-    enviar_pcb(pcb);
-    // agregar_a_paquete(paquete,IO,sizeof(int));
-    CODIGO_INSTRUCCION io = IO;
-    agregar_a_paquete(paquete, &io, sizeof(CODIGO_INSTRUCCION));
-    agregar_a_paquete(paquete, &instruccion->tiempo, sizeof(int32_t));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
-    eliminar_paquete(paquete);
+    
+    //enviar_pcb(pcb);
+    //// agregar_a_paquete(paquete,IO,sizeof(int));
+    //CODIGO_INSTRUCCION io = IO;
+    //agregar_a_paquete(paquete, &io, sizeof(CODIGO_INSTRUCCION));
+    //agregar_a_paquete(paquete, &instruccion->tiempo, sizeof(int32_t));
+    //enviar_paquete_a_cliente(paquete, socket_kernel);
+    //eliminar_paquete(paquete);
+
+    PAQUETE *paquete2 = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete2, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete2, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete2, &instruccion->tiempo, sizeof(int32_t));
+    enviar_paquete_a_cliente(paquete2, socket_kernel);
+
 }
 
 void ejecutar_f_open(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
@@ -648,26 +671,39 @@ void ejecutar_yield(PAQUETE *paquete, PCB *pcb)
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <YIELD>",
                 pcb->PID);
 
-    enviar_mensaje_a_cliente("YIELD", socket_kernel);
+    //enviar_mensaje_a_cliente("YIELD", socket_kernel);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION yield = YIELD;
+    //agregar_a_paquete(paquete, &yield, sizeof(CODIGO_INSTRUCCION));
+    //enviar_paquete_a_cliente(paquete, socket_kernel);
+    //eliminar_paquete(paquete);
 
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION yield = YIELD;
-  
-    agregar_a_paquete(paquete, &yield, sizeof(CODIGO_INSTRUCCION));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
-    
-    eliminar_paquete(paquete);
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+
+    eliminar_paquete(paquete_kernel);
 }
 
 void ejecutar_exit(PAQUETE *paquete, PCB *pcb)
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <EXIT>",
                 pcb->PID);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION exit = EXIT;
-    agregar_a_paquete(paquete, &exit, sizeof(CODIGO_INSTRUCCION));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
-    eliminar_paquete(paquete);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION exit = EXIT;
+    //agregar_a_paquete(paquete, &exit, sizeof(CODIGO_INSTRUCCION));
+    //enviar_paquete_a_cliente(paquete, socket_kernel);
+    //eliminar_paquete(paquete);
+
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+
+    eliminar_paquete(paquete_kernel);
 }
 
 void quitar_salto_de_linea(char *cadena) {
