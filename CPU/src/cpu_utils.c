@@ -34,9 +34,9 @@ int iniciar_servidor_cpu()
 // Conectar con cliente de cpu? - esperar kernel
 void conectar_con_kernel()
 {
-    log_info(logger, "[MEMORIA]: Esperando conexiones de KERNEL..");
+    log_info(logger, "[CPU]: Esperando conexiones de KERNEL..");
     socket_kernel = esperar_cliente(socket_cpu);
-    log_info(logger, "[MEMORIA]: Conexión de KERNEL establecida.");
+    log_info(logger, "[CPU]: Conexión de KERNEL establecida.");
 
     pthread_create(&hilo_kernel, NULL, (void *)manejar_paquete_kernel, (void *)socket_kernel);
     pthread_join(hilo_kernel, NULL);
@@ -327,47 +327,47 @@ void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
     }
     else if(!strcmp(registro_instr,"BX"))
     {
-        strcpy(reg_cpu->valor_BX, valor, 4);
+        strncpy(reg_cpu->valor_BX, valor, 4);
     }
     else if(!strcmp(registro_instr,"CX"))
     {
-        strcpy(reg_cpu->valor_CX, valor, 4);
+        strncpy(reg_cpu->valor_CX, valor, 4);
     }
     else if(!strcmp(registro_instr,"DX"))
     {
-        strcpy(reg_cpu->valor_DX, valor, 4);
+        strncpy(reg_cpu->valor_DX, valor, 4);
     }
     else if(!strcmp(registro_instr,"EAX"))
     {
-        strcpy(reg_cpu->valor_EAX, valor, 8);
+        strncpy(reg_cpu->valor_EAX, valor, 8);
     }
     else if(!strcmp(registro_instr,"EBX"))
     {
-        strcpy(reg_cpu->valor_EBX, valor, 8);
+        strncpy(reg_cpu->valor_EBX, valor, 8);
     }
     else if(!strcmp(registro_instr,"ECX"))
     {
-        strcpy(reg_cpu->valor_ECX, valor, 8);
+        strncpy(reg_cpu->valor_ECX, valor, 8);
     }
     else if(!strcmp(registro_instr,"EDX"))
     {
-        strcpy(reg_cpu->valor_EDX, valor, 8);
+        strncpy(reg_cpu->valor_EDX, valor, 8);
     }
     else if(!strcmp(registro_instr,"RAX"))
     {
-        strcpy(reg_cpu->valor_RAX, valor, 16);
+        strncpy(reg_cpu->valor_RAX, valor, 16);
     }
     else if(!strcmp(registro_instr,"RBX"))
     {
-        strcpy(reg_cpu->valor_RBX, valor, 16);
+        strncpy(reg_cpu->valor_RBX, valor, 16);
     }
     else if(!strcmp(registro_instr,"RCX"))
     {
-        strcpy(reg_cpu->valor_RCX, valor, 16);
+        strncpy(reg_cpu->valor_RCX, valor, 16);
     }
     else if(!strcmp(registro_instr,"RDX"))
     {
-        strcpy(reg_cpu->valor_RDX, valor, 16);
+        strncpy(reg_cpu->valor_RDX, valor, 16);
     }
     else
     {
