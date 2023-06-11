@@ -41,11 +41,13 @@ void manejar_paquete_kernel(int socket_kernel)
       log_info(logger, "[CPU]: OP PCB Recibido de Kernel");
       PCB *pcb = recibir_pcb(socket_kernel);
       log_info(logger, "[CPU]: PCB Deserializada: con PID:[%d]",pcb->PID);
+      /*
       for (int i = 0; i < list_size(pcb->instrucciones); i++)
             {
                 Instruccion *instruccion = list_get(pcb->instrucciones, i);
                 // log_info(logger, "Instruccion %d: nombre: %s", i, instruccion->nombreInstruccion);
             }
+      */
       log_info(logger, "[CPU]: Lista de instrucciones recibida");
       manejar_instrucciones(pcb);
       log_info(logger, "[CPU]: Esperando conexiones de KERNEL..");

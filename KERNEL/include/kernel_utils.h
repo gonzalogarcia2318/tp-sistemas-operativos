@@ -25,12 +25,12 @@ extern pthread_mutex_t mx_procesos;
 
 void planificar();
 void iniciar_logger_kernel();
-void iniciar_config_kernel();
+int iniciar_config_kernel(char*);
 int iniciar_servidor_kernel();
-void conectar_con_file_system();
+int conectar_con_file_system();
 void conectar_con_consola();
-void conectar_con_cpu();
-void conectar_con_memoria();
+int conectar_con_cpu();
+int conectar_con_memoria();
 void terminar_ejecucion();
 t_list* crear_recursos(char** recursos, char** instancias_recursos);
 

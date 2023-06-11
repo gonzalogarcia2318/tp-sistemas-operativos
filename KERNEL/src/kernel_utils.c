@@ -14,11 +14,17 @@ void iniciar_logger_kernel()
     log_info(logger, "[KERNEL]: Logger creado correctamente");
 }
 
-void iniciar_config_kernel()
+int iniciar_config_kernel(char* path)
 {
-    config = config_create(ARCHIVO_CONFIG);
+    config = config_create(path);
+    if(config == NULL)
+    {
+        log_error(logger,"[KERNEL]: ERROR AL INICIAR CONFIG INICIAL");
+        return FAILURE;
+    }
     rellenar_configuracion_kernel(config);
     log_info(logger, "[KERNEL]: Archivo Config creado y rellenado correctamente");
+    return SUCCESS;
 }
 
 int iniciar_servidor_kernel()
@@ -44,7 +50,7 @@ void conectar_con_consola()
     pthread_detach(hilo_consolas);
 }
 
-void conectar_con_cpu()
+int conectar_con_cpu()
 {
     log_info(logger, "[KERNEL] conectando con CPU...");
 
@@ -52,14 +58,15 @@ void conectar_con_cpu()
 
     if (socket_cpu < 0)
     {
-        log_info(logger, "[KERNEL]: Error al conectar con CPU. Finalizando Ejecucion");
-        log_error(logger, "[KERNEL]: CPU no está disponible");
+        log_error(logger, "[KERNEL]: CPU NO ESTÁ DISPONIBLE, FINALIZANDO EJECUCIÓN");
+        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con CPU: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL╰(*°▽°*)╯", socket_cpu);
+    return SUCCESS;
 }
 
-void conectar_con_memoria()
+int conectar_con_memoria()
 {
     log_info(logger, "[KERNEL] conectando con Memoria...");
 
@@ -67,27 +74,28 @@ void conectar_con_memoria()
 
     if (socket_memoria < 0)
     {
-        log_info(logger, "[KERNEL]: Error al conectar con Memoria. Finalizando Ejecucion");
-        log_error(logger, "[KERNEL]: Memoria no está disponible");
+        log_error(logger, "[KERNEL]: MEMORIA NO ESTÁ DISPONIBLE, FINALIZANDO EJECUCIÓN");
+        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con Memoria: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL ╰(*°▽°*)╯", socket_memoria);
+    return SUCCESS;
 }
 
-void conectar_con_file_system()
+int conectar_con_file_system()
 {
     log_info(logger, "[KERNEL] conectando con FILE SYSTEM...");
 
     socket_file_system = crear_conexion_con_servidor(KernelConfig.IP_FILESYSTEM, KernelConfig.PUERTO_FILESYSTEM);
 
-    if (socket_memoria < 0)
+    if (socket_file_system < 0)
     {
-        log_info(logger, "[KERNEL]: Error al conectar con FILE SYSTEM. Finalizando Ejecucion");
-        log_error(logger, "[KERNEL]: FILE SYSTEM no está disponible");
-
+        log_error(logger, "[KERNEL]: FILE SYSTEM NO ESTÁ DISPONIBLE, FINALIZANDO EJECUCIÓN");
+        return FAILURE;
     }
     log_info(logger, "[KERNEL]: Conexion con FILE SYSTEM: OK");
     enviar_mensaje_a_servidor("HOLA! SOY KERNEL╰(*°▽°*)╯", socket_file_system);
+    return SUCCESS;
 }
 
 void terminar_ejecucion()

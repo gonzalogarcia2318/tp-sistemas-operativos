@@ -8,11 +8,14 @@ int socket_memoria;
 int socket_cliente;
 int socket_kernel;
 
-int main()
+int main(int argc, char** argv)
 {
     iniciar_logger_cpu();
 
-    iniciar_config_cpu();
+    char* config_path = argv[1];
+
+    if(iniciar_config_cpu(config_path) == FAILURE) 
+        return EXIT_FAILURE;
 
     iniciar_servidor_cpu();
 
@@ -22,7 +25,7 @@ int main()
     if(respuesta_conexion != SUCCESS)
     {       
         terminar_ejecucion();
-        return FAILURE;
+        return EXIT_FAILURE;
         // liberar_conexion_con_servidor(conexionMemoria);
         //free(mensaje); //Luego de inicializar el char* corresponde usar free para liberar la memoria utilizada
     }

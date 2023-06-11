@@ -37,5 +37,12 @@ all: $(PROCESS_NAME)
 clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ $(PROCESS_NAME) $(SHARED_ODIR)/*.o ../shared/libcommons.so
 
-run: $(PROCESS_NAME)
-	./$(PROCESS_NAME)
+run: all
+	./$(PROCESS_NAME) config/cpu_base.config
+
+rund: all
+	./$(PROCESS_NAME) config/cpu_deadlock.config
+
+rune: all
+	./$(PROCESS_NAME) config/cpu_error.config
+

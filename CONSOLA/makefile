@@ -55,3 +55,9 @@ rund3: all
 
 rund4: all
 	./$(PROCESS_NAME) config/consola.config ./deadlock4.txt
+
+rune1: all
+	./$(PROCESS_NAME) config/consola.config ./error1.txt
+
+rune2: all
+	./$(PROCESS_NAME) config/consola.config ./error2.txt

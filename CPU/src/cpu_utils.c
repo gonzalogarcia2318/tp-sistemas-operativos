@@ -9,11 +9,17 @@ void iniciar_logger_cpu()
     log_info(logger, "[CPU]: Logger creado correctamente");
 }
 
-void iniciar_config_cpu()
+int iniciar_config_cpu(char* path)
 {
-    config = config_create(ARCHIVO_CONFIG);
+    config = config_create(path);
+    if(config == NULL)
+    {
+        log_error(logger,"[CPU]: ERROR AL INICIAR CONFIG INICIAL");
+        return FAILURE;
+    }
     rellenar_configuracion_cpu(config);
     log_info(logger, "[CPU]: Archivo Config creado y rellenado correctamente");
+    return SUCCESS;
 }
 
 int iniciar_servidor_cpu()
@@ -49,13 +55,10 @@ int conectar_con_memoria()
 
     if (socket_memoria < 0)
     {
-        log_info(logger, "[CPU]: Error al conectar con memoria. Finalizando Ejecucion");
-        log_error(logger, "[CPU]: memoria no está disponible");
-
+        log_error(logger, "[CPU]: MEMORIA NO ESTÁ DISPONIBLE, FINALIZANDO EJECUCIÓN");
         return FAILURE;
     }
     log_info(logger, "[CPU]: Conexion con Memoria: OK %d", socket_memoria);
-
     return SUCCESS;
 }
 

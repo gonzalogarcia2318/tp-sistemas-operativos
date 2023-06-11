@@ -35,7 +35,7 @@ void manejar_exit(Proceso *proceso, PCB *pcb);
 void quitar_salto_de_linea(char *cadena);
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion);
 
-int main()
+int main(int argc, char** argv)
 {
 
     // TODO: Destruir la lista al final.
@@ -47,19 +47,25 @@ int main()
     pthread_mutex_init(&mx_procesos, NULL);
     sem_init(&semaforo_io, 0, 0);
 
+    char* path_config = argv[1];
+
     iniciar_logger_kernel();
 
-    iniciar_config_kernel();
+    if(iniciar_config_kernel(path_config) == FAILURE)
+        return EXIT_FAILURE;
 
     recursos = crear_recursos(KernelConfig.RECURSOS, KernelConfig.INSTANCIAS_RECURSOS);
 
     if (iniciar_servidor_kernel() == SUCCESS)
     {
-        conectar_con_memoria();
+        if(conectar_con_memoria() == FAILURE)
+            return EXIT_FAILURE;
 
-        conectar_con_file_system();
+        if(conectar_con_file_system() == FAILURE)
+            return EXIT_FAILURE; 
 
-        conectar_con_cpu();
+        if(conectar_con_cpu() == FAILURE)
+            return EXIT_FAILURE;
 
         conectar_con_consola();
     }
