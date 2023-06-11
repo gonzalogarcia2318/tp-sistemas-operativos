@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     sem_init(&semaforo_ejecutando, 0, 1);
 
     // grado multiprogramacion
-    sem_init(&semaforo_multiprogramacion, 0, KernelConfig.GRADO_MAX_MULTIPROGRAMACION);
+    sem_init(&semaforo_multiprogramacion, 0, atoi(KernelConfig.GRADO_MAX_MULTIPROGRAMACION));
 
     sem_wait(&semaforo_new); // Para que no empiece sin que no haya ningun proceso
 
