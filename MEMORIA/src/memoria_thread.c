@@ -3,6 +3,7 @@
 void escuchar_kernel(int socket_kernel)
 {
   log_info(logger,"[MEMORIA]: Escuchando KERNEL...");
+
   while (true)
   {
     char *mensaje;
@@ -13,6 +14,11 @@ void escuchar_kernel(int socket_kernel)
       log_info(logger, "[MEMORIA]: Mensaje recibido de KERNEL: %s", mensaje);
       free(mensaje);
       break;
+    case CREAR_PROCESO:
+      int32_t pid; // ¿Como llega?
+      log_info(logger, "CREACIÓN DE PROCESO: PID<%d>", pid);
+      t_list* tabla_de_segmentos = crear_tabla_de_segmentos();
+      //DEVOLVER TABLA DE SEGMENTOS A KERNEL.
 
     case INSTRUCCION:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida de KERNEL");

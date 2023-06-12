@@ -33,6 +33,7 @@ typedef enum
     OP_PCB,
     INSTRUCCION,
     INSTRUCCIONES,
+    CREAR_PROCESO,
     FINALIZAR_PROCESO,
     SEG_FAULT
 

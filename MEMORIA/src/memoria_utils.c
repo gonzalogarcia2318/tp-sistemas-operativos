@@ -10,6 +10,10 @@ int socket_kernel;
 int socket_file_system;
 int socket_cpu;
 
+SEGMENTO* segmento_compartido;
+t_list* huecos_libres;
+void* espacio_usuario;
+
 void iniciar_logger_memoria()
 {
     logger = log_create(ARCHIVO_LOGGER, "Memoria", 1, LOG_LEVEL_INFO);
@@ -70,4 +74,51 @@ void terminar_ejecucion(){
     log_warning(logger, "[MEMORIA]: Finalizando ejecucion...");
     log_destroy(logger);
     config_destroy(config);
+}
+
+void crear_estructuras_administrativas()
+{
+    crear_segmento_compartido();
+    
+    crear_espacio_usuario();
+
+    crear_lista_huecos_libres();
+    
+
+}
+
+void crear_segmento_compartido()
+{
+    //CREAR STRUCT SEGMENTO PÚBLICO CON LOS SIGUIENTES DATOS:
+        //ID = 0
+        //BASE = 0
+        //LÍMITE = TAM_MAXIMO
+    segmento_compartido = malloc(sizeof(SEGMENTO));
+    segmento_compartido->id = 0;
+    segmento_compartido->base = 0;
+    segmento_compartido->limite = MemoriaConfig.TAM_SEGMENTO_0;
+}
+
+void crear_espacio_usuario()
+{
+    void* espacio_usuario = malloc(sizeof(MemoriaConfig.TAM_MEMORIA));
+}
+
+void crear_lista_huecos_libres()
+{
+    huecos_libres = list_create();
+
+    SEGMENTO* hueco_0 = malloc(sizeof(SEGMENTO));
+    hueco_0->base = MemoriaConfig.TAM_SEGMENTO_0;
+    hueco_0->limite = MemoriaConfig.TAM_MEMORIA;
+
+    list_add(huecos_libres,hueco_0);
+}
+
+t_list* crear_tabla_de_segmentos()
+{
+    t_list* tabla_segmentos = list_create();
+    list_add(tabla_segmentos, segmento_compartido);
+    //EL TAMAÑO SE VERIFICA A LA HORA DE CREAR SEMGNETOS => SI size = CANT_SEGMENTOS => NO CREA SEGMENTO
+    return tabla_segmentos;
 }
