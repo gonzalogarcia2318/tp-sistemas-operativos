@@ -110,7 +110,7 @@ void crear_lista_huecos_libres()
 
     SEGMENTO* hueco_0 = malloc(sizeof(SEGMENTO));
     hueco_0->base = MemoriaConfig.TAM_SEGMENTO_0;
-    hueco_0->limite = MemoriaConfig.TAM_MEMORIA;
+    hueco_0->limite = MemoriaConfig.TAM_MEMORIA - 1;
 
     list_add(huecos_libres,hueco_0);
 }
