@@ -75,6 +75,7 @@ void terminar_ejecucion(){
     log_destroy(logger);
     config_destroy(config);
 }
+///////////////////////////////////////////ESTRUCTURAS ADMINISTRATIVAS/////////////////////////////////////////
 
 void crear_estructuras_administrativas()
 {
@@ -83,8 +84,6 @@ void crear_estructuras_administrativas()
     crear_espacio_usuario();
 
     crear_lista_huecos_libres();
-    
-
 }
 
 void crear_segmento_compartido()
@@ -97,11 +96,14 @@ void crear_segmento_compartido()
     segmento_compartido->id = 0;
     segmento_compartido->base = 0;
     segmento_compartido->limite = MemoriaConfig.TAM_SEGMENTO_0;
+    log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó el SEGMENTO COMPARTIDO con éxito");
 }
 
 void crear_espacio_usuario()
 {
     void* espacio_usuario = malloc(sizeof(MemoriaConfig.TAM_MEMORIA));
+    log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó el ESPACIO DE USUARIO con éxito");
+
 }
 
 void crear_lista_huecos_libres()
@@ -113,6 +115,7 @@ void crear_lista_huecos_libres()
     hueco_0->limite = MemoriaConfig.TAM_MEMORIA - 1;
 
     list_add(huecos_libres,hueco_0);
+    log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó la LISTA DE HUECOS LIBRES con éxito");
 }
 
 t_list* crear_tabla_de_segmentos()
@@ -120,5 +123,50 @@ t_list* crear_tabla_de_segmentos()
     t_list* tabla_segmentos = list_create();
     list_add(tabla_segmentos, segmento_compartido);
     //EL TAMAÑO SE VERIFICA A LA HORA DE CREAR SEMGNETOS => SI size = CANT_SEGMENTOS => NO CREA SEGMENTO
+    log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó la TABLA DE SEGMENTOS con éxito");
     return tabla_segmentos;
+}
+
+//////////////////////////////////////////////ACCESO A ESPACIO DE USUARIO////////////////////////////////////
+
+char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro)
+{
+    void* posicion = espacio_usuario + direccion_fisica;
+    int tamanio = (bytes_registro + 1) * sizeof(char);
+
+    char* contenido = (char*)malloc(tamanio);
+    
+    if(contenido == NULL)
+        log_error(logger,"ERROR AL RESERVAR MEMORIA PARA EL CONTENIDO DENTRO DE leer_de_memoria()");
+    
+    memcpy(contenido,posicion,tamanio);
+
+    log_info(logger,"LEÍ DE MEMORIA EL CONTENIDO:<%s>, DE LA DIRECCIÓN FÍSICA:<%d> y DE TAMANIO:<%d>",
+                     contenido,
+                     direccion_fisica,
+                     tamanio
+            );
+
+    aplicar_retardo_espacio_usuario();
+
+    return contenido;
+}
+void escribir_en_memoria(char* contenido, int32_t direccion_fisica, int32_t bytes_registro)
+{
+    void* posicion = espacio_usuario + direccion_fisica;
+
+    memcpy(posicion,contenido,(bytes_registro+1)*sizeof(char));
+
+    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d>",
+                     contenido,
+                     direccion_fisica
+            );
+    aplicar_retardo_espacio_usuario();
+}
+
+void aplicar_retardo_espacio_usuario()
+{
+    int segundos = MemoriaConfig.RETARDO_MEMORIA/1000;
+    log_info(logger,"Retraso de <%d> segundos por acceso a espacio de usuario",segundos);
+    sleep(segundos);
 }

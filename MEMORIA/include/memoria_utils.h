@@ -36,6 +36,9 @@ void crear_estructuras_administrativas();
     void crear_espacio_usuario();
     void crear_lista_huecos_libres();
 
-t_list* crear_tabla_de_segmentos();
+    t_list* crear_tabla_de_segmentos();
 
+char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro);
+void escribir_en_memoria(char* contenido,int32_t direccion_fisica,int32_t bytes_registro);
+    void aplicar_retardo_espacio_usuario();
 #endif

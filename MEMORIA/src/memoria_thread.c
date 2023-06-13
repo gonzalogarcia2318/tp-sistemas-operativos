@@ -90,30 +90,44 @@ void escuchar_cpu(int socket_cpu)
 
 void recibir_instruccion_cpu()
 {
-  int direccion_fisica = 0;
   Lista* lista_recepcion;
   lista_recepcion = obtener_paquete_como_lista(socket_cpu);
 
   CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION *)list_get(lista_recepcion,0);
+  int32_t pid = *(int32_t*)list_get(lista_recepcion,1);
+  int32_t direccion_fisica = *(int32_t*)list_get(lista_recepcion,2);
+  int32_t tamanio_registro = *(int32_t*)list_get(lista_recepcion,3);
 
   switch (cod_instruccion)
   {
-    case MOV_IN:
+    case MOV_IN: //TODO
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
-      direccion_fisica = *(int*)list_get(lista_recepcion,1);
-      //...
-      //leer de memoria y devolver valor de la dire_fisica dada
+
+      char* contenido = malloc((tamanio_registro + 1) * sizeof(char));
+
+      strcpy(contenido,leer_de_memoria(direccion_fisica,tamanio_registro));
+      
+      log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <PID> - Acción: <LEER> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
+                          direccion_fisica,
+                          tamanio_registro
+                  );
+
       //...TODO
-      enviar_mensaje_a_cliente("VALOR_LEIDO",socket_cpu);
+      enviar_mensaje_a_cliente("VALOR_LEIDO",socket_cpu); //MODIFICAR...
       log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <VALOR_LEIDO> COMO MOTIVO DE FIN DE MOV_IN");
       break;
 
-    case MOV_OUT:
+    case MOV_OUT: //TODO
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_OUT");
       direccion_fisica = *(int*)list_get(lista_recepcion,1);
-      char* valor_a_escribir = string_duplicate((char*)list_get(lista_recepcion,2));
-      //...
-      //escribir valor en memoria
+      char* valor_a_escribir = string_duplicate((char*)list_get(lista_recepcion,4));
+      
+      escribir_en_memoria(valor_a_escribir,direccion_fisica,tamanio_registro);
+
+      log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <PID> - Acción: <ESCRIBIR> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
+                          direccion_fisica,
+                          tamanio_registro
+                  );
       //...TODO
       enviar_mensaje_a_cliente("OK",socket_cpu);
       log_info(logger,"MEMORIA: ENVIE EL MENSAJE <OK> A CPU COMO MOTIVO DE FIN DE MOV_OUT");

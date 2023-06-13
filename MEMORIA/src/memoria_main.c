@@ -14,14 +14,12 @@ int main()
         
         conectar_con_kernel();
 
-        pthread_join(hilo_file_system, NULL);
-        pthread_join(hilo_cpu, NULL);
-        pthread_join(hilo_kernel, NULL);
+        crear_estructuras_administrativas();
     }
 
-    crear_estructuras_administrativas();
-    
-    //
+    pthread_join(hilo_file_system, NULL);
+    pthread_join(hilo_cpu, NULL);
+    pthread_join(hilo_kernel, NULL);
     
     terminar_ejecucion();
 
