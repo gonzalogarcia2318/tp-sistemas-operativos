@@ -125,7 +125,9 @@ bool esSet(Instruccion *Instruccion)
 }
 void aplicar_retardo(int32_t retardo)
 {
-    sleep(retardo);
+    int segundos = retardo/1000;
+    log_info(logger,"Retraso de <%d> segundos por ejecutar instrucción SET",segundos);
+    sleep(segundos);
 }
 bool requiere_traduccion(Instruccion *instruccion)
 {
