@@ -69,8 +69,16 @@ void recibir_instruccion_kernel()
 
   switch (cod_instruccion)
   {
-    case F_OPEN:
+    case CREAR_ARCHIVO:
       log_warning(logger,"CREAR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
+      crear_archivo(nombre_archivo);
+
+      enviar_mensaje_a_cliente("CREACION_OK", socket_kernel);
+
+
+      break;
+    case F_OPEN:
+      log_warning(logger,"ABRIR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
 
       //ejecutar_f_open(nombre_archivo); TODO
 
@@ -144,4 +152,8 @@ void recibir_instruccion_kernel()
   }
 
   list_destroy(lista);
+}
+
+void crear_archivo(char* nombre){
+  // crear un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
 }

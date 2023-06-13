@@ -140,7 +140,7 @@ void conectar_con_kernel()
   log_info(logger, "[FILE_SYSTEM]: Conexión de Kernel establecida.");
 
   pthread_create(&hilo_fileSystem, NULL, (void *)manejar_paquete_kernel, (void *)socket_kernel);
-  //pthread_join(hilo_fileSystem, NULL);
+  pthread_join(hilo_fileSystem, NULL);
 }
 
 int conectar_con_memoria(){

@@ -12,7 +12,6 @@ int main()
     {
         if(conectar_con_memoria() == SUCCESS)
         {
-            conectar_con_kernel();
 
             if(iniciar_config_superbloque() == FAILURE)
                 return EXIT_FAILURE;
@@ -23,13 +22,13 @@ int main()
             if(iniciar_archivo_de_bloques(FileSystemConfig.PATH_BLOQUES) == FAILURE)
                 return EXIT_FAILURE;
 
-            
+            conectar_con_kernel();
         }
         else
             return EXIT_FAILURE;
     }
 
-    pthread_join(hilo_fileSystem, NULL); //LO PASO PARA ACA PARA QUE NO FINALICE EL MÓDULO SI DETACH NI SE BLOQUEE ANTES DE INICIALIZAR LAS ESTRUCTURAS NECESARIAS
+    // pthread_join(hilo_fileSystem, NULL); //LO PASO PARA ACA PARA QUE NO FINALICE EL MÓDULO SI DETACH NI SE BLOQUEE ANTES DE INICIALIZAR LAS ESTRUCTURAS NECESARIAS
     
     terminar_ejecucion();
 
