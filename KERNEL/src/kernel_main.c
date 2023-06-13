@@ -19,12 +19,15 @@ pthread_mutex_t mx_procesos;
 t_list *procesos;
 t_list *recursos;
 
+t_list * listaReady;
+
 void manejar_paquete_cpu();
 void manejar_hilo_io();
 
 void cambiar_estado(Proceso *proceso, ESTADO estado);
 void actualizar_pcb(Proceso *proceso, PCB *pcb);
 Instruccion *buscar_instruccion_por_counter(Proceso *proceso, PCB *pcb);
+t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready);
 
 void manejar_io(Proceso *proceso, int32_t PID, int tiempo);
 void manejar_wait(Proceso *proceso, char *nombre_recurso);
@@ -108,9 +111,13 @@ int main(int argc, char** argv)
         {
             sem_wait(&semaforo_multiprogramacion);
             Proceso *proceso_para_ready = (Proceso *)list_get(procesos_en_new, 0);
-            proceso_para_ready->estado = READY;
+
+            cambiar_estado(proceso_para_ready,READY);
+            proceso_para_ready->pcb->tiempo_ready = time(NULL); 
             queue_push(cola_ready, (Proceso *)proceso_para_ready);
+
             log_info(logger, "Proceso %d -> READY", (proceso_para_ready->pcb)->PID);
+            
         }
         pthread_mutex_unlock(&mx_procesos);
 
@@ -119,17 +126,26 @@ int main(int argc, char** argv)
         log_info(logger, "En ready: %d", queue_size(cola_ready));
         if (!queue_is_empty(cola_ready))
         {
-            Proceso *proceso_a_ejecutar = (Proceso *)queue_pop(cola_ready);
-            proceso_a_ejecutar->estado = EXEC;
 
+            if(strcmp(KernelConfig.ALGORITMO_PLANIFICACION,"HRRN")==0){
+
+                 //Verificar Cuenta HRRRN - Quien pasa a ejecutar?
+                cola_ready = calcular_lista_ready_HRRN(cola_ready);
+                
+            }
+            
+            Proceso *proceso_a_ejecutar = (Proceso *)queue_pop(cola_ready);
+            cambiar_estado(proceso_a_ejecutar,EXEC);
+   
             // destrabar ready
             sem_post(&semaforo_planificador);
             log_info(logger, "Proceso %d -> EXEC", (proceso_a_ejecutar->pcb)->PID);
-            // sleep(5);
-            //  Tomar el time ejecucion HRRN
+
             //   Enviar PCB a CPU
             log_info(logger, "Enviando %d - con program counter = %d", (proceso_a_ejecutar->pcb)->PID, (proceso_a_ejecutar->pcb)->program_counter);
+            
             enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
+            proceso_a_ejecutar->pcb->tiempo_cpu_real_inicial = time(NULL);
         }
         else
         {
@@ -314,12 +330,26 @@ Proceso *obtener_proceso_por_pid(int32_t PID)
     return proceso;
 }
 
+double calcular_response_ratio (double tiempo_esperado_ready ,double tiempo_en_cpu){
+
+return ((tiempo_esperado_ready + tiempo_en_cpu) / tiempo_en_cpu);
+
+}
+
+double calcular_estimacion_cpu (PCB * pcb){
+
+    return pcb->estimacion_cpu_anterior * atoi((KernelConfig.HRRN_ALFA)) + pcb->tiempo_cpu_real * (1 - atoi(KernelConfig.HRRN_ALFA));
+
+}
+
 void actualizar_pcb(Proceso *proceso, PCB *pcb)
 {
     pthread_mutex_lock(&mx_procesos); // proceso* esta en lista compartida procesos
     // Proceso *proceso = obtener_proceso_por_pid(pcb->PID);
     proceso->pcb->program_counter = pcb->program_counter;
-    // algun dato mas?
+    // algun dato mas? Si
+    proceso->pcb->tiempo_cpu_real = difftime(time(NULL),proceso->pcb->tiempo_cpu_real_inicial);
+    proceso->pcb->estimacion_cpu_anterior = proceso->pcb->estimacion_cpu_proxima_rafaga;
     pthread_mutex_unlock(&mx_procesos);
 }
 
@@ -331,6 +361,54 @@ void actualizar_registros(Proceso *proceso, PCB *pcb)
     // algun dato mas?
     pthread_mutex_unlock(&mx_procesos);
 }
+
+t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
+
+    Proceso * proceso = malloc(sizeof(Proceso));
+    listaReady = list_create();
+
+    while(!queue_is_empty(cola_ready)){
+
+        proceso = queue_pop(cola_ready);
+
+        if(proceso->pcb->estimacion_cpu_anterior !=0){
+
+            proceso->pcb->estimacion_cpu_proxima_rafaga = calcular_estimacion_cpu(proceso->pcb);
+
+
+        }
+        
+
+        proceso->pcb->response_Ratio = calcular_response_ratio(proceso->pcb->tiempo_ready, proceso->pcb->estimacion_cpu_proxima_rafaga );
+
+        list_add(listaReady,proceso);
+
+
+    }
+
+     bool mayor_rr(Proceso * proceso1 , Proceso * proceso2)
+    {
+        return proceso1->pcb->response_Ratio > proceso2->pcb->response_Ratio;
+    }
+
+    list_sort(listaReady,(void *)mayor_rr);
+
+    for(int i=0; i<list_size(listaReady); i++){
+        queue_push(cola_ready,list_get(listaReady,i));
+
+        log_warning(logger,"Proceso en cola : %d", ((Proceso *)list_get(listaReady,i))->pcb->PID);
+        log_warning(logger,"Con RR : %f", ((Proceso *)list_get(listaReady,i))->pcb->response_Ratio);
+    }
+
+    list_destroy(listaReady);
+
+
+
+    return cola_ready;
+
+}
+
+
 
 // duda por lo que dice el enunciado
 // asi esta bien o 1 hilo por proceso y que sleep de ese hilo?
@@ -346,6 +424,8 @@ void manejar_hilo_io()
 
         log_error(logger, "[KERNEL] poner ready %d ", proceso->pcb->PID);
         cambiar_estado(proceso, READY);
+
+        proceso->pcb->tiempo_ready = time(NULL); 
 
         sem_post(&semaforo_planificador);
         //sem_post(&semaforo_ejecutando);
@@ -377,8 +457,10 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
         recurso->instancias -= 1;
 
         proceso->pcb->program_counter++;
-        cambiar_estado(proceso, READY);
+        cambiar_estado(proceso, READY); 
+        proceso->pcb->tiempo_ready = time(NULL);      
         queue_push(cola_ready, proceso);
+        
     }
     else
     {
@@ -417,6 +499,7 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
 
     proceso->pcb->program_counter++;
     cambiar_estado(proceso, READY);
+    proceso->pcb->tiempo_ready = time(NULL);   
     queue_push(cola_ready, proceso);
 }
 
@@ -437,6 +520,7 @@ void manejar_yield(Proceso *proceso, PCB *pcb)
 
     log_error(logger, "[KERNEL] poner en ready POR YIELD %d", proceso->pcb->PID);
     cambiar_estado(proceso, READY);
+    proceso->pcb->tiempo_ready = time(NULL);   
     queue_push(cola_ready, proceso);
 
     pthread_mutex_unlock(&mx_procesos);

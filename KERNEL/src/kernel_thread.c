@@ -82,6 +82,11 @@ void manejar_proceso_consola(t_list *instrucciones)
     Proceso *proceso = malloc(sizeof(Proceso));
     SEGMENTO * segmento0 = malloc (sizeof(SEGMENTO));
 
+ log_info(logger," estimacion inicial: %d", atoi(KernelConfig.ESTIMACION_INICIAL));
+    pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
+
+    log_info(logger,"Asigno estimacion inicial ");
+
     segmento0->base = 0;
     segmento0->id =0;
     segmento0->limite=100;
@@ -90,7 +95,7 @@ void manejar_proceso_consola(t_list *instrucciones)
 
     proceso->estado = NEW;
     proceso->pcb = pcb;
-
+ proceso->pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
     //proceso->pcb->registros_cpu = malloc(112);
     
     proceso->pcb->tabla_segmentos = list_create();
