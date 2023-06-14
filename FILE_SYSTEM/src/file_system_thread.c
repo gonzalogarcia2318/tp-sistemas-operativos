@@ -71,10 +71,12 @@ void recibir_instruccion_kernel()
   {
     case CREAR_ARCHIVO:
       log_warning(logger,"CREAR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
-      crear_archivo(nombre_archivo);
+      if(crear_archivo(nombre_archivo)!=-1){
+        log_warning(logger,"FCB CREADO DE: %s>", nombre_archivo);
 
-      enviar_mensaje_a_cliente("CREACION_OK", socket_kernel);
-
+        enviar_mensaje_a_cliente("CREACION_OK", socket_kernel);
+      }
+       
 
       break;
     case F_OPEN:
@@ -154,6 +156,27 @@ void recibir_instruccion_kernel()
   list_destroy(lista);
 }
 
-void crear_archivo(char* nombre){
-  // crear un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
+ // crea un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
+int crear_archivo(const char* nombre){
+ 
+  char* barra = "/";
+  char* pathCompleto = FileSystemConfig.PATH_FCB;
+    log_error(logger,"pathCompleto: %s",pathCompleto);
+   log_error(logger,"barra: %s",barra);
+
+  string_append(pathCompleto,barra);
+  string_append(pathCompleto,barra);
+
+  t_config fcb_config;
+  fcb_config.path = pathCompleto;
+
+  t_dictionary * diccionario = dictionary_create();
+  dictionary_put(diccionario,"NOMBRE_ARCHIVO", nombre);
+  dictionary_put(diccionario,"TAMANIO_ARCHIVO", '0');
+  dictionary_put(diccionario,"PUNTERO_DIRECTO", '0');
+  dictionary_put(diccionario,"PUNTERO_INDIRECTO", '0');
+  fcb_config.properties = diccionario;
+
+  return config_save_in_file(&fcb_config, pathCompleto);
+
 }
