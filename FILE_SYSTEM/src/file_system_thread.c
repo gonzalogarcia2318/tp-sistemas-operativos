@@ -157,25 +157,25 @@ void recibir_instruccion_kernel()
 }
 
  // crea un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
-int crear_archivo(const char* nombre){
+int crear_archivo(char* nombre){
  
-  char* barra = "/";
   char* pathCompleto = FileSystemConfig.PATH_FCB;
-    log_error(logger,"pathCompleto: %s",pathCompleto);
-   log_error(logger,"barra: %s",barra);
+// Crea el directorio
+  mkdir(pathCompleto,0777);
 
-  string_append(pathCompleto,barra);
-  string_append(pathCompleto,barra);
+  string_append(&pathCompleto,nombre);
+  string_append(&pathCompleto,".config");
 
   t_config fcb_config;
   fcb_config.path = pathCompleto;
 
   t_dictionary * diccionario = dictionary_create();
   dictionary_put(diccionario,"NOMBRE_ARCHIVO", nombre);
-  dictionary_put(diccionario,"TAMANIO_ARCHIVO", '0');
-  dictionary_put(diccionario,"PUNTERO_DIRECTO", '0');
-  dictionary_put(diccionario,"PUNTERO_INDIRECTO", '0');
+  dictionary_put(diccionario,"TAMANIO_ARCHIVO", "0");
+  dictionary_put(diccionario,"PUNTERO_DIRECTO", "0");
+  dictionary_put(diccionario,"PUNTERO_INDIRECTO", "0");
   fcb_config.properties = diccionario;
+
 
   return config_save_in_file(&fcb_config, pathCompleto);
 

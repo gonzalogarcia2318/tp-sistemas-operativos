@@ -2,6 +2,8 @@
 #define FILE_SYSTEM_THREAD_H
 
 #include <file_system_utils.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "protocolo.h"
 
 typedef struct
@@ -15,5 +17,5 @@ typedef struct
 //void esperar_kernel(int socket_file_system);
 bool manejar_paquete_kernel(int socket_kernel);
 void recibir_instruccion_kernel();
-int crear_archivo(const char* );
+int crear_archivo(char* );
 #endif

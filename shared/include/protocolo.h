@@ -8,6 +8,7 @@
 #include <commons/collections/list.h>
 #include <commons/collections/queue.h>
 #include <commons/bitarray.h>
+#include <commons/collections/dictionary.h>
 
 // #include <list.h>
 #include <commons/string.h>
@@ -54,7 +55,9 @@ typedef enum
     CREATE_SEGMENT,
     DELETE_SEGMENT,
     YIELD,
-    EXIT
+    EXIT,
+    CREAR_ARCHIVO
+
 } CODIGO_INSTRUCCION;
 typedef struct
 {
