@@ -31,6 +31,9 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso);
 void manejar_signal(Proceso *proceso, char *nombre_recurso);
 void manejar_yield(Proceso *proceso, PCB *pcb);
 void manejar_exit(Proceso *proceso, PCB *pcb);
+void manejar_create_segment(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
+void manejar_delete_segment(int32_t pid, int32_t id_segmento);
+
 
 void quitar_salto_de_linea(char *cadena);
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion);
@@ -280,15 +283,22 @@ void manejar_paquete_cpu()
             case CREATE_SEGMENT:
                 log_info(logger, "[KERNEL] Llego Instruccion CREATE_SEGMENT");
                 log_info(logger, "Parametros: %d - %d", instruccion->idSegmento, instruccion->tamanioSegmento);
-                // HACER
-                //
+                log_warning(logger, "PID: <%d> - Crear Segmento - Id: <%d> - Tamaño:<%d>",
+                            pcb->PID,
+                            instruccion->idSegmento,
+                            instruccion->tamanioSegmento
+                            );
+                manejar_create_segment(pcb->PID, instruccion->idSegmento, instruccion->tamanioSegmento);
                 break;
 
             case DELETE_SEGMENT:
                 log_info(logger, "[KERNEL] Llego Instruccion DELETE_SEGMENT");
                 log_info(logger, "Parametros: %d", instruccion->idSegmento);
-                // HACER
-                //
+                log_warning(logger,"PID: <%d> - Eliminar Segmento - Id Segmento: <%d>", 
+                            pcb->PID,
+                            instruccion->idSegmento
+                            );
+                manejar_delete_segment(pcb->PID, instruccion->idSegmento);
                 break;
 
             default:
@@ -528,4 +538,33 @@ void cambiar_estado(Proceso *proceso, ESTADO estado)
     ESTADO anterior = proceso->estado;
     proceso->estado = estado;
     log_warning(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s> - Estado Actual: <%s>", proceso->pcb->PID, descripcion_estado(anterior), descripcion_estado(proceso->estado));
+}
+
+void manejar_create_segment(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
+{
+    PAQUETE* paquete = crear_paquete(INSTRUCCION);
+    int32_t cs = CREATE_SEGMENT;
+    agregar_a_paquete(paquete,&cs,sizeof(int32_t));
+    agregar_a_paquete(paquete,&pid,sizeof(int32_t));
+    agregar_a_paquete(paquete,&id_segmento,sizeof(int32_t));
+    agregar_a_paquete(paquete,&tamanio_segmento,sizeof(int32_t));
+    enviar_paquete_a_servidor(paquete,socket_memoria);
+    eliminar_paquete(paquete);
+    log_info(logger, "ENVIÉ PAQUETE A MEMORIA CON MOTIVO: <CREATE_SEGMENT>");
+
+    //RECIBIR RTA ... TODO
+}
+
+void manejar_delete_segment(int32_t pid, int32_t id_segmento)
+{
+    PAQUETE* paquete = crear_paquete(ELIMINAR_SEGMENTO);
+    int32_t ds = DELETE_SEGMENT;
+    agregar_a_paquete(paquete,&ds,sizeof(int32_t));
+    agregar_a_paquete(paquete,&pid,sizeof(int32_t));
+    agregar_a_paquete(paquete,&id_segmento,sizeof(int32_t));
+    enviar_paquete_a_servidor(paquete,socket_memoria);
+    eliminar_paquete(paquete);
+    log_info(logger, "ENVIÉ PAQUETE A MEMORIA CON MOTIVO: <DELETE_SEGMENT>");
+
+    //RECIBIR RTA ... TODO
 }

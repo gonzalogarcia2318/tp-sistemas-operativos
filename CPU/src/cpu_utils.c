@@ -427,7 +427,7 @@ char *obtener_valor_registro(Registro_CPU registros_pcb, char *registro_buscado)
     return valor;
 }
 
-void ejecutar_set(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_set(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <SET> - <REGISTRO:%s , VALOR: %s>",
                 pcb->PID,
@@ -437,7 +437,7 @@ void ejecutar_set(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MODIFICADO CHK 4 PERO NO VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <MOV_IN> - <REGISTRO:%s , DIRECCIÓN LÓGICA: %d>",
                 pcb->PID,
@@ -452,8 +452,8 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     if(tamanio_registro == 0) //NO LO ENCONTRÓ
         return;
 
-    int mov_in = MOV_IN; 
-    agregar_a_paquete(paquete, &mov_in, sizeof(int));
+    int32_t mov_in = MOV_IN; 
+    agregar_a_paquete(paquete, &mov_in, sizeof(int32_t));
     agregar_a_paquete(paquete,&pcb->PID,sizeof(int32_t));
     agregar_a_paquete(paquete, &instruccion->direccionFisica, sizeof(int32_t));
     agregar_a_paquete(paquete,&tamanio_registro,sizeof(int32_t));
@@ -472,7 +472,7 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MODIFICADO CHK 4 PERO NO VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <MOV_OUT> - <DIRECCIÓN LÓGICA: %d, REGISTRO: %s>",
                 pcb->PID,
@@ -489,8 +489,8 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     if(tamanio_registro == 0) //NO LO ENCONTRÓ
         return;
 
-    int mov_out = MOV_OUT; 
-    agregar_a_paquete(paquete, &mov_out, sizeof(int));
+    int32_t mov_out = MOV_OUT; 
+    agregar_a_paquete(paquete, &mov_out, sizeof(int32_t));
     agregar_a_paquete(paquete,&pcb->PID,sizeof(int32_t));
     agregar_a_paquete(paquete, &instruccion->direccionFisica, sizeof(int32_t));
     agregar_a_paquete(paquete,&tamanio_registro,sizeof(int32_t));
@@ -510,29 +510,22 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <I/O> - <TIEMPO: %d>",
                 pcb->PID,
                 instruccion->tiempo);
-    
-    //enviar_pcb(pcb);
-    //// agregar_a_paquete(paquete,IO,sizeof(int));
-    //CODIGO_INSTRUCCION io = IO;
-    //agregar_a_paquete(paquete, &io, sizeof(CODIGO_INSTRUCCION));
-    //agregar_a_paquete(paquete, &instruccion->tiempo, sizeof(int32_t));
-    //enviar_paquete_a_cliente(paquete, socket_kernel);
-    //eliminar_paquete(paquete);
 
     PAQUETE *paquete2 = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete2, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete2, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete2, &instruccion->tiempo, sizeof(int32_t));
     enviar_paquete_a_cliente(paquete2, socket_kernel);
+    eliminar_paquete(paquete2);
     eliminar_paquete(paquete);
 }
 
-void ejecutar_f_open(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_f_open(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI MODIFICADO NI VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_OPEN> - <NOMBRE_ARCHIVO: %s>",
                 pcb->PID,
@@ -545,7 +538,7 @@ void ejecutar_f_open(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_f_close(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_f_close(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI MODIFICADO NI VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_CLOSE> - <NOMBRE_ARCHIVO: %s>",
                 pcb->PID,
@@ -558,7 +551,7 @@ void ejecutar_f_close(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_f_seek(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_f_seek(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI MODIFICADO NI VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_SEEK> - <NOMBRE_ARCHIVO: %s> - <POSICION: %d> ",
                 pcb->PID,
@@ -573,7 +566,7 @@ void ejecutar_f_seek(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_f_read(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_f_read(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI MODIFICADO NI VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_READ> - <NOMBRE_ARCHIVO: %s> - <DIR_FISICA: %d> - <CANT_BYTES %d>",
                 pcb->PID,
@@ -590,7 +583,7 @@ void ejecutar_f_read(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_f_write(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_f_write(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI MODIFICADO NI VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_WRITE> - <NOMBRE_ARCHIVO: %s> - <DIR_FISICA: %d> - <CANT_BYTES %d>",
                 pcb->PID,
@@ -607,7 +600,7 @@ void ejecutar_f_write(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_f_truncate(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_f_truncate(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI MODIFICADO NI VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_TRUNCATE> - <NOMBRE_ARCHIVO: %s> - <TAM_ARCHIVO: %d>",
                 pcb->PID,
@@ -622,18 +615,12 @@ void ejecutar_f_truncate(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_wait(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_wait(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <WAIT> - <RECURSO: %s>",
                 pcb->PID,
                 instruccion->recurso);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION wait = WAIT;
-    //agregar_a_paquete(paquete, &wait, sizeof(int));
-    //agregar_a_paquete(paquete, &(instruccion->recurso), strlen(instruccion->recurso) + 1);
-    //enviar_paquete_a_cliente(paquete, socket_kernel);
-    //eliminar_paquete(paquete);
-
+            
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
@@ -642,17 +629,11 @@ void ejecutar_wait(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
 }
-void ejecutar_signal(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_signal(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <SIGNAL> - <RECURSO: %s>",
                 pcb->PID,
                 instruccion->recurso);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION signal = SIGNAL;
-    //agregar_a_paquete(paquete, &signal, sizeof(CODIGO_INSTRUCCION));
-    //agregar_a_paquete(paquete, &(instruccion->recurso), strlen(instruccion->recurso) + 1);
-    //enviar_paquete_a_cliente(paquete, socket_kernel);
-    //eliminar_paquete(paquete);
 
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
@@ -663,44 +644,26 @@ void ejecutar_signal(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_create_segment(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_create_segment(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MODIFICADO CHK 4 PERO NO VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <CREATE_SEGMENT> - <ID_SEGMENTO: %d> - <TAMANIO: %d>",
                 pcb->PID,
                 instruccion->idSegmento,
                 instruccion->tamanioSegmento);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION create_segment = CREATE_SEGMENT;
-    agregar_a_paquete(paquete, &create_segment, sizeof(CODIGO_INSTRUCCION));
-    agregar_a_paquete(paquete, &(instruccion->idSegmento), sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->tamanioSegmento), sizeof(int));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
+
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
 }
-void ejecutar_delete_segment(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
+void ejecutar_delete_segment(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MODIFICADO CHK 4 PERO NO VERIFICADO
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <DELETE_SEGMENT> - <ID_SEGMENTO: %d> ",
                 pcb->PID,
                 instruccion->idSegmento);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION delete_segment = DELETE_SEGMENT;
-    agregar_a_paquete(paquete, &delete_segment, sizeof(CODIGO_INSTRUCCION));
-    agregar_a_paquete(paquete, &(instruccion->idSegmento), sizeof(int));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
-    eliminar_paquete(paquete);
-}
-
-void ejecutar_yield(PAQUETE *paquete, PCB *pcb)
-{
-    log_warning(logger, "CPU: PID: <%d> - Ejecutando: <YIELD>",
-                pcb->PID);
-
-    //enviar_mensaje_a_cliente("YIELD", socket_kernel);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION yield = YIELD;
-    //agregar_a_paquete(paquete, &yield, sizeof(CODIGO_INSTRUCCION));
-    //enviar_paquete_a_cliente(paquete, socket_kernel);
-    //eliminar_paquete(paquete);
 
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
@@ -711,15 +674,26 @@ void ejecutar_yield(PAQUETE *paquete, PCB *pcb)
     eliminar_paquete(paquete);
 }
 
-void ejecutar_exit(PAQUETE *paquete, PCB *pcb)
+void ejecutar_yield(PAQUETE *paquete, PCB *pcb) //OK
+{
+    log_warning(logger, "CPU: PID: <%d> - Ejecutando: <YIELD>",
+                pcb->PID
+                );
+
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
+    eliminar_paquete(paquete);
+}
+
+void ejecutar_exit(PAQUETE *paquete, PCB *pcb) //OK
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <EXIT>",
-                pcb->PID);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION exit = EXIT;
-    //agregar_a_paquete(paquete, &exit, sizeof(CODIGO_INSTRUCCION));
-    //enviar_paquete_a_cliente(paquete, socket_kernel);
-    //eliminar_paquete(paquete);
+                pcb->PID
+                );
 
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
