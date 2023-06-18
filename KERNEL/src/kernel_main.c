@@ -557,7 +557,7 @@ void manejar_create_segment(int32_t pid, int32_t id_segmento, int32_t tamanio_se
 
 void manejar_delete_segment(int32_t pid, int32_t id_segmento)
 {
-    PAQUETE* paquete = crear_paquete(ELIMINAR_SEGMENTO);
+    PAQUETE* paquete = crear_paquete(INSTRUCCION);
     int32_t ds = DELETE_SEGMENT;
     agregar_a_paquete(paquete,&ds,sizeof(int32_t));
     agregar_a_paquete(paquete,&pid,sizeof(int32_t));

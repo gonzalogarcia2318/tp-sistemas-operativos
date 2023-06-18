@@ -125,7 +125,7 @@ void recibir_instruccion_cpu()
 
   switch (cod_instruccion)
   {
-    case MOV_IN: //TODO
+    case MOV_IN:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
 
       char* contenido = malloc((tamanio_registro + 1) * sizeof(char));
@@ -179,11 +179,11 @@ void recibir_instruccion_kernel()
   memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
         buffer->stream += (sizeof(int32_t) * 2); 
   memcpy(&id_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
-        buffer->stream += (sizeof(int32_t) * 2); 
+        buffer->stream += (sizeof(int32_t) * 2);
   
   switch (cod_instruccion)
   {
-    case CREATE_SEGMENT:
+    case CREATE_SEGMENT: //TODO
       
       int32_t tamanio_segmento;
       memcpy(&tamanio_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
@@ -219,7 +219,7 @@ void recibir_instruccion_kernel()
       
       break;
 
-    case DELETE_SEGMENT:
+    case DELETE_SEGMENT: //TODO
   
       log_info(logger,"INSTRUCCIÓN KERNEL: DELETE_SEGMENT - PID:<%d> - ID_SEG:<%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
                 pid,
@@ -258,15 +258,4 @@ void recibir_instruccion_file_system()
     log_error(logger,"CODIGO DE OP DESCONOCIDO AL RECIBIR INSTRUCCION FS");
     return;
   }
-
-}
-
-void manejar_create_segment()
-{
-  
-}
-
-void manejar_delete_segment()
-{
-
 }
