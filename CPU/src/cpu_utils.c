@@ -439,19 +439,27 @@ void ejecutar_set(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
 
 void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
 {
-
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <MOV_IN> - <REGISTRO:%s , DIRECCIÓN LÓGICA: %d>",
                 pcb->PID,
                 instruccion->registro,
-                instruccion->direccionLogica);
-    CODIGO_INSTRUCCION mov_in = MOV_IN; 
+                instruccion->direccionLogica
+                );
+
+    int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);
+    log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d>", 
+            instruccion->registro,
+            tamanio_registro);
+    if(tamanio_registro == 0) //NO LO ENCONTRÓ
+        return;
+
+    int mov_in = MOV_IN; 
     agregar_a_paquete(paquete, &mov_in, sizeof(int));
+    agregar_a_paquete(paquete,&pcb->PID,sizeof(int32_t));
     agregar_a_paquete(paquete, &instruccion->direccionFisica, sizeof(int32_t));
+    agregar_a_paquete(paquete,&tamanio_registro,sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
 
-    char *valor = string_duplicate(obtener_mensaje_del_servidor(socket_memoria));
-
-    //... SE BLOQUEA HASTA QUE RESPONDA
+    char *valor = obtener_mensaje_del_servidor(socket_memoria);
 
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
 
@@ -470,18 +478,26 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
                 pcb->PID,
                 instruccion->direccionLogica,
                 instruccion->registro);
+
     char *registro = string_duplicate(instruccion->registro);
     char *valor_registro = string_duplicate(obtener_valor_registro(pcb->registros_cpu, registro));
 
-    // agregar_a_paquete(paquete, 3, sizeof(int));
-    CODIGO_INSTRUCCION mov_out = MOV_OUT;
-    agregar_a_paquete(paquete, &mov_out, sizeof(CODIGO_INSTRUCCION));
-    agregar_a_paquete(paquete, &(instruccion->direccionFisica), sizeof(int32_t));
-    agregar_a_paquete(paquete, &valor_registro, strlen(valor_registro) + 1);
-    enviar_paquete_a_servidor(paquete, socket_memoria);
-    char *mensaje = obtener_mensaje_del_servidor(socket_memoria);
+    int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);
+    log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d>", 
+            instruccion->registro,
+            tamanio_registro);
+    if(tamanio_registro == 0) //NO LO ENCONTRÓ
+        return;
 
-    //... SE BLOQUEA HASTA QUE RESPONDA
+    int mov_out = MOV_OUT; 
+    agregar_a_paquete(paquete, &mov_out, sizeof(int));
+    agregar_a_paquete(paquete,&pcb->PID,sizeof(int32_t));
+    agregar_a_paquete(paquete, &instruccion->direccionFisica, sizeof(int32_t));
+    agregar_a_paquete(paquete,&tamanio_registro,sizeof(int32_t));
+    agregar_a_paquete(paquete, &valor_registro, sizeof(char) * (tamanio_registro + 1));
+    enviar_paquete_a_servidor(paquete, socket_memoria);
+
+    char *mensaje = obtener_mensaje_del_servidor(socket_memoria);
 
     log_info(logger, "CPU: Recibi un mensaje de MEMORIA como RTA a MOV_OUT: <%s>", mensaje);
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
@@ -513,7 +529,7 @@ void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     agregar_a_paquete(paquete2, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete2, &instruccion->tiempo, sizeof(int32_t));
     enviar_paquete_a_cliente(paquete2, socket_kernel);
-
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_f_open(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
@@ -623,8 +639,8 @@ void ejecutar_wait(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
-
     eliminar_paquete(paquete_kernel);
+    eliminar_paquete(paquete);
 }
 void ejecutar_signal(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
 {
@@ -643,9 +659,8 @@ void ejecutar_signal(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
-
     eliminar_paquete(paquete_kernel);
-
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_create_segment(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
@@ -692,8 +707,8 @@ void ejecutar_yield(PAQUETE *paquete, PCB *pcb)
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
-
     eliminar_paquete(paquete_kernel);
+    eliminar_paquete(paquete);
 }
 
 void ejecutar_exit(PAQUETE *paquete, PCB *pcb)
@@ -711,11 +726,6 @@ void ejecutar_exit(PAQUETE *paquete, PCB *pcb)
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
-
     eliminar_paquete(paquete_kernel);
-}
-
-void quitar_salto_de_linea(char *cadena) {
-    int longitud = strcspn(cadena, "\n");
-    cadena[longitud] = '\0';
+    eliminar_paquete(paquete);
 }

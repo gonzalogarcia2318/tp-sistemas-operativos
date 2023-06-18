@@ -167,6 +167,7 @@ t_list* deserializar_instrucciones(BUFFER* buffer);
 
 BUFFER *serializar_registros(Registro_CPU *registros);
 Registro_CPU *deserializar_registros(BUFFER *buffer);
+int32_t obtener_tamanio_registro(char* nombre_registro);
 
 BUFFER *serializar_segmentos(t_list *segmentos);
 BUFFER *serializar_segmento(SEGMENTO *segmento);
@@ -179,5 +180,6 @@ int calcular_tamanio_segmento(SEGMENTO *segmento);
 int calcular_tamanio_segmentos(t_list *segmentos);
 
 void imprimir_buffer( BUFFER* buffer);
+void quitar_salto_de_linea(char *);
 
 #endif

@@ -53,6 +53,10 @@ void escuchar_file_system(int socket_fs)
     case DESCONEXION:
       log_warning(logger, "[MEMORIA]: Conexión con FILE SYSTEM terminada.");
       return;
+    
+    case INSTRUCCION:
+      log_warning(logger,"[MEMORIA]: INSTRUCCION recibida de FILE SYSTEM");
+      recibir_instruccion_file_system();
 
     default:
       log_warning(logger, "[MEMORIA]: Operacion desconocida.");
@@ -90,13 +94,28 @@ void escuchar_cpu(int socket_cpu)
 
 void recibir_instruccion_cpu()
 {
-  Lista* lista_recepcion;
-  lista_recepcion = obtener_paquete_como_lista(socket_cpu);
+  BUFFER *buffer = recibir_buffer(socket_cpu);
 
-  CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION *)list_get(lista_recepcion,0);
-  int32_t pid = *(int32_t*)list_get(lista_recepcion,1);
-  int32_t direccion_fisica = *(int32_t*)list_get(lista_recepcion,2);
-  int32_t tamanio_registro = *(int32_t*)list_get(lista_recepcion,3);
+  int cod_instruccion;
+  int32_t pid;
+  int32_t direccion_fisica;
+  int32_t tamanio_registro;
+  
+  memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int));
+            buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+  memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+  memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+  memcpy(&tamanio_registro, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2);
+
+  log_info(logger,"INSTRUCCIÓN CPU: COD:<%d> - PID:<%d> - DF:<%d> - TR: <%d>",
+            cod_instruccion,
+            pid,
+            direccion_fisica,
+            tamanio_registro
+          );
 
   switch (cod_instruccion)
   {
@@ -107,29 +126,32 @@ void recibir_instruccion_cpu()
 
       strcpy(contenido,leer_de_memoria(direccion_fisica,tamanio_registro));
       
-      log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <PID> - Acción: <LEER> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
+      log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <%d> - Acción: <LEER> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
+                          pid,
                           direccion_fisica,
                           tamanio_registro
                   );
-
-      //...TODO
-      enviar_mensaje_a_cliente("VALOR_LEIDO",socket_cpu); //MODIFICAR...
-      log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <VALOR_LEIDO> COMO MOTIVO DE FIN DE MOV_IN");
+      enviar_mensaje_a_cliente(contenido,socket_cpu);
+      log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <%s> COMO MOTIVO DE FIN DE MOV_IN", contenido);
+      free(contenido);
       break;
 
-    case MOV_OUT: //TODO
+    case MOV_OUT:
+      char* valor_a_escribir = malloc(sizeof(char) * (tamanio_registro + 1));
+      memcpy(&valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio_registro + 1));
+            buffer->stream += (tamanio_registro + 1); 
+
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_OUT");
-      direccion_fisica = *(int*)list_get(lista_recepcion,1);
-      char* valor_a_escribir = string_duplicate((char*)list_get(lista_recepcion,4));
+      log_info(logger, "VALOR A ESCRIBIR: <%s>", valor_a_escribir);
       
       escribir_en_memoria(valor_a_escribir,direccion_fisica,tamanio_registro);
 
-      log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <PID> - Acción: <ESCRIBIR> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
+      log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <%d> - Acción: <ESCRIBIR> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
+                          pid,
                           direccion_fisica,
                           tamanio_registro
                   );
-      //...TODO
-      enviar_mensaje_a_cliente("OK",socket_cpu);
+      enviar_mensaje_a_cliente("[MEMORIA]: MOV_OUT:<OK>",socket_cpu);
       log_info(logger,"MEMORIA: ENVIE EL MENSAJE <OK> A CPU COMO MOTIVO DE FIN DE MOV_OUT");
       break;
     
@@ -137,8 +159,6 @@ void recibir_instruccion_cpu()
     log_warning(logger, "[MEMORIA]: Código Instrucción desconocido.");
     break;
   }
-  
-  list_destroy(lista_recepcion);
 }
 
 void recibir_instruccion_kernel()
@@ -188,4 +208,27 @@ void recibir_instruccion_kernel()
   }
 
   list_destroy(lista_recepcion);
+}
+
+void recibir_instruccion_file_system()
+{
+  Lista* lista = obtener_paquete_como_lista(socket_file_system);
+
+  int numero_op = *(int*)list_get(lista,0);
+
+  switch (numero_op)
+  {
+  case F_WRITE:
+    //...
+    break;
+  
+  case F_READ:
+    //....
+    break;
+
+  default:
+    log_error(logger,"CODIGO DE OP DESCONOCIDO AL RECIBIR INSTRUCCION FS");
+    return;
+  }
+
 }

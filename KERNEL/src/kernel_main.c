@@ -529,9 +529,3 @@ void cambiar_estado(Proceso *proceso, ESTADO estado)
     proceso->estado = estado;
     log_warning(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s> - Estado Actual: <%s>", proceso->pcb->PID, descripcion_estado(anterior), descripcion_estado(proceso->estado));
 }
-
-void quitar_salto_de_linea(char *cadena)
-{
-    int longitud = strcspn(cadena, "\n");
-    cadena[longitud] = '\0';
-}
