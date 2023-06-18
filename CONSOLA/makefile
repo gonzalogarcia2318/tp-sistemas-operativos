@@ -44,6 +44,9 @@ run: all
 runb2: all
 	./$(PROCESS_NAME) config/consola.config ./base2.txt
 
+runb3: all
+	./$(PROCESS_NAME) config/consola.config ./base3.txt
+
 rund1: all
 	./$(PROCESS_NAME) config/consola.config ./deadlock1.txt
 

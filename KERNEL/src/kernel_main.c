@@ -34,6 +34,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso);
 void manejar_signal(Proceso *proceso, char *nombre_recurso);
 void manejar_yield(Proceso *proceso, PCB *pcb);
 void manejar_exit(Proceso *proceso, PCB *pcb);
+void imprimir_cola (t_queue cola);
 
 void quitar_salto_de_linea(char *cadena);
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion);
@@ -92,7 +93,7 @@ int main(int argc, char** argv)
 
     sem_wait(&semaforo_new); // Para que no empiece sin que no haya ningun proceso
 
-    sleep(5);
+    sleep(8);
 
     while (true)
     {
@@ -141,13 +142,24 @@ int main(int argc, char** argv)
         sem_wait(&semaforo_ejecutando); // Ejecuta uno a la vez
 
         log_info(logger, "En ready: %d", queue_size(cola_ready));
+        
+
         if (!queue_is_empty(cola_ready))
         {
 
             if(strcmp(KernelConfig.ALGORITMO_PLANIFICACION,"HRRN")==0){
 
+                log_info(logger,"---------------------HRRN-------------------------");
                  //Verificar Cuenta HRRRN - Quien pasa a ejecutar?
-                cola_ready = calcular_lista_ready_HRRN(cola_ready);
+                log_info(logger,"Antes de Ordenar por HRRN");
+                imprimir_cola(*cola_ready);
+
+                calcular_lista_ready_HRRN(cola_ready);
+                
+                log_info(logger,"Despues de Ordenar por HRRN");
+                imprimir_cola(*cola_ready);
+
+                log_info(logger,"--------------------------------------------------");
                 
             }
             
@@ -353,14 +365,12 @@ double calcular_response_ratio (double tiempo_esperado_ready ,double tiempo_en_c
 
     tiempo_esperado_ready = difftime (time(NULL),tiempo_esperado_ready);
 
-    log_info(logger, "Tiempo_esperado_ready: %f", tiempo_esperado_ready);
-    log_info(logger, "Tiempo_en_cpu : %f", tiempo_en_cpu);
-
-    
+    log_info(logger, "Tiempo en ready: %.4f seg", tiempo_esperado_ready);
+    log_info(logger, "Tiempo en cpu : %.4f seg", tiempo_en_cpu);
 
     double resultado2 = ((tiempo_esperado_ready + tiempo_en_cpu) / tiempo_en_cpu);
     
-    log_info(logger, "Resultado: %f", resultado2);
+    log_info(logger, "Response Ratio: %.4f", resultado2);
 
 return resultado2;
 
@@ -368,13 +378,15 @@ return resultado2;
 
 double calcular_estimacion_cpu (PCB * pcb){
 
-    log_info(logger, "Estimacion Anterior : %f", pcb->estimacion_cpu_anterior);
-    log_info(logger, "Alfa : %f", atof((KernelConfig.HRRN_ALFA)));
-    log_info(logger, "Real CPU : %f", pcb->tiempo_cpu_real);
+    
+    log_info(logger, "Estimacion Anterior : %.4f", pcb->estimacion_cpu_anterior);
+    log_info(logger, "CPU  Real  Anterior : %.4f", pcb->tiempo_cpu_real);
 
     double resultado = pcb->estimacion_cpu_anterior * atof((KernelConfig.HRRN_ALFA)) + pcb->tiempo_cpu_real * (1 - atof(KernelConfig.HRRN_ALFA));
     
-    log_info(logger, "Resultado: %f", resultado);
+    log_info(logger, "Estimacion Nueva: %.4f", resultado);
+    
+
     
     return resultado;
 
@@ -409,32 +421,30 @@ t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
 
         proceso = queue_pop(cola_ready);
 
+        log_info(logger,"-------------------Proceso ID : %d----------------", proceso->pcb->PID);
+
         if(proceso->pcb->estimacion_cpu_anterior !=0){
 
             proceso->pcb->estimacion_cpu_proxima_rafaga = calcular_estimacion_cpu(proceso->pcb);
 
         }
         
-
         proceso->pcb->response_Ratio = calcular_response_ratio(proceso->pcb->tiempo_ready, proceso->pcb->estimacion_cpu_proxima_rafaga );
 
         list_add(listaReady,proceso);
 
-
+        
     }
 
      bool mayor_rr(Proceso * proceso1 , Proceso * proceso2)
     {
-        return proceso2->pcb->response_Ratio > proceso1->pcb->response_Ratio;
+        return proceso1->pcb->response_Ratio > proceso2->pcb->response_Ratio;
     }
 
     list_sort(listaReady,(void *)mayor_rr);
 
     for(int i=0; i<list_size(listaReady); i++){
         queue_push(cola_ready,list_get(listaReady,i));
-
-        log_warning(logger,"Proceso en cola : %d", ((Proceso *)list_get(listaReady,i))->pcb->PID);
-        log_warning(logger,"Con RR : %f", ((Proceso *)list_get(listaReady,i))->pcb->response_Ratio);
     }
 
     list_destroy(listaReady);
@@ -442,6 +452,26 @@ t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
 
 
     return cola_ready;
+
+}
+
+void imprimir_cola (t_queue cola){
+
+    t_queue * copia = queue_create();
+    Proceso*paraImprimir ;
+    log_info(logger, "COLA READY SIZE: %d", queue_size(&cola));
+    int elementos = queue_size(&cola);
+
+    for(int i =0; i<elementos; i++){
+
+        paraImprimir = (Proceso* )queue_pop(&cola);
+        log_info(logger, "Proceso ID : %d ", paraImprimir->pcb->PID);
+        queue_push(copia, (Proceso* )paraImprimir);
+
+    }
+
+    cola_ready = copia;
+
 
 }
 
