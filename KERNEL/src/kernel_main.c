@@ -92,7 +92,8 @@ int main(int argc, char** argv)
 
     sem_wait(&semaforo_new); // Para que no empiece sin que no haya ningun proceso
 
-    
+    sleep(5);
+
     while (true)
     {
 
@@ -110,13 +111,29 @@ int main(int argc, char** argv)
         if (list_size(procesos_en_new) > 0)
         {
             sem_wait(&semaforo_multiprogramacion);
-            Proceso *proceso_para_ready = (Proceso *)list_get(procesos_en_new, 0);
+            Proceso *proceso_para_ready1 = (Proceso *)list_get(procesos_en_new, 0);
 
-            cambiar_estado(proceso_para_ready,READY);
-            proceso_para_ready->pcb->tiempo_ready = time(NULL); 
-            queue_push(cola_ready, (Proceso *)proceso_para_ready);
+            cambiar_estado(proceso_para_ready1,READY);
+            proceso_para_ready1->pcb->tiempo_ready = time(NULL); 
+            queue_push(cola_ready, (Proceso *)proceso_para_ready1);
 
-            log_info(logger, "Proceso %d -> READY", (proceso_para_ready->pcb)->PID);
+            sleep(5);
+
+            Proceso *proceso_para_ready2 = (Proceso *)list_get(procesos_en_new, 1);
+
+            cambiar_estado(proceso_para_ready2,READY);
+            proceso_para_ready2->pcb->tiempo_ready = time(NULL); 
+            queue_push(cola_ready, (Proceso *)proceso_para_ready2);
+
+            sleep(5);
+
+            Proceso *proceso_para_ready3 = (Proceso *)list_get(procesos_en_new, 2);
+
+            cambiar_estado(proceso_para_ready3,READY);
+            proceso_para_ready3->pcb->tiempo_ready = time(NULL); 
+            queue_push(cola_ready, (Proceso *)proceso_para_ready3);
+
+           // log_info(logger, "Proceso %d -> READY", (proceso_para_ready->pcb)->PID);
             
         }
         pthread_mutex_unlock(&mx_procesos);
@@ -223,6 +240,8 @@ void manejar_paquete_cpu()
 
                 memcpy(&(pcb->registros_cpu), buffer->stream + sizeof(int32_t), sizeof(Registro_CPU));
                 buffer->stream += (sizeof(int32_t) + sizeof(Registro_CPU));
+
+                sleep(5);
 
                 manejar_yield(proceso, pcb);
                 break;
@@ -332,13 +351,32 @@ Proceso *obtener_proceso_por_pid(int32_t PID)
 
 double calcular_response_ratio (double tiempo_esperado_ready ,double tiempo_en_cpu){
 
-return ((tiempo_esperado_ready + tiempo_en_cpu) / tiempo_en_cpu);
+    tiempo_esperado_ready = difftime (time(NULL),tiempo_esperado_ready);
+
+    log_info(logger, "Tiempo_esperado_ready: %f", tiempo_esperado_ready);
+    log_info(logger, "Tiempo_en_cpu : %f", tiempo_en_cpu);
+
+    
+
+    double resultado2 = ((tiempo_esperado_ready + tiempo_en_cpu) / tiempo_en_cpu);
+    
+    log_info(logger, "Resultado: %f", resultado2);
+
+return resultado2;
 
 }
 
 double calcular_estimacion_cpu (PCB * pcb){
 
-    return pcb->estimacion_cpu_anterior * atoi((KernelConfig.HRRN_ALFA)) + pcb->tiempo_cpu_real * (1 - atoi(KernelConfig.HRRN_ALFA));
+    log_info(logger, "Estimacion Anterior : %f", pcb->estimacion_cpu_anterior);
+    log_info(logger, "Alfa : %f", atof((KernelConfig.HRRN_ALFA)));
+    log_info(logger, "Real CPU : %f", pcb->tiempo_cpu_real);
+
+    double resultado = pcb->estimacion_cpu_anterior * atof((KernelConfig.HRRN_ALFA)) + pcb->tiempo_cpu_real * (1 - atof(KernelConfig.HRRN_ALFA));
+    
+    log_info(logger, "Resultado: %f", resultado);
+    
+    return resultado;
 
 }
 
@@ -375,7 +413,6 @@ t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
 
             proceso->pcb->estimacion_cpu_proxima_rafaga = calcular_estimacion_cpu(proceso->pcb);
 
-
         }
         
 
@@ -388,7 +425,7 @@ t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
 
      bool mayor_rr(Proceso * proceso1 , Proceso * proceso2)
     {
-        return proceso1->pcb->response_Ratio > proceso2->pcb->response_Ratio;
+        return proceso2->pcb->response_Ratio > proceso1->pcb->response_Ratio;
     }
 
     list_sort(listaReady,(void *)mayor_rr);
