@@ -7,6 +7,7 @@ t_queue *cola_io;
 
 sem_t semaforo_planificador;
 sem_t semaforo_ejecutando;
+sem_t semaforo_ready;
 
 sem_t semaforo_multiprogramacion;
 
@@ -23,6 +24,7 @@ t_list * listaReady;
 
 void manejar_paquete_cpu();
 void manejar_hilo_io();
+void manejar_hilo_ejecutar();
 
 void cambiar_estado(Proceso *proceso, ESTADO estado);
 void actualizar_pcb(Proceso *proceso, PCB *pcb);
@@ -82,11 +84,17 @@ int main(int argc, char** argv)
     pthread_create(&hilo_io, NULL, (void *)manejar_hilo_io, NULL);
     pthread_detach(hilo_io);
 
+    Hilo hilo_ejecutar;
+    pthread_create(&hilo_ejecutar, NULL, (void *)manejar_hilo_ejecutar, NULL);
+    pthread_detach(hilo_ejecutar);
+
     // manejar_proceso_consola();
 
     sem_init(&semaforo_planificador, 0, 1);
 
     sem_init(&semaforo_ejecutando, 0, 1);
+
+    sem_init(&semaforo_ready, 0, 0);
 
     // grado multiprogramacion
     sem_init(&semaforo_multiprogramacion, 0, atoi(KernelConfig.GRADO_MAX_MULTIPROGRAMACION));
@@ -97,6 +105,7 @@ int main(int argc, char** argv)
 
     while (true)
     {
+
 
         sem_wait(&semaforo_planificador);
 
@@ -109,77 +118,27 @@ int main(int argc, char** argv)
         t_list *procesos_en_new = list_filter(procesos, (void *)en_new);
 
         log_info(logger, "En NEW: %d", list_size(procesos_en_new));
+
+       
+
         if (list_size(procesos_en_new) > 0)
         {
             sem_wait(&semaforo_multiprogramacion);
+
             Proceso *proceso_para_ready1 = (Proceso *)list_get(procesos_en_new, 0);
 
             cambiar_estado(proceso_para_ready1,READY);
             proceso_para_ready1->pcb->tiempo_ready = time(NULL); 
             queue_push(cola_ready, (Proceso *)proceso_para_ready1);
+            sem_post(&semaforo_ready);
 
-            sleep(5);
+            sem_post(&semaforo_planificador);
 
-            Proceso *proceso_para_ready2 = (Proceso *)list_get(procesos_en_new, 1);
-
-            cambiar_estado(proceso_para_ready2,READY);
-            proceso_para_ready2->pcb->tiempo_ready = time(NULL); 
-            queue_push(cola_ready, (Proceso *)proceso_para_ready2);
-
-            sleep(5);
-
-            Proceso *proceso_para_ready3 = (Proceso *)list_get(procesos_en_new, 2);
-
-            cambiar_estado(proceso_para_ready3,READY);
-            proceso_para_ready3->pcb->tiempo_ready = time(NULL); 
-            queue_push(cola_ready, (Proceso *)proceso_para_ready3);
-
-           // log_info(logger, "Proceso %d -> READY", (proceso_para_ready->pcb)->PID);
+            sleep(1);
             
         }
         pthread_mutex_unlock(&mx_procesos);
 
-        sem_wait(&semaforo_ejecutando); // Ejecuta uno a la vez
-
-        log_info(logger, "En ready: %d", queue_size(cola_ready));
-        
-
-        if (!queue_is_empty(cola_ready))
-        {
-
-            if(strcmp(KernelConfig.ALGORITMO_PLANIFICACION,"HRRN")==0){
-
-                log_info(logger,"---------------------HRRN-------------------------");
-                 //Verificar Cuenta HRRRN - Quien pasa a ejecutar?
-                log_info(logger,"Antes de Ordenar por HRRN");
-                imprimir_cola(*cola_ready);
-
-                calcular_lista_ready_HRRN(cola_ready);
-                
-                log_info(logger,"Despues de Ordenar por HRRN");
-                imprimir_cola(*cola_ready);
-
-                log_info(logger,"--------------------------------------------------");
-                
-            }
-            
-            Proceso *proceso_a_ejecutar = (Proceso *)queue_pop(cola_ready);
-            cambiar_estado(proceso_a_ejecutar,EXEC);
-   
-            // destrabar ready
-            sem_post(&semaforo_planificador);
-            log_info(logger, "Proceso %d -> EXEC", (proceso_a_ejecutar->pcb)->PID);
-
-            //   Enviar PCB a CPU
-            log_info(logger, "Enviando %d - con program counter = %d", (proceso_a_ejecutar->pcb)->PID, (proceso_a_ejecutar->pcb)->program_counter);
-            
-            enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
-            proceso_a_ejecutar->pcb->tiempo_cpu_real_inicial = time(NULL);
-        }
-        else
-        {
-            sem_post(&semaforo_ejecutando);
-        }
     }
 
     terminar_ejecucion();
@@ -475,6 +434,62 @@ void imprimir_cola (t_queue cola){
 
 }
 
+
+void manejar_hilo_ejecutar(){
+
+    sem_wait(&semaforo_ready);
+
+    log_info(logger, "----------ENTRA A EJECUTAR-------");
+
+    while(true){
+        
+        sem_wait(&semaforo_ejecutando); // Ejecuta uno a la vez
+
+        log_info(logger, "En ready: %d", queue_size(cola_ready));
+        
+
+        if (!queue_is_empty(cola_ready))
+        {
+
+            if(strcmp(KernelConfig.ALGORITMO_PLANIFICACION,"HRRN")==0){
+
+                log_info(logger,"---------------------HRRN-------------------------");
+                 //Verificar Cuenta HRRRN - Quien pasa a ejecutar?
+                log_info(logger,"Antes de Ordenar por HRRN");
+                imprimir_cola(*cola_ready);
+
+                calcular_lista_ready_HRRN(cola_ready);
+                
+                log_info(logger,"Despues de Ordenar por HRRN");
+                imprimir_cola(*cola_ready);
+
+                log_info(logger,"--------------------------------------------------");
+                
+            }
+            
+            Proceso *proceso_a_ejecutar = (Proceso *)queue_pop(cola_ready);
+            cambiar_estado(proceso_a_ejecutar,EXEC);
+   
+            // destrabar ready
+            sem_post(&semaforo_planificador);
+            log_info(logger, "Proceso %d -> EXEC", (proceso_a_ejecutar->pcb)->PID);
+
+            //   Enviar PCB a CPU
+            log_info(logger, "Enviando %d - con program counter = %d", (proceso_a_ejecutar->pcb)->PID, (proceso_a_ejecutar->pcb)->program_counter);
+            
+            enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
+            proceso_a_ejecutar->pcb->tiempo_cpu_real_inicial = time(NULL);
+        }
+        else
+        {
+            //sem_post(&semaforo_ejecutando);
+        }
+
+
+    }
+
+
+}
 
 
 // duda por lo que dice el enunciado
