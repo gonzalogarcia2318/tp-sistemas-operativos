@@ -26,13 +26,8 @@ int main(int argc, char** argv)
     if (conectar_con_kernel() == SUCCESS)
     {
         enviar_instrucciones_a_kernel(instrucciones);
-
-        // RECIBIR QUE LLEGARON LAS INSTRUCCIONES BIEN A KERNEL (bloqueante)
-        //escuchar_kernel();
-
-        // QUEDARSE ESPERANDO A QUE KERNEL ENVIE UN MENSAJE TERMINANDO LA EJECUCION PARA SALIR (bloqueante)
-
-         escuchar_kernel();
+        
+        escuchar_kernel();
 
         desconectar_con_kernel();
     }

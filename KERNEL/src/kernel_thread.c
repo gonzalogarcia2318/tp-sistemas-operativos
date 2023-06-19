@@ -46,15 +46,8 @@ void manejar_paquete_consola(int socketConsola)
             return;
         case INSTRUCCIONES:
             t_list *instrucciones = obtener_paquete_estructura_dinamica(socketConsola);
-
-            // Para testear . Borrar.
-            for (int i = 0; i < list_size(instrucciones); i++)
-            {
-                Instruccion *instruccion = list_get(instrucciones, i);
-                log_info(logger, "Instruccion %d: nombre: %s", i, instruccion->nombreInstruccion);
-            }
-
-            manejar_proceso_consola(instrucciones);
+            confirmar_recepcion_a_consola(socketConsola);
+            manejar_proceso_consola(instrucciones, socketConsola);
 
             break;
 
@@ -65,27 +58,23 @@ void manejar_paquete_consola(int socketConsola)
     }
 }
 
-void manejar_proceso_consola(t_list *instrucciones)
+void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
 {
-    log_info(logger, "[KERNEL]: Creando PCB");
+    //log_info(logger, "[KERNEL]: Creando PCB");
 
     PCB *pcb = malloc(sizeof(PCB));
 
     pcb->PID = PROCESO_ID++;
     pcb->instrucciones = instrucciones;
     pcb->program_counter = 0;
-    
-   
 
-    log_info(logger, "[KERNEL]: PCB Creada - Proceso - PID: <%d>", pcb->PID);
+    pcb->socket_consola = socket_consola;
+    
 
     Proceso *proceso = malloc(sizeof(Proceso));
     SEGMENTO * segmento0 = malloc (sizeof(SEGMENTO));
 
-    log_info(logger," estimacion inicial: %d", atoi(KernelConfig.ESTIMACION_INICIAL));
     pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
-
-    log_info(logger,"Asigno estimacion inicial ");
 
     segmento0->base = 0;
     segmento0->id =0;
@@ -101,6 +90,8 @@ void manejar_proceso_consola(t_list *instrucciones)
     
     proceso->pcb->tabla_segmentos = list_create();
     list_add(proceso->pcb->tabla_segmentos, segmento0);
+
+    log_info(logger, "[KERNEL]: Proceso Creado (en NEW) - PID: <%d>", pcb->PID);
     
     bool en_new(Proceso * proceso)
     {
@@ -121,17 +112,19 @@ void manejar_proceso_consola(t_list *instrucciones)
     }
 }
 
+void confirmar_recepcion_a_consola(int socket_consola){
+    log_info(logger, "[KERNEL]: Confirmando recepcion a consola - SOCKET_CONSOLA: <%d>", socket_consola);
+    PAQUETE *paquete = crear_paquete(RECEPCION_OK);
+    enviar_paquete_a_cliente(paquete, socket_consola);
+}
+
 void enviar_pcb_a_cpu(PCB *pcb)
 {
-    log_info(logger, "[KERNEL]: Enviar PCB a CPU: preparando paquete");
-
     PAQUETE *paquete_pcb = crear_paquete(OP_PCB);
-
-    log_info(logger, "[KERNEL]: Enviar PCB a CPU: serializar pcb %d", pcb->PID);
-
+    
     paquete_pcb->buffer = serializar_pcb(pcb);
 
-    log_info(logger, "[KERNEL]: Enviar PCB a CPU: enviar");
+    log_info(logger, "[KERNEL]: Enviando PCB <%d> a CPU", pcb->PID);
 
     enviar_paquete_a_servidor(paquete_pcb, socket_cpu);
 
