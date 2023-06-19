@@ -96,6 +96,7 @@ void manejar_proceso_consola(t_list *instrucciones)
     proceso->estado = NEW;
     proceso->pcb = pcb;
     proceso->pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
+    proceso->pcb->estimacion_cpu_anterior = 0;
     //proceso->pcb->registros_cpu = malloc(112);
     
     proceso->pcb->tabla_segmentos = list_create();

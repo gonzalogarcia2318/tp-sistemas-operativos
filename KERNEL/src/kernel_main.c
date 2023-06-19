@@ -128,7 +128,10 @@ int main(int argc, char** argv)
             Proceso *proceso_para_ready1 = (Proceso *)list_get(procesos_en_new, 0);
 
             cambiar_estado(proceso_para_ready1,READY);
-            proceso_para_ready1->pcb->tiempo_ready = time(NULL); 
+
+            proceso_para_ready1->pcb->cronometro_ready = temporal_create();
+      
+
             queue_push(cola_ready, (Proceso *)proceso_para_ready1);
             sem_post(&semaforo_ready);
 
@@ -320,16 +323,16 @@ Proceso *obtener_proceso_por_pid(int32_t PID)
     return proceso;
 }
 
-double calcular_response_ratio (double tiempo_esperado_ready ,double tiempo_en_cpu){
+double calcular_response_ratio (PCB * pcb){
 
-    tiempo_esperado_ready = difftime (time(NULL),tiempo_esperado_ready);
+    int64_t tiempo_esperado_ready = temporal_gettime(pcb->cronometro_ready);
 
-    log_info(logger, "Tiempo en ready: %.4f seg", tiempo_esperado_ready);
-    log_info(logger, "Tiempo en cpu : %.4f seg", tiempo_en_cpu);
+    log_info(logger, "Tiempo en ready: %ld seg", tiempo_esperado_ready);
+    log_info(logger, "Tiempo en cpu : %f seg", pcb->estimacion_cpu_proxima_rafaga);
 
-    double resultado2 = ((tiempo_esperado_ready + tiempo_en_cpu) / tiempo_en_cpu);
+    double resultado2 = ((tiempo_esperado_ready + pcb->estimacion_cpu_proxima_rafaga) / pcb->estimacion_cpu_proxima_rafaga);
     
-    log_info(logger, "Response Ratio: %.4f", resultado2);
+    log_info(logger, "Response Ratio: %.2f", resultado2);
 
 return resultado2;
 
@@ -338,14 +341,13 @@ return resultado2;
 double calcular_estimacion_cpu (PCB * pcb){
 
     
-    log_info(logger, "Estimacion Anterior : %.4f", pcb->estimacion_cpu_anterior);
-    log_info(logger, "CPU  Real  Anterior : %.4f", pcb->tiempo_cpu_real);
+    log_info(logger, "Estimacion Anterior : %f", pcb->estimacion_cpu_anterior);
+    log_info(logger, "CPU  Real  Anterior : %ld", pcb->tiempo_cpu_real);
 
     double resultado = pcb->estimacion_cpu_anterior * atof((KernelConfig.HRRN_ALFA)) + pcb->tiempo_cpu_real * (1 - atof(KernelConfig.HRRN_ALFA));
     
-    log_info(logger, "Estimacion Nueva: %.4f", resultado);
+    log_info(logger, "Estimacion Nueva: %f", resultado);
     
-
     
     return resultado;
 
@@ -357,7 +359,7 @@ void actualizar_pcb(Proceso *proceso, PCB *pcb)
     // Proceso *proceso = obtener_proceso_por_pid(pcb->PID);
     proceso->pcb->program_counter = pcb->program_counter;
     // algun dato mas? Si
-    proceso->pcb->tiempo_cpu_real = difftime(time(NULL),proceso->pcb->tiempo_cpu_real_inicial);
+    proceso->pcb->tiempo_cpu_real = temporal_gettime(proceso->pcb->cronometro_exec);
     proceso->pcb->estimacion_cpu_anterior = proceso->pcb->estimacion_cpu_proxima_rafaga;
     pthread_mutex_unlock(&mx_procesos);
 }
@@ -381,14 +383,14 @@ t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
         proceso = queue_pop(cola_ready);
 
         log_info(logger,"-------------------Proceso ID : %d----------------", proceso->pcb->PID);
-
+        log_info(logger,"Valor EST ANT: %f", proceso->pcb->estimacion_cpu_anterior);
         if(proceso->pcb->estimacion_cpu_anterior !=0){
 
             proceso->pcb->estimacion_cpu_proxima_rafaga = calcular_estimacion_cpu(proceso->pcb);
 
         }
         
-        proceso->pcb->response_Ratio = calcular_response_ratio(proceso->pcb->tiempo_ready, proceso->pcb->estimacion_cpu_proxima_rafaga );
+        proceso->pcb->response_Ratio = calcular_response_ratio(proceso->pcb);
 
         list_add(listaReady,proceso);
 
@@ -478,7 +480,7 @@ void manejar_hilo_ejecutar(){
             log_info(logger, "Enviando %d - con program counter = %d", (proceso_a_ejecutar->pcb)->PID, (proceso_a_ejecutar->pcb)->program_counter);
             
             enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
-            proceso_a_ejecutar->pcb->tiempo_cpu_real_inicial = time(NULL);
+            proceso_a_ejecutar->pcb->cronometro_exec = temporal_create();
         }
         else
         {
@@ -507,7 +509,7 @@ void manejar_hilo_io()
         log_error(logger, "[KERNEL] poner ready %d ", proceso->pcb->PID);
         cambiar_estado(proceso, READY);
 
-        proceso->pcb->tiempo_ready = time(NULL); 
+        proceso->pcb->cronometro_ready = temporal_create(); 
 
         sem_post(&semaforo_planificador);
         //sem_post(&semaforo_ejecutando);
@@ -540,7 +542,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
 
         proceso->pcb->program_counter++;
         cambiar_estado(proceso, READY); 
-        proceso->pcb->tiempo_ready = time(NULL);      
+        proceso->pcb->cronometro_ready = temporal_create();      
         queue_push(cola_ready, proceso);
         
     }
@@ -581,7 +583,7 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
 
     proceso->pcb->program_counter++;
     cambiar_estado(proceso, READY);
-    proceso->pcb->tiempo_ready = time(NULL);   
+    proceso->pcb->cronometro_ready = temporal_create();   
     queue_push(cola_ready, proceso);
 }
 
@@ -602,7 +604,7 @@ void manejar_yield(Proceso *proceso, PCB *pcb)
 
     log_error(logger, "[KERNEL] poner en ready POR YIELD %d", proceso->pcb->PID);
     cambiar_estado(proceso, READY);
-    proceso->pcb->tiempo_ready = time(NULL);   
+    proceso->pcb->cronometro_ready = temporal_create();   
     queue_push(cola_ready, proceso);
 
     pthread_mutex_unlock(&mx_procesos);

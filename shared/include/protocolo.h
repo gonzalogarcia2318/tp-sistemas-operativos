@@ -3,6 +3,7 @@
 
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/temporal.h>
 #include <math.h>
 #include <time.h>
 #include <commons/string.h>
@@ -118,13 +119,15 @@ typedef struct
     int32_t program_counter; //DEBE INICIALIZARSE EN 0.
     Registro_CPU registros_cpu;   // Tipo struct REGISTROS_CPU
     t_list *tabla_segmentos;
-    double estimacion_cpu_proxima_rafaga;
+    float estimacion_cpu_proxima_rafaga;
     time_t tiempo_ready;
     char *archivos_abiertos; // Lista de struct ARCHIVOS_ABIERTOS
     time_t tiempo_cpu_real_inicial;
-    double tiempo_cpu_real;
-    double estimacion_cpu_anterior;
-    double response_Ratio;
+    t_temporal* cronometro_ready;
+    t_temporal* cronometro_exec;
+    int64_t tiempo_cpu_real;
+    float estimacion_cpu_anterior;
+    float response_Ratio;
 
 } PCB;
 
