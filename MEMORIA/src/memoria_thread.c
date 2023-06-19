@@ -16,14 +16,13 @@ void escuchar_kernel(int socket_kernel)
       free(mensaje);
       break;
     case CREAR_PROCESO:
-      int32_t pid; // ¿Como llega?
-      log_info(logger, "CREACIÓN DE PROCESO: PID<%d>", pid);
-      t_list* tabla_de_segmentos = crear_tabla_de_segmentos();
-      //DEVOLVER TABLA DE SEGMENTOS A KERNEL.
+      t_list* tabla_de_segmentos = manejar_crear_proceso();
+      //serializar_tabla_de_segmentos(tabla_de_segmentos); TODO
       break;
     
     case FINALIZAR_PROCESO:
-      //TODO
+      manejar_finalizar_proceso();
+      enviar_mensaje_a_cliente("FINALIZAR_PROCESO: <OK>",socket_kernel);
       break;
     
     case INSTRUCCION:
@@ -203,7 +202,7 @@ void recibir_instruccion_kernel()
         break;
           
       case 2: //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
-        enviar_mensaje_a_cliente("HAY QUE CONSOLIDAR", socket_kernel);
+        enviar_mensaje_a_cliente("HAY QUE CONSOLIDAR", socket_kernel); //REALMENTE SERÍA PAQUETE CON COD_OP : CONSOLIDAR
         break;
           
       case 3: //FALTA ESPACIO
@@ -225,7 +224,7 @@ void recibir_instruccion_kernel()
                 pid,
                 id_segmento
               );
-      //manejar_delete_segment(id_segmento); TODO
+      //int dire_base = manejar_delete_segment(pid, id_segmento); TODO
 
       enviar_mensaje_a_cliente("DELETE_SEGMENT: <OK>",socket_kernel);
       log_warning(logger,"PID: <PID> - Eliminar Segmento: <ID SEGMENTO> - Base: <DIRECCIÓN BASE> - TAMAÑO: <TAMAÑO>");

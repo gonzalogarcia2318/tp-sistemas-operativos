@@ -13,6 +13,7 @@ int socket_cpu;
 SEGMENTO* segmento_compartido;
 t_list* huecos_libres;
 void* espacio_usuario;
+t_list* procesos_globales;
 
 void iniciar_logger_memoria()
 {
@@ -84,14 +85,12 @@ void crear_estructuras_administrativas()
     crear_espacio_usuario();
 
     crear_lista_huecos_libres();
+
+    crear_lista_procesos_globales();
 }
 
 void crear_segmento_compartido()
 {
-    //CREAR STRUCT SEGMENTO PÚBLICO CON LOS SIGUIENTES DATOS:
-        //ID = 0
-        //BASE = 0
-        //LÍMITE = TAM_MAXIMO
     segmento_compartido = malloc(sizeof(SEGMENTO));
     segmento_compartido->id = 0;
     segmento_compartido->base = 0;
@@ -101,7 +100,7 @@ void crear_segmento_compartido()
 
 void crear_espacio_usuario()
 {
-    void* espacio_usuario = malloc(sizeof(MemoriaConfig.TAM_MEMORIA));
+    espacio_usuario = malloc(sizeof(MemoriaConfig.TAM_MEMORIA));
     log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó el ESPACIO DE USUARIO con éxito");
 
 }
@@ -118,6 +117,30 @@ void crear_lista_huecos_libres()
     log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó la LISTA DE HUECOS LIBRES con éxito");
 }
 
+void crear_lista_procesos_globales()
+{
+    procesos_globales = list_create();
+    log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó la lista de PROCESOS GLOBALES con éxito");
+}
+///////////////////////////////////////////PROCESOS KERNEL////////////////////////////////////////////////////////////////
+
+t_list* manejar_crear_proceso()
+{
+  BUFFER* buffer = recibir_buffer(socket_kernel);
+  PROCESO_MEMORIA* proceso = malloc(sizeof(PROCESO_MEMORIA));
+  int32_t pid;
+
+  memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+          buffer->stream += (sizeof(int32_t) * 2);
+  log_info(logger,"RECIBI CREAR_PROCESO: PID:<%d>", pid);
+
+  proceso->pid = pid;
+  proceso->tabla_de_segmentos = crear_tabla_de_segmentos();
+
+  free(buffer);
+  return proceso->tabla_de_segmentos;
+}
+
 t_list* crear_tabla_de_segmentos()
 {
     t_list* tabla_segmentos = list_create();
@@ -125,6 +148,45 @@ t_list* crear_tabla_de_segmentos()
     //EL TAMAÑO SE VERIFICA A LA HORA DE CREAR SEMGNETOS => SI size = CANT_SEGMENTOS => NO CREA SEGMENTO
     log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó la TABLA DE SEGMENTOS con éxito");
     return tabla_segmentos;
+}
+
+void manejar_finalizar_proceso()
+{
+    BUFFER* buffer = recibir_buffer(socket_kernel);
+    int32_t pid;
+    memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2);
+    log_info(logger,"RECIBI ELIMINAR_PROCESO: PID:<%d>", pid);
+
+    PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
+    SEGMENTO* seg_aux;
+    
+    int size = list_size(proceso->tabla_de_segmentos);
+    list_remove(proceso->tabla_de_segmentos,0); //NO ELIMINO EL SEGMENTO GLOBAL
+
+    for (int i = 1; i < size; i++)
+    {
+        seg_aux = list_get(proceso->tabla_de_segmentos, i);
+        //eliminar_segmento(seg_aux) ELIMINAR DE ESPACIO DE USUARIO Y CAMBIAR EN HUECOS LIBRES : TODO
+        //free(seg_aux);
+    }
+    list_destroy(proceso->tabla_de_segmentos);
+    free(proceso);
+
+    log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);
+}
+
+PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid)
+{
+    int size = list_size(procesos_globales);
+    PROCESO_MEMORIA* proc_mem_aux;
+
+    for(int i = 0; i < size; i++)
+    {
+        proc_mem_aux = list_get(procesos_globales, i);
+        if(proc_mem_aux->pid == pid)
+            return proc_mem_aux;
+    }
 }
 
 //////////////////////////////////////////////ACCESO A ESPACIO DE USUARIO////////////////////////////////////
