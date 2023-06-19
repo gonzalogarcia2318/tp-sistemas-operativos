@@ -20,7 +20,9 @@ int main(int argc, char** argv)
 
     t_list *instrucciones = leer_instrucciones(pseudocodigo_path);
 
-    log_info(logger, "[CONSOLA]: %s.", pseudocodigo_path);
+    log_info(logger, "[CONSOLA]: pseudocodigo_path: %s.", pseudocodigo_path);
+    log_info(logger, "[CONSOLA]: config_path: %s.", config_path);
+
 
 
     if (conectar_con_kernel() == SUCCESS)
