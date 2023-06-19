@@ -22,6 +22,12 @@ int main()
             if(iniciar_archivo_de_bloques(FileSystemConfig.PATH_BLOQUES) == FAILURE)
                 return EXIT_FAILURE;
 
+            //PRUEBAS
+            // if(crear_archivo("Prueba") == FAILURE)
+            //     return EXIT_FAILURE;
+
+            // int existeDos = existe_archivo("Prueba");    
+
             conectar_con_kernel();
         }
         else
