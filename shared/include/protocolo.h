@@ -36,6 +36,7 @@ typedef enum
     OP_PCB,
     INSTRUCCION,
     INSTRUCCIONES,
+    CREAR_PROCESO,
     FINALIZAR_PROCESO,
     SEG_FAULT,
     RECEPCION_OK,
@@ -165,7 +166,7 @@ typedef struct
     int32_t id;
     int32_t base;
     int32_t limite;
-
+    int32_t validez;
 } SEGMENTO;
 
 PCB *obtener_paquete_pcb(int socket_cpu);
@@ -181,6 +182,7 @@ t_list* deserializar_instrucciones(BUFFER* buffer);
 
 BUFFER *serializar_registros(Registro_CPU *registros);
 Registro_CPU *deserializar_registros(BUFFER *buffer);
+int32_t obtener_tamanio_registro(char* nombre_registro);
 
 BUFFER *serializar_segmentos(t_list *segmentos);
 BUFFER *serializar_segmento(SEGMENTO *segmento);
@@ -193,5 +195,6 @@ int calcular_tamanio_segmento(SEGMENTO *segmento);
 int calcular_tamanio_segmentos(t_list *segmentos);
 
 void imprimir_buffer( BUFFER* buffer);
+void quitar_salto_de_linea(char *);
 
 #endif

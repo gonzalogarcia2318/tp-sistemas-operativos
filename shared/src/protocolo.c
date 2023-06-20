@@ -296,20 +296,17 @@ BUFFER *serializar_segmento(SEGMENTO *segmento)
     void* stream = malloc(buffer->size);
     int offset = 0; // Desplazamiento
 
-    
-    
     memcpy(stream + offset, &(segmento->base), sizeof(int32_t));
     offset += sizeof(int32_t);
 
- 
     memcpy(stream + offset, &(segmento->id), sizeof(int32_t));
     offset += sizeof(int32_t);
 
-    
     memcpy(stream + offset, &(segmento->limite), sizeof(int32_t));
     offset += sizeof(int32_t);
  
-
+    memcpy(stream + offset, &(segmento->validez), sizeof(int32_t));
+    offset += sizeof(int32_t);
     // Guarda el tamaño y los datos serializados en la estructura BUFFER
     buffer->stream = stream;
 
@@ -505,8 +502,10 @@ SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
     memcpy(&(segmento->limite), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-
     memcpy(&(segmento->base), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    memcpy(&(segmento->validez), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
     return segmento;
@@ -580,7 +579,7 @@ int calcular_tamanio_instruccion(Instruccion *instruccion){
 }
 
 int calcular_tamanio_segmento(SEGMENTO *segmento){
-    int tamanio = sizeof(int32_t) * 3;                
+    int tamanio = sizeof(int32_t) * 4;                
     return tamanio;
 }
 
@@ -679,4 +678,24 @@ Registro_CPU *deserializar_registros(BUFFER *buffer)
     stream += 16+1;
 
     return registros;
+}
+void quitar_salto_de_linea(char *cadena) 
+{
+    int longitud = strcspn(cadena, "\n");
+    cadena[longitud] = '\0';
+}
+int32_t obtener_tamanio_registro(char* nombre_registro)
+{
+  quitar_salto_de_linea(nombre_registro);
+  if( !strcmp(nombre_registro, "AX") || !strcmp(nombre_registro, "BX") || !strcmp(nombre_registro, "CX") || !strcmp(nombre_registro, "DX"))
+    return (int32_t)4;
+  
+  else if(!strcmp(nombre_registro, "EAX") || !strcmp(nombre_registro, "EBX") || !strcmp(nombre_registro, "ECX") || !strcmp(nombre_registro, "EDX"))
+    return (int32_t)8;
+  
+  else if(!strcmp(nombre_registro, "RAX") || !strcmp(nombre_registro, "RBX") || !strcmp(nombre_registro, "RCX") || !strcmp(nombre_registro, "RDX"))
+    return (int32_t)16;
+  
+  else
+    return(int32_t)0;
 }
