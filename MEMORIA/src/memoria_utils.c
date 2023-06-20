@@ -95,6 +95,7 @@ void crear_segmento_compartido()
     segmento_compartido->id = 0;
     segmento_compartido->base = 0;
     segmento_compartido->limite = MemoriaConfig.TAM_SEGMENTO_0;
+    segmento_compartido->validez = 1;
     log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó el SEGMENTO COMPARTIDO con éxito");
 }
 
@@ -111,7 +112,7 @@ void crear_lista_huecos_libres()
 
     SEGMENTO* hueco_0 = malloc(sizeof(SEGMENTO));
     hueco_0->base = MemoriaConfig.TAM_SEGMENTO_0;
-    hueco_0->limite = MemoriaConfig.TAM_MEMORIA - 1;
+    hueco_0->limite = MemoriaConfig.TAM_MEMORIA - MemoriaConfig.TAM_SEGMENTO_0;
 
     list_add(huecos_libres,hueco_0);
     log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó la LISTA DE HUECOS LIBRES con éxito");
@@ -167,6 +168,7 @@ void manejar_finalizar_proceso()
     log_info(logger,"RECIBI ELIMINAR_PROCESO: PID:<%d>", pid);
 
     PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
+
     SEGMENTO* seg_aux;
     
     int size = list_size(proceso->tabla_de_segmentos);
@@ -179,6 +181,7 @@ void manejar_finalizar_proceso()
         //free(seg_aux);
     }
     list_destroy(proceso->tabla_de_segmentos);
+    eliminar_proceso_de_globales(pid);
     free(proceso);
 
     log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);
@@ -191,9 +194,30 @@ PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid)
 
     for(int i = 0; i < size; i++)
     {
-        proc_mem_aux = list_get(procesos_globales, i);
-        if(proc_mem_aux->pid == pid)
+        if(list_get(procesos_globales, i) != NULL)
+        {
+            proc_mem_aux = list_get(procesos_globales, i);
+            if(proc_mem_aux->pid == pid)
             return proc_mem_aux;
+        }
+    }
+}
+void eliminar_proceso_de_globales(int32_t pid)
+{
+    int size = list_size(procesos_globales);
+    PROCESO_MEMORIA* proc_mem_aux;
+
+    for(int i = 0; i < size; i++)
+    {
+        if(list_get(procesos_globales, i) != NULL)
+        {
+            proc_mem_aux = list_get(procesos_globales, i);
+            if(proc_mem_aux->pid == pid)
+            {
+                list_replace(procesos_globales,i,NULL);
+                free(proc_mem_aux);
+            }  
+        }  
     }
 }
 
@@ -239,4 +263,124 @@ void aplicar_retardo_espacio_usuario()
     int segundos = MemoriaConfig.RETARDO_MEMORIA/1000;
     log_info(logger,"Retraso de <%d> segundos por acceso a espacio de usuario",segundos);
     sleep(segundos);
+}
+
+///////////////////////////////////////////CREAR SEGMENTO//////////////////////////////////////////////
+
+int manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
+{
+    t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
+
+    if(!puedo_crear_nuevo_segmento_proceso(tabla_de_segmentos))
+        return 3; //ERROR "Out of Memory" por tabla de segmentos llena.
+
+    int caso = hay_espacio_memoria(tamanio_segmento);
+    
+    switch (caso)
+    {
+    case 1:
+        //OK -> ASIGNAR SEGÚN ALGORITMO ASIGNACIÓN 
+        int dire_base = crear_segmento(pid, id_segmento, tamanio_segmento);
+        log_warning(logger,"PID: <%d> - Crear Segmento: ID SEGMENTO:<%d> - Base: <%d> - TAMAÑO: <%d>",
+                    pid,
+                    id_segmento,
+                    dire_base,
+                    tamanio_segmento
+                    );
+        return 1;
+    case 2:
+        //HAY QUE CONSOLIDAR -> AVISAR A KERNEL 
+        return 2;
+    case 3:
+        //ERROR: OUT OF MEMORY -> AVISAR A KERNEL
+        return 3;
+    default:
+        break;
+    }
+}
+
+int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
+{
+    SEGMENTO* segmento_nuevo = malloc(sizeof(SEGMENTO));
+    segmento_nuevo->id = id_segmento;
+    segmento_nuevo->limite = tamanio_segmento;
+    segmento_nuevo->validez = 1;
+
+    int base = aplicar_algoritmo_asignacion(tamanio_segmento); // TODO
+
+    segmento_nuevo->base = base;
+
+    t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
+    list_add(tabla_de_segmentos,segmento_nuevo);
+
+    return base;
+}
+
+int aplicar_algoritmo_asignacion(int32_t tamanio_segmento)
+{
+    return 0; //TODO
+}
+
+bool puedo_crear_nuevo_segmento_proceso(t_list* tabla_de_segmentos)
+{
+    int max_segmentos = MemoriaConfig.CANT_SEGMENTOS;
+    int size = list_size(tabla_de_segmentos);
+
+    if(size < max_segmentos)
+        return true;
+    
+    SEGMENTO* seg_aux;
+
+    for(int i = 0; i < size; i++) //PUEDE HABER NO VALIDOS 
+    {
+        seg_aux = list_get(tabla_de_segmentos,i);
+        if(seg_aux->validez != 1)
+            size--;  
+    }
+
+    if(size < max_segmentos)
+        return true;
+
+    log_error(logger,"El proceso no puede crear nuevos segmentos, alcanzo el máximo");
+    return false;
+}
+
+int hay_espacio_memoria(int32_t tamanio_segmento)
+{
+    int size = list_size(huecos_libres);
+    SEGMENTO* seg_aux;
+
+    for (int i = 0; i < size; i++)
+    {
+        seg_aux = list_get(huecos_libres,i);
+        if(seg_aux->limite >= tamanio_segmento)
+            return 1; //HAY ESPACIO CONTIGUO: OK
+    }
+
+    int espacio_acumulado = 0;
+
+    for (int i = 0; i < size; i++)
+    {
+        seg_aux = list_get(huecos_libres,i);
+        espacio_acumulado += seg_aux->limite;
+    }
+
+    if(espacio_acumulado >= tamanio_segmento)
+        return 2; //HAY QUE CONSOLIDAR
+    
+    else
+        return 3; //FALTA ESPACIO
+    
+}
+
+t_list* obtener_tabla_de_segmentos(int32_t pid)
+{
+    PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
+    t_list* tabla_de_segmentos = proceso->tabla_de_segmentos;
+    return tabla_de_segmentos;
+}
+
+void eliminar_segmento()
+{
+    //TODO
 }

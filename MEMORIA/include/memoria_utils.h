@@ -53,8 +53,17 @@ t_list* manejar_crear_proceso();
     void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos);
 void manejar_finalizar_proceso();
     PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid);
+    void eliminar_proceso_de_globales(int32_t pid);
 
 char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro);
 void escribir_en_memoria(char* contenido,int32_t direccion_fisica,int32_t bytes_registro);
     void aplicar_retardo_espacio_usuario();
+
+int manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
+    int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
+        int aplicar_algoritmo_asignacion(int32_t tamanio_segmento); //TODO
+    bool puedo_crear_nuevo_segmento_proceso(t_list* tabla_de_segmentos);
+    int hay_espacio_memoria(int32_t tamanio_segmento);
+    t_list* obtener_tabla_de_segmentos(int32_t pid);
+void eliminar_segmento(); // TODO
 #endif

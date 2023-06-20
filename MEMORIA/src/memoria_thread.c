@@ -193,8 +193,8 @@ void recibir_instruccion_kernel()
                 id_segmento,
                 tamanio_segmento
               );
-      int codigo = 0;
-      // codigo = manejar_create_segment(id_segmento, tamanio_segmento); //TODO
+
+      int codigo = manejar_crear_segmento(pid, id_segmento, tamanio_segmento); //TODO
 
       switch (codigo)
       {
@@ -206,7 +206,7 @@ void recibir_instruccion_kernel()
         enviar_mensaje_a_cliente("HAY QUE CONSOLIDAR", socket_kernel); //REALMENTE SERÍA PAQUETE CON COD_OP : CONSOLIDAR
         break;
           
-      case 3: //FALTA ESPACIO
+      case 3: //FALTA ESPACIO "Out of Memory"
         enviar_mensaje_a_cliente("FALTA ESPACIO", socket_kernel);
         break;
 
@@ -215,8 +215,6 @@ void recibir_instruccion_kernel()
         break;
       }
 
-      log_warning(logger,"PID: <PID> - Crear Segmento: <ID SEGMENTO> - Base: <DIRECCIÓN BASE> - TAMAÑO: <TAMAÑO>");
-      
       break;
 
     case DELETE_SEGMENT: //TODO
