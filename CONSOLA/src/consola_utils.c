@@ -169,9 +169,3 @@ Instruccion *parsear_instruccion_por_linea(char *linea)
 
     return instruccion;
 }
-
-void quitar_salto_de_linea(char *cadena)
-{
-    int longitud = strcspn(cadena, "\n");
-    cadena[longitud] = '\0';
-}
