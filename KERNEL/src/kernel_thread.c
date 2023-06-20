@@ -23,11 +23,14 @@ void esperar_consola(int socketKernel)
         Hilo hilo_consola;
         pthread_create(&hilo_consola, NULL, (void *)manejar_paquete_consola, (void *)socketConsola);
         pthread_detach(hilo_consola);
+
+        
     }
 }
 
 void manejar_paquete_consola(int socketConsola)
 {
+    int recibi_instrucciones = 0;
 
     while (true)
     {
@@ -46,41 +49,42 @@ void manejar_paquete_consola(int socketConsola)
             return;
         case INSTRUCCIONES:
             t_list *instrucciones = obtener_paquete_estructura_dinamica(socketConsola);
-
-            // Para testear . Borrar.
-            for (int i = 0; i < list_size(instrucciones); i++)
-            {
-                Instruccion *instruccion = list_get(instrucciones, i);
-                log_info(logger, "Instruccion %d: nombre: %s", i, instruccion->nombreInstruccion);
-            }
-
-            manejar_proceso_consola(instrucciones);
-
+            confirmar_recepcion_a_consola(socketConsola);
+            manejar_proceso_consola(instrucciones, socketConsola);
+            recibi_instrucciones = 1;
             break;
 
         default:
             log_warning(logger, "[KERNEL]: Operacion desconocida desde consola.");
             break;
         }
+
+        if(recibi_instrucciones){
+            log_info(logger, "[KERNEL]: Recibi las instrucciones. Muere el hilo de la consola <%d>.", socketConsola);
+            break;
+        }
+
     }
+    
 }
 
-void manejar_proceso_consola(t_list *instrucciones)
+void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
 {
-    log_info(logger, "[KERNEL]: Creando PCB");
+    //log_info(logger, "[KERNEL]: Creando PCB");
 
     PCB *pcb = malloc(sizeof(PCB));
 
     pcb->PID = PROCESO_ID++;
     pcb->instrucciones = instrucciones;
     pcb->program_counter = 0;
-    
-   
 
-    log_info(logger, "[KERNEL]: PCB Creada - Proceso - PID: <%d>", pcb->PID);
+    pcb->socket_consola = socket_consola;
+    
 
     Proceso *proceso = malloc(sizeof(Proceso));
     SEGMENTO * segmento0 = malloc (sizeof(SEGMENTO));
+
+    pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
 
     segmento0->base = 0;
     segmento0->id =0;
@@ -90,11 +94,14 @@ void manejar_proceso_consola(t_list *instrucciones)
 
     proceso->estado = NEW;
     proceso->pcb = pcb;
-
+    proceso->pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
+    proceso->pcb->estimacion_cpu_anterior = 0;
     //proceso->pcb->registros_cpu = malloc(112);
     
     proceso->pcb->tabla_segmentos = list_create();
     list_add(proceso->pcb->tabla_segmentos, segmento0);
+
+    log_info(logger, "[KERNEL]: Proceso Creado (en NEW) - PID: <%d>", pcb->PID);
     
     bool en_new(Proceso * proceso)
     {
@@ -115,17 +122,19 @@ void manejar_proceso_consola(t_list *instrucciones)
     }
 }
 
+void confirmar_recepcion_a_consola(int socket_consola){
+    log_info(logger, "[KERNEL]: Confirmando recepcion a consola - SOCKET_CONSOLA: <%d>", socket_consola);
+    PAQUETE *paquete = crear_paquete(RECEPCION_OK);
+    enviar_paquete_a_cliente(paquete, socket_consola);
+}
+
 void enviar_pcb_a_cpu(PCB *pcb)
 {
-    log_info(logger, "[KERNEL]: Enviar PCB a CPU: preparando paquete");
-
     PAQUETE *paquete_pcb = crear_paquete(OP_PCB);
-
-    log_info(logger, "[KERNEL]: Enviar PCB a CPU: serializar pcb %d", pcb->PID);
-
+    
     paquete_pcb->buffer = serializar_pcb(pcb);
 
-    log_info(logger, "[KERNEL]: Enviar PCB a CPU: enviar");
+    log_info(logger, "[KERNEL]: Enviando PCB <%d> a CPU", pcb->PID);
 
     enviar_paquete_a_servidor(paquete_pcb, socket_cpu);
 

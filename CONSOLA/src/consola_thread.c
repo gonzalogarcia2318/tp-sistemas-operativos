@@ -30,11 +30,19 @@ void escuchar_kernel()
             log_warning(logger, "[CONSOLA]: Kernel se desconecto.");
             return;
 
+        case RECEPCION_OK:
+            log_info(logger, "[CONSOLA]: KERNEL CONFIRMO RECEPCION DE INSTRUCCIONES.");
+
+            log_info(logger, "[CONSOLA]: Esperando finalizacion del proceso...");
+            break;
+
+        case PROCESO_FINALIZADO:
+            log_info(logger, "[CONSOLA]: FINALIZO EL PROCESO.");
+            return;
         default:
             continue;
         }
 
-        break;
     }
     
 }

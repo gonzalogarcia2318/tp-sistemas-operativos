@@ -3,11 +3,14 @@
 
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/temporal.h>
 #include <math.h>
+#include <time.h>
 #include <commons/string.h>
 #include <commons/collections/list.h>
 #include <commons/collections/queue.h>
 #include <commons/bitarray.h>
+#include <commons/collections/dictionary.h>
 
 // #include <list.h>
 #include <commons/string.h>
@@ -35,7 +38,9 @@ typedef enum
     INSTRUCCIONES,
     CREAR_PROCESO,
     FINALIZAR_PROCESO,
-    SEG_FAULT
+    SEG_FAULT,
+    RECEPCION_OK,
+    PROCESO_FINALIZADO
 
 } CODIGO_OPERACION;
 
@@ -55,7 +60,9 @@ typedef enum
     CREATE_SEGMENT,
     DELETE_SEGMENT,
     YIELD,
-    EXIT
+    EXIT,
+    CREAR_ARCHIVO
+
 } CODIGO_INSTRUCCION;
 typedef struct
 {
@@ -113,13 +120,21 @@ typedef struct
 typedef struct
 {
     int32_t PID;
+    int32_t socket_consola;
     t_list *instrucciones;
     int32_t program_counter; //DEBE INICIALIZARSE EN 0.
     Registro_CPU registros_cpu;   // Tipo struct REGISTROS_CPU
     t_list *tabla_segmentos;
-    double proxima_rafaga;
-    char *tiempo_ready;
+    float estimacion_cpu_proxima_rafaga;
+    time_t tiempo_ready;
     char *archivos_abiertos; // Lista de struct ARCHIVOS_ABIERTOS
+    time_t tiempo_cpu_real_inicial;
+    t_temporal* cronometro_ready;
+    t_temporal* cronometro_exec;
+    int64_t tiempo_cpu_real;
+    float estimacion_cpu_anterior;
+    float response_Ratio;
+
 } PCB;
 
 typedef struct 
