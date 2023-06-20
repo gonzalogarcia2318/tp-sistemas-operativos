@@ -145,7 +145,7 @@ int main(int argc, char** argv)
 
             sem_post(&semaforo_planificador);
 
-            //sleep(1);
+            sleep(1);
             
         }
         pthread_mutex_unlock(&mx_procesos);
@@ -520,7 +520,7 @@ void manejar_hilo_io()
         proceso->pcb->cronometro_ready = temporal_create(); 
 
         sem_post(&semaforo_planificador);
-        //sem_post(&semaforo_ejecutando);
+        sem_post(&semaforo_ejecutando);
 
         queue_push(cola_ready, proceso);
         imprimir_cola(*cola_ready);
