@@ -20,19 +20,16 @@ int main(int argc, char** argv)
 
     t_list *instrucciones = leer_instrucciones(pseudocodigo_path);
 
-    log_info(logger, "[CONSOLA]: %s.", pseudocodigo_path);
+    log_info(logger, "[CONSOLA]: pseudocodigo_path: %s.", pseudocodigo_path);
+    log_info(logger, "[CONSOLA]: config_path: %s.", config_path);
+
 
 
     if (conectar_con_kernel() == SUCCESS)
     {
         enviar_instrucciones_a_kernel(instrucciones);
-
-        // RECIBIR QUE LLEGARON LAS INSTRUCCIONES BIEN A KERNEL (bloqueante)
-        //escuchar_kernel();
-
-        // QUEDARSE ESPERANDO A QUE KERNEL ENVIE UN MENSAJE TERMINANDO LA EJECUCION PARA SALIR (bloqueante)
-
-         escuchar_kernel();
+        
+        escuchar_kernel();
 
         desconectar_con_kernel();
     }

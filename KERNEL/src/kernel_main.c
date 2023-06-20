@@ -7,6 +7,7 @@ t_queue *cola_io;
 
 sem_t semaforo_planificador;
 sem_t semaforo_ejecutando;
+sem_t semaforo_ready;
 
 sem_t semaforo_multiprogramacion;
 
@@ -23,6 +24,7 @@ t_list * listaReady;
 
 void manejar_paquete_cpu();
 void manejar_hilo_io();
+void manejar_hilo_ejecutar();
 
 void cambiar_estado(Proceso *proceso, ESTADO estado);
 void actualizar_pcb(Proceso *proceso, PCB *pcb);
@@ -34,9 +36,15 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso);
 void manejar_signal(Proceso *proceso, char *nombre_recurso);
 void manejar_yield(Proceso *proceso, PCB *pcb);
 void manejar_exit(Proceso *proceso, PCB *pcb);
+void imprimir_cola (t_queue cola);
 
 void quitar_salto_de_linea(char *cadena);
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion);
+
+void avisar_a_consola_fin_proceso(Proceso *proceso);
+
+void liberar_proceso(Proceso* proceso);
+void liberar_instruccion(Instruccion* instruccion);
 
 int main(int argc, char** argv)
 {
@@ -53,6 +61,8 @@ int main(int argc, char** argv)
     char* path_config = argv[1];
 
     iniciar_logger_kernel();
+
+    log_info(logger, "----- INICIA KERNEL -----");
 
     if(iniciar_config_kernel(path_config) == FAILURE)
         return EXIT_FAILURE;
@@ -81,20 +91,28 @@ int main(int argc, char** argv)
     pthread_create(&hilo_io, NULL, (void *)manejar_hilo_io, NULL);
     pthread_detach(hilo_io);
 
+    Hilo hilo_ejecutar;
+    pthread_create(&hilo_ejecutar, NULL, (void *)manejar_hilo_ejecutar, NULL);
+    pthread_detach(hilo_ejecutar);
+
     // manejar_proceso_consola();
 
     sem_init(&semaforo_planificador, 0, 1);
 
     sem_init(&semaforo_ejecutando, 0, 1);
 
+    sem_init(&semaforo_ready, 0, 0);
+
     // grado multiprogramacion
     sem_init(&semaforo_multiprogramacion, 0, atoi(KernelConfig.GRADO_MAX_MULTIPROGRAMACION));
 
     sem_wait(&semaforo_new); // Para que no empiece sin que no haya ningun proceso
 
-    
+    sleep(8);
+
     while (true)
     {
+
 
         sem_wait(&semaforo_planificador);
 
@@ -107,50 +125,31 @@ int main(int argc, char** argv)
         t_list *procesos_en_new = list_filter(procesos, (void *)en_new);
 
         log_info(logger, "En NEW: %d", list_size(procesos_en_new));
+
+
         if (list_size(procesos_en_new) > 0)
         {
             sem_wait(&semaforo_multiprogramacion);
-            Proceso *proceso_para_ready = (Proceso *)list_get(procesos_en_new, 0);
 
-            cambiar_estado(proceso_para_ready,READY);
-            proceso_para_ready->pcb->tiempo_ready = time(NULL); 
-            queue_push(cola_ready, (Proceso *)proceso_para_ready);
+            Proceso *proceso_para_ready1 = (Proceso *)list_get(procesos_en_new, 0);
 
-            log_info(logger, "Proceso %d -> READY", (proceso_para_ready->pcb)->PID);
+            cambiar_estado(proceso_para_ready1,READY);
+
+            proceso_para_ready1->pcb->cronometro_ready = temporal_create();
+      
+
+            queue_push(cola_ready, (Proceso *)proceso_para_ready1);
+            imprimir_cola(*cola_ready);
+
+            sem_post(&semaforo_ready);
+
+            sem_post(&semaforo_planificador);
+
+            sleep(1);
             
         }
         pthread_mutex_unlock(&mx_procesos);
 
-        sem_wait(&semaforo_ejecutando); // Ejecuta uno a la vez
-
-        log_info(logger, "En ready: %d", queue_size(cola_ready));
-        if (!queue_is_empty(cola_ready))
-        {
-
-            if(strcmp(KernelConfig.ALGORITMO_PLANIFICACION,"HRRN")==0){
-
-                 //Verificar Cuenta HRRRN - Quien pasa a ejecutar?
-                cola_ready = calcular_lista_ready_HRRN(cola_ready);
-                
-            }
-            
-            Proceso *proceso_a_ejecutar = (Proceso *)queue_pop(cola_ready);
-            cambiar_estado(proceso_a_ejecutar,EXEC);
-   
-            // destrabar ready
-            sem_post(&semaforo_planificador);
-            log_info(logger, "Proceso %d -> EXEC", (proceso_a_ejecutar->pcb)->PID);
-
-            //   Enviar PCB a CPU
-            log_info(logger, "Enviando %d - con program counter = %d", (proceso_a_ejecutar->pcb)->PID, (proceso_a_ejecutar->pcb)->program_counter);
-            
-            enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
-            proceso_a_ejecutar->pcb->tiempo_cpu_real_inicial = time(NULL);
-        }
-        else
-        {
-            sem_post(&semaforo_ejecutando);
-        }
     }
 
     terminar_ejecucion();
@@ -175,8 +174,6 @@ void manejar_paquete_cpu()
             return;
 
         case PAQUETE_CPU:
-            log_info(logger, "[KERNEL] Llego PCB");
-
             BUFFER *buffer = recibir_buffer(socket_cpu);
 
             PCB *pcb = malloc(sizeof(PCB));
@@ -186,6 +183,8 @@ void manejar_paquete_cpu()
             buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
             memcpy(&(pcb->program_counter), buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2);
+
+            log_info(logger, "[KERNEL]: Llego PCB <%d>", pcb->PID);
 
             Proceso *proceso = obtener_proceso_por_pid(pcb->PID);
 
@@ -223,6 +222,8 @@ void manejar_paquete_cpu()
 
                 memcpy(&(pcb->registros_cpu), buffer->stream + sizeof(int32_t), sizeof(Registro_CPU));
                 buffer->stream += (sizeof(int32_t) + sizeof(Registro_CPU));
+
+                //sleep(5);
 
                 manejar_yield(proceso, pcb);
                 break;
@@ -330,25 +331,41 @@ Proceso *obtener_proceso_por_pid(int32_t PID)
     return proceso;
 }
 
-double calcular_response_ratio (double tiempo_esperado_ready ,double tiempo_en_cpu){
+double calcular_response_ratio (PCB * pcb){
 
-return ((tiempo_esperado_ready + tiempo_en_cpu) / tiempo_en_cpu);
+    int64_t tiempo_esperado_ready = temporal_gettime(pcb->cronometro_ready);
+
+    //log_info(logger, "Tiempo en ready: %ld seg", tiempo_esperado_ready);
+    //log_info(logger, "Tiempo en cpu : %f seg", pcb->estimacion_cpu_proxima_rafaga);
+
+    double resultado2 = ((tiempo_esperado_ready + pcb->estimacion_cpu_proxima_rafaga) / pcb->estimacion_cpu_proxima_rafaga);
+    
+    //log_info(logger, "Response Ratio: %.2f", resultado2);
+
+return resultado2;
 
 }
 
 double calcular_estimacion_cpu (PCB * pcb){
 
-    return pcb->estimacion_cpu_anterior * atoi((KernelConfig.HRRN_ALFA)) + pcb->tiempo_cpu_real * (1 - atoi(KernelConfig.HRRN_ALFA));
+    
+    //log_info(logger, "Estimacion Anterior : %f", pcb->estimacion_cpu_anterior);
+    //log_info(logger, "CPU  Real  Anterior : %ld", pcb->tiempo_cpu_real);
+
+    double resultado = pcb->estimacion_cpu_anterior * atof((KernelConfig.HRRN_ALFA)) + pcb->tiempo_cpu_real * (1 - atof(KernelConfig.HRRN_ALFA));
+    
+    //log_info(logger, "Estimacion Nueva: %f", resultado);
+    
+    
+    return resultado;
 
 }
 
 void actualizar_pcb(Proceso *proceso, PCB *pcb)
 {
     pthread_mutex_lock(&mx_procesos); // proceso* esta en lista compartida procesos
-    // Proceso *proceso = obtener_proceso_por_pid(pcb->PID);
     proceso->pcb->program_counter = pcb->program_counter;
-    // algun dato mas? Si
-    proceso->pcb->tiempo_cpu_real = difftime(time(NULL),proceso->pcb->tiempo_cpu_real_inicial);
+    proceso->pcb->tiempo_cpu_real = temporal_gettime(proceso->pcb->cronometro_exec);
     proceso->pcb->estimacion_cpu_anterior = proceso->pcb->estimacion_cpu_proxima_rafaga;
     pthread_mutex_unlock(&mx_procesos);
 }
@@ -356,9 +373,7 @@ void actualizar_pcb(Proceso *proceso, PCB *pcb)
 void actualizar_registros(Proceso *proceso, PCB *pcb)
 {
     pthread_mutex_lock(&mx_procesos); // proceso* esta en lista compartida procesos
-    // Proceso *proceso = obtener_proceso_por_pid(pcb->PID);
     proceso->pcb->registros_cpu = pcb->registros_cpu;
-    // algun dato mas?
     pthread_mutex_unlock(&mx_procesos);
 }
 
@@ -371,19 +386,18 @@ t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
 
         proceso = queue_pop(cola_ready);
 
+        //log_info(logger,"-------------------Proceso ID : %d----------------", proceso->pcb->PID);
         if(proceso->pcb->estimacion_cpu_anterior !=0){
 
             proceso->pcb->estimacion_cpu_proxima_rafaga = calcular_estimacion_cpu(proceso->pcb);
 
-
         }
         
-
-        proceso->pcb->response_Ratio = calcular_response_ratio(proceso->pcb->tiempo_ready, proceso->pcb->estimacion_cpu_proxima_rafaga );
+        proceso->pcb->response_Ratio = calcular_response_ratio(proceso->pcb);
 
         list_add(listaReady,proceso);
 
-
+        
     }
 
      bool mayor_rr(Proceso * proceso1 , Proceso * proceso2)
@@ -395,9 +409,6 @@ t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
 
     for(int i=0; i<list_size(listaReady); i++){
         queue_push(cola_ready,list_get(listaReady,i));
-
-        log_warning(logger,"Proceso en cola : %d", ((Proceso *)list_get(listaReady,i))->pcb->PID);
-        log_warning(logger,"Con RR : %f", ((Proceso *)list_get(listaReady,i))->pcb->response_Ratio);
     }
 
     list_destroy(listaReady);
@@ -408,6 +419,86 @@ t_queue* calcular_lista_ready_HRRN (t_queue * cola_ready){
 
 }
 
+void imprimir_cola (t_queue cola){
+
+    t_queue * copia = queue_create();
+    Proceso*paraImprimir ;
+    int elementos = queue_size(&cola);
+
+    char* lista_pids = string_new();
+    string_append(&lista_pids, "[ ");
+
+    for(int i =0; i<elementos; i++){
+
+        paraImprimir = (Proceso* )queue_pop(&cola);
+        string_append_with_format(&lista_pids, " %s ", string_itoa(paraImprimir->pcb->PID));
+        //log_info(logger, "Proceso ID : %d ", paraImprimir->pcb->PID);
+        queue_push(copia, (Proceso* )paraImprimir);
+
+    }
+
+    string_append(&lista_pids, " ]");
+
+    log_info(logger, "Cola Ready %s: %s ", KernelConfig.ALGORITMO_PLANIFICACION, lista_pids);
+
+    cola_ready = copia;
+
+    free(lista_pids);
+
+}
+
+
+void manejar_hilo_ejecutar(){
+
+    sem_wait(&semaforo_ready);
+
+    log_info(logger, "----------ENTRA A EJECUTAR-------");
+
+    while(true){
+        
+        sem_wait(&semaforo_ejecutando); // Ejecuta uno a la vez
+
+        log_info(logger, "En ready: %d", queue_size(cola_ready));
+        
+
+        if (!queue_is_empty(cola_ready))
+        {
+
+            if(strcmp(KernelConfig.ALGORITMO_PLANIFICACION,"HRRN")==0){
+
+                log_info(logger,"---------------------HRRN-------------------------");
+                //log_info(logger, "Antes de Ordenar por HRRN");
+                imprimir_cola(*cola_ready);
+
+                calcular_lista_ready_HRRN(cola_ready);
+                
+                //log_info(logger,"Despues de Ordenar por HRRN");
+                imprimir_cola(*cola_ready);
+
+                log_info(logger,"---------------------HRRN-------------------------");
+                
+            }
+            
+            Proceso *proceso_a_ejecutar = (Proceso *)queue_pop(cola_ready);
+            cambiar_estado(proceso_a_ejecutar,EXEC);
+   
+            // destrabar ready
+            sem_post(&semaforo_planificador);
+
+            //   Enviar PCB a CPU
+            enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
+            proceso_a_ejecutar->pcb->cronometro_exec = temporal_create();
+        }
+        else
+        {
+            //sem_post(&semaforo_ejecutando);
+        }
+
+
+    }
+
+
+}
 
 
 // duda por lo que dice el enunciado
@@ -418,25 +509,27 @@ void manejar_hilo_io()
     {
         sem_wait(&semaforo_io);
         Proceso_IO *proceso_io = (Proceso_IO *)queue_pop(cola_io);
+        log_info(logger, "[KERNEL]: PID: <%d> - Ejecuta IO: %d", proceso_io->PID, proceso_io->tiempo_bloqueado);
         sleep(proceso_io->tiempo_bloqueado);
 
         Proceso *proceso = obtener_proceso_por_pid(proceso_io->PID);
 
-        log_error(logger, "[KERNEL] poner ready %d ", proceso->pcb->PID);
+        log_info(logger, "[KERNEL] Poner <%d> en READY por IO", proceso_io->PID);
         cambiar_estado(proceso, READY);
 
-        proceso->pcb->tiempo_ready = time(NULL); 
+        proceso->pcb->cronometro_ready = temporal_create(); 
 
         sem_post(&semaforo_planificador);
-        //sem_post(&semaforo_ejecutando);
+        sem_post(&semaforo_ejecutando);
 
         queue_push(cola_ready, proceso);
+        imprimir_cola(*cola_ready);
     }
 }
 
 void manejar_wait(Proceso *proceso, char *nombre_recurso)
 {
-    quitar_salto_de_linea(nombre_recurso);
+    //quitar_salto_de_linea(nombre_recurso);
 
     bool comparar_recurso_por_nombre(Recurso * recurso)
     {
@@ -447,24 +540,32 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
 
     if (recurso == NULL)
     {
+        log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - WAIT RECURSO NO EXISTENTE (%s)", proceso->pcb->PID, nombre_recurso);
         cambiar_estado(proceso, FINISHED);
+        sem_post(&semaforo_multiprogramacion);
+
+        avisar_a_consola_fin_proceso(proceso);
         return;
     }
 
     if (recurso->instancias > 0)
     {
-        log_info(logger, "[KERNEL] Descontar recurso %s - %d", nombre_recurso, recurso->instancias);
         recurso->instancias -= 1;
+
+        log_info(logger, "[KERNEL]: PID: <%d> - WAIT: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
 
         proceso->pcb->program_counter++;
         cambiar_estado(proceso, READY); 
-        proceso->pcb->tiempo_ready = time(NULL);      
+        proceso->pcb->cronometro_ready = temporal_create();      
         queue_push(cola_ready, proceso);
+        imprimir_cola(*cola_ready);
         
     }
     else
     {
         cambiar_estado(proceso, BLOCK);
+
+        log_error(logger, "[KERNEL] PID: <%d> - Bloqueado por: %s", proceso->pcb->PID, nombre_recurso);
 
         queue_push(recurso->cola_block, proceso);
     }
@@ -472,7 +573,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
 
 void manejar_signal(Proceso *proceso, char *nombre_recurso)
 {
-    quitar_salto_de_linea(nombre_recurso);
+    //quitar_salto_de_linea(nombre_recurso);
     bool comparar_recurso_por_nombre(Recurso * recurso)
     {
         return strcmp(recurso->nombre, nombre_recurso) == 0;
@@ -482,12 +583,17 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
 
     if (recurso == NULL)
     {
+        log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - SIGNAL DE RECURSO NO EXISTENTE (%s)", proceso->pcb->PID, nombre_recurso);
         cambiar_estado(proceso, FINISHED);
+        sem_post(&semaforo_multiprogramacion);
+
+        avisar_a_consola_fin_proceso(proceso);
         return;
     }
 
-    log_info(logger, "[KERNEL] Sumar recurso %s - %d", nombre_recurso, recurso->instancias);
     recurso->instancias += 1;
+
+    log_info(logger, "[KERNEL]: PID: <%d> - SIGNAL: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
 
     if (!queue_is_empty(recurso->cola_block))
     {
@@ -499,8 +605,9 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
 
     proceso->pcb->program_counter++;
     cambiar_estado(proceso, READY);
-    proceso->pcb->tiempo_ready = time(NULL);   
+    proceso->pcb->cronometro_ready = temporal_create();   
     queue_push(cola_ready, proceso);
+    imprimir_cola(*cola_ready);
 }
 
 Instruccion *buscar_instruccion_por_counter(Proceso *proceso, PCB *pcb)
@@ -518,10 +625,12 @@ void manejar_yield(Proceso *proceso, PCB *pcb)
 
     proceso->pcb->registros_cpu = pcb->registros_cpu;
 
-    log_error(logger, "[KERNEL] poner en ready POR YIELD %d", proceso->pcb->PID);
+    log_info(logger, "[KERNEL] Poner <%d> en READY por YIELD", proceso->pcb->PID);
     cambiar_estado(proceso, READY);
-    proceso->pcb->tiempo_ready = time(NULL);   
+
+    proceso->pcb->cronometro_ready = temporal_create();   
     queue_push(cola_ready, proceso);
+    imprimir_cola(*cola_ready);
 
     pthread_mutex_unlock(&mx_procesos);
 }
@@ -532,14 +641,24 @@ void manejar_exit(Proceso *proceso, PCB *pcb)
 
     cambiar_estado(proceso, FINISHED);
     sem_post(&semaforo_multiprogramacion);
-    // liberar recursos asignados
+    
     // avisar a memoria para que libere estructuras
+
     // avisar a consola que finalizo
+    avisar_a_consola_fin_proceso(proceso);
+
+    // liberar recursos asignados
+    // hay que hacer signal a los recursos que les haya hecho wait este proceso y no les hizo signal todavia? 
+    // agregar en alguna estructura que recursos tiene asignado este proceso?
+
+    liberar_proceso(proceso);
 }
 
 void manejar_io(Proceso *proceso, int32_t PID, int tiempo)
 {
     cambiar_estado(proceso, BLOCK);
+
+    log_error(logger, "[KERNEL] PID: <%d> - Bloqueado por: IO", PID);
 
     Proceso_IO *proceso_io = malloc(sizeof(Proceso_IO));
     proceso_io->PID = PID;
@@ -553,9 +672,30 @@ void manejar_io(Proceso *proceso, int32_t PID, int tiempo)
     sem_post(&semaforo_io);
 }
 
+void avisar_a_consola_fin_proceso(Proceso *proceso){
+    log_info(logger, "[KERNEL]: Avisando a CONSOLA que finalizo el proceso PID <%d> - SOCKET_CONSOLA: <%d>", proceso->pcb->PID, proceso->pcb->socket_consola);
+    PAQUETE *paquete = crear_paquete(PROCESO_FINALIZADO);
+    enviar_paquete_a_cliente(paquete, proceso->pcb->socket_consola);
+}
+
+void liberar_instruccion(Instruccion* instruccion){
+    free(instruccion->nombreInstruccion);
+    free(instruccion->valor);
+    free(instruccion->registro);
+    free(instruccion->nombreArchivo);
+    free(instruccion->recurso);
+}
+
+void liberar_proceso(Proceso* proceso){
+    list_destroy_and_destroy_elements(proceso->pcb->instrucciones, liberar_instruccion);
+    temporal_destroy(proceso->pcb->cronometro_ready);
+    temporal_destroy(proceso->pcb->cronometro_exec);
+    //free(proceso->pcb); -> Todavia no se puede liberar. Hacer free al final
+}
+
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion)
 {
-    quitar_salto_de_linea(instruccion);
+    //quitar_salto_de_linea(instruccion);
     if (strcmp(instruccion, "MOV_IN") == 0)
         return MOV_IN;
     else if (strcmp(instruccion, "MOV_OUT") == 0)

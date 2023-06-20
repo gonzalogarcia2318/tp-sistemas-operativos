@@ -207,7 +207,7 @@ int ejecutar_instruccion(Instruccion *Instruccion, PCB *pcb) // EXECUTE //CADA I
 
     PAQUETE *paquete = crear_paquete(INSTRUCCION);
 
-    quitar_salto_de_linea(nombre_instru);
+    //quitar_salto_de_linea(nombre_instru);
 
     if (!strcmp(nombre_instru, "SET"))
     {
@@ -309,7 +309,7 @@ int ejecutar_instruccion(Instruccion *Instruccion, PCB *pcb) // EXECUTE //CADA I
 void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
 {
     Registro_CPU *reg_cpu = &pcb->registros_cpu;
-    quitar_salto_de_linea(valor);
+    //quitar_salto_de_linea(valor);
 
     if(!strcmp(registro_instr,"AX"))
     {
@@ -368,7 +368,7 @@ void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
 char *obtener_valor_registro(Registro_CPU registros_pcb, char *registro_buscado)
 {
     char *valor = string_itoa(0); // solo lo inicializo, se tiene q pisar
-    quitar_salto_de_linea(registro_buscado);
+    //quitar_salto_de_linea(registro_buscado);
 
     if (!strcmp(registro_buscado, "AX"))
     {

@@ -44,6 +44,9 @@ run: all
 runb2: all
 	./$(PROCESS_NAME) config/consola.config ./base2.txt
 
+runb3: all
+	./$(PROCESS_NAME) config/consola.config ./base3.txt
+
 rund1: all
 	./$(PROCESS_NAME) config/consola.config ./deadlock1.txt
 
@@ -61,3 +64,6 @@ rune1: all
 
 rune2: all
 	./$(PROCESS_NAME) config/consola.config ./error2.txt
+
+run-args: all
+	./${PROCESS_NAME} $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
