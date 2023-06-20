@@ -296,20 +296,17 @@ BUFFER *serializar_segmento(SEGMENTO *segmento)
     void* stream = malloc(buffer->size);
     int offset = 0; // Desplazamiento
 
-    
-    
     memcpy(stream + offset, &(segmento->base), sizeof(int32_t));
     offset += sizeof(int32_t);
 
- 
     memcpy(stream + offset, &(segmento->id), sizeof(int32_t));
     offset += sizeof(int32_t);
 
-    
     memcpy(stream + offset, &(segmento->limite), sizeof(int32_t));
     offset += sizeof(int32_t);
  
-
+    memcpy(stream + offset, &(segmento->validez), sizeof(int32_t));
+    offset += sizeof(int32_t);
     // Guarda el tamaño y los datos serializados en la estructura BUFFER
     buffer->stream = stream;
 
@@ -505,8 +502,10 @@ SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
     memcpy(&(segmento->limite), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-
     memcpy(&(segmento->base), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    memcpy(&(segmento->validez), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
     return segmento;
@@ -580,7 +579,7 @@ int calcular_tamanio_instruccion(Instruccion *instruccion){
 }
 
 int calcular_tamanio_segmento(SEGMENTO *segmento){
-    int tamanio = sizeof(int32_t) * 3;                
+    int tamanio = sizeof(int32_t) * 4;                
     return tamanio;
 }
 

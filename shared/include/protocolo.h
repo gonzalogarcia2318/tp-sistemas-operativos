@@ -151,7 +151,7 @@ typedef struct
     int32_t id;
     int32_t base;
     int32_t limite;
-
+    int32_t validez;
 } SEGMENTO;
 
 PCB *obtener_paquete_pcb(int socket_cpu);
