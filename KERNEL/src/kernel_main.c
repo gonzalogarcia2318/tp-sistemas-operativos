@@ -223,7 +223,7 @@ void manejar_paquete_cpu()
                 memcpy(&(pcb->registros_cpu), buffer->stream + sizeof(int32_t), sizeof(Registro_CPU));
                 buffer->stream += (sizeof(int32_t) + sizeof(Registro_CPU));
 
-                sleep(5);
+                //sleep(5);
 
                 manejar_yield(proceso, pcb);
                 break;
@@ -690,7 +690,7 @@ void liberar_proceso(Proceso* proceso){
     list_destroy_and_destroy_elements(proceso->pcb->instrucciones, liberar_instruccion);
     temporal_destroy(proceso->pcb->cronometro_ready);
     temporal_destroy(proceso->pcb->cronometro_exec);
-    free(proceso->pcb);
+    //free(proceso->pcb); -> Todavia no se puede liberar. Hacer free al final
 }
 
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion)

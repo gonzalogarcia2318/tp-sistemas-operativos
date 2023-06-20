@@ -23,11 +23,14 @@ void esperar_consola(int socketKernel)
         Hilo hilo_consola;
         pthread_create(&hilo_consola, NULL, (void *)manejar_paquete_consola, (void *)socketConsola);
         pthread_detach(hilo_consola);
+
+        
     }
 }
 
 void manejar_paquete_consola(int socketConsola)
 {
+    int recibi_instrucciones = 0;
 
     while (true)
     {
@@ -48,14 +51,21 @@ void manejar_paquete_consola(int socketConsola)
             t_list *instrucciones = obtener_paquete_estructura_dinamica(socketConsola);
             confirmar_recepcion_a_consola(socketConsola);
             manejar_proceso_consola(instrucciones, socketConsola);
-
+            recibi_instrucciones = 1;
             break;
 
         default:
             log_warning(logger, "[KERNEL]: Operacion desconocida desde consola.");
             break;
         }
+
+        if(recibi_instrucciones){
+            log_info(logger, "[KERNEL]: Recibi las instrucciones. Muere el hilo de la consola <%d>.", socketConsola);
+            break;
+        }
+
     }
+    
 }
 
 void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
