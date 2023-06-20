@@ -1,33 +1,5 @@
 #include "file_system_thread.h"
-/*
-void esperar_kernel(int socketFileSystem)
-{
-  bool desconectado = false;
-  while (true)
-  {
 
-    log_info(logger, "[FILE_SYSTEM]: Esperando conexion de kernel...");
-    int socket_kernel = esperar_cliente(socketFileSystem);
-
-    if (socket_kernel < 0)
-    {
-      log_warning(logger, "[FILE_SYSTEM]: Kernel Desconectado.");
-
-      return;
-    }
-
-    log_info(logger, "[FILE_SYSTEM]: Conexión de Kernel establecida.");
-
-    desconectado = manejar_paquete_kernel(socket_kernel);
-    
-    if(desconectado) return;
-
-    //Hilo hilo_kernel;
-    //pthread_create(&hilo_kernel, NULL, (void *)manejar_paquete_kernel, (void *)socket_kernel);
-    //pthread_detach(hilo_kernel);
-  }
-}
-*/
 bool manejar_paquete_kernel(int socket_kernel)
 {
 
@@ -60,21 +32,34 @@ bool manejar_paquete_kernel(int socket_kernel)
 
 void recibir_instruccion_kernel()
 {
-  Lista* lista = obtener_paquete_como_lista(socket_kernel);
+
+  t_list* lista =  obtener_paquete_estructura_dinamica(socket_kernel);
+
   CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION*)list_get(lista,0);
-  char* nombre_archivo = (char*)list_get(lista,1);
+  char* nombre_archivo = (char*)list_get(lista,5); //Verificar posicion de la instruccion
   int32_t direccion_fisica = 0;
   int32_t tamanio = 0;
   int32_t puntero_archivo = 0; //DEFINIR DE DONDE SALE ESTE DATO
 
   switch (cod_instruccion)
   {
-    case F_OPEN:
+    case CREAR_ARCHIVO:
       log_warning(logger,"CREAR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
+      if(crear_archivo(nombre_archivo)!=-1){
+        log_warning(logger,"FCB CREADO DE: %s>", nombre_archivo);
 
-      //ejecutar_f_open(nombre_archivo); TODO
-
-      enviar_mensaje_a_cliente("F_OPEN: OK", socket_kernel);
+        enviar_mensaje_a_cliente("CREACION_OK", socket_kernel);
+      }
+      break;
+    case F_OPEN:
+      log_warning(logger,"ABRIR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
+      if(existe_archivo(nombre_archivo) == SUCCESS){
+        enviar_mensaje_a_cliente("OK", socket_kernel);
+      }
+      else
+      {
+        enviar_mensaje_a_cliente("No Existe Archivo", socket_kernel);
+      }
       break;
         
     case F_CLOSE:
@@ -144,4 +129,45 @@ void recibir_instruccion_kernel()
   }
 
   list_destroy(lista);
+}
+
+ // crea un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
+int crear_archivo(char* nombre){
+ 
+
+// Crea el directorio
+  mkdir(FileSystemConfig.PATH_FCB,0777);
+  char* pathCompleto = FileSystemConfig.PATH_FCB;
+  string_append(&pathCompleto,nombre);
+  string_append(&pathCompleto,".config");
+
+  t_config fcb_config;
+  fcb_config.path = pathCompleto;
+
+  t_dictionary * diccionario = dictionary_create();
+  dictionary_put(diccionario,"NOMBRE_ARCHIVO", nombre);
+  dictionary_put(diccionario,"TAMANIO_ARCHIVO", "0");
+  dictionary_put(diccionario,"PUNTERO_DIRECTO", "0");
+  dictionary_put(diccionario,"PUNTERO_INDIRECTO", "0");
+  fcb_config.properties = diccionario;
+
+
+  return config_save_in_file(&fcb_config, pathCompleto);
+
+}
+
+int existe_archivo(char* nombre){
+
+  char* path = "config/fcb/Prueba.config"; //Hace el path correcto, revisar porque falla
+  // string_append(&path,nombre);
+  // string_append(&path,".config");
+  t_config *fcb=  config_create(path);
+
+  if(fcb == NULL){
+    return FAILURE;
+  }
+  else
+  {
+    return SUCCESS;
+  } 
 }
