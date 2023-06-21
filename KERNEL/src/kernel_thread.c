@@ -101,6 +101,8 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
     proceso->pcb->tabla_segmentos = list_create();
     list_add(proceso->pcb->tabla_segmentos, segmento0);
 
+    proceso->pcb->recursos_asignados = list_create();
+
     log_info(logger, "[KERNEL]: Proceso Creado (en NEW) - PID: <%d>", pcb->PID);
     
     bool en_new(Proceso * proceso)

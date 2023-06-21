@@ -135,6 +135,7 @@ typedef struct
     float estimacion_cpu_anterior;
     float response_Ratio;
 
+    t_list *recursos_asignados;
 } PCB;
 
 typedef struct 
