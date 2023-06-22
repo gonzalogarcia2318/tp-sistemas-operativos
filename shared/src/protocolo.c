@@ -423,6 +423,9 @@ BUFFER *serializar_instruccion(Instruccion *instruccion)
     offset += strlen(instruccion->recurso) + 1;
 
     memcpy(stream + offset, &(instruccion->idSegmento), sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    memcpy(stream + offset, &(instruccion->tamanioSegmento), sizeof(int32_t));
 
     // Guarda el tamaño y los datos serializados en la estructura BUFFER
     buffer->stream = stream;
@@ -491,6 +494,10 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     stream += instruccion->recurso_long + 1;
 
     memcpy(&(instruccion->idSegmento), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    memcpy(&(instruccion->tamanioSegmento), stream, sizeof(int32_t));
+
 
     return instruccion;
 }
@@ -574,7 +581,7 @@ t_list* deserializar_segmentos(BUFFER* buffer){
 }
 
 int calcular_tamanio_instruccion(Instruccion *instruccion){
-    int tamanio = sizeof(int32_t) * 11       
+    int tamanio = sizeof(int32_t) * 12       
             + strlen(instruccion->valor) + 1
             + strlen(instruccion->nombreInstruccion) + 1
             + strlen(instruccion->registro) + 1
