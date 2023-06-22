@@ -185,7 +185,7 @@ BUFFER *serializar_registros(Registro_CPU *registros);
 Registro_CPU *deserializar_registros(BUFFER *buffer);
 int32_t obtener_tamanio_registro(char* nombre_registro);
 
-BUFFER *serializar_segmentos(t_list *segmentos);
+BUFFER *serializar_segmentos(t_list *segmentos, int pid);
 BUFFER *serializar_segmento(SEGMENTO *segmento);
 SEGMENTO * deserializar_segmento(BUFFER* buffer, int stream_offset);
 t_list * deserializar_segmentos(BUFFER* buffer);

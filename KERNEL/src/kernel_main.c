@@ -24,6 +24,7 @@ t_list *listaReady;
 void manejar_paquete_cpu();
 void manejar_hilo_io();
 void manejar_hilo_ejecutar();
+void manejar_hilo_memoria();
 
 void cambiar_estado(Proceso *proceso, ESTADO estado);
 void actualizar_pcb(Proceso *proceso, PCB *pcb);
@@ -43,6 +44,10 @@ void quitar_salto_de_linea(char *cadena);
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion);
 
 void avisar_a_consola_fin_proceso(Proceso *proceso);
+void avisar_a_memoria_fin_proceso(Proceso *proceso);
+void finalizar_proceso(Proceso* proceso);
+
+void enviar_proceso_a_memoria(Proceso* proceso);
 
 void liberar_proceso(Proceso *proceso);
 void liberar_instruccion(Instruccion *instruccion);
@@ -98,6 +103,10 @@ int main(int argc, char **argv)
     pthread_create(&hilo_ejecutar, NULL, (void *)manejar_hilo_ejecutar, NULL);
     pthread_detach(hilo_ejecutar);
 
+    Hilo hilo_memoria;
+    pthread_create(&hilo_memoria, NULL, (void *)manejar_hilo_memoria, NULL);
+    pthread_detach(hilo_memoria);
+
     // manejar_proceso_consola();
 
     sem_init(&semaforo_planificador, 0, 1);
@@ -132,13 +141,16 @@ int main(int argc, char **argv)
         {
             sem_wait(&semaforo_multiprogramacion);
 
-            Proceso *proceso_para_ready1 = (Proceso *)list_get(procesos_en_new, 0);
+            Proceso *proceso_para_ready = (Proceso *)list_get(procesos_en_new, 0);
 
-            cambiar_estado(proceso_para_ready1, READY);
+            cambiar_estado(proceso_para_ready, READY);
+            
+            enviar_proceso_a_memoria(proceso_para_ready);
+  
 
-            proceso_para_ready1->pcb->cronometro_ready = temporal_create();
+            proceso_para_ready->pcb->cronometro_ready = temporal_create();
 
-            queue_push(cola_ready, (Proceso *)proceso_para_ready1);
+            queue_push(cola_ready, (Proceso *)proceso_para_ready);
             imprimir_cola(*cola_ready);
 
             sem_post(&semaforo_ready);
@@ -181,6 +193,10 @@ void manejar_paquete_cpu()
             buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
             memcpy(&(pcb->program_counter), buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2);
+
+            memcpy(&(pcb->registros_cpu), buffer->stream + sizeof(int32_t), sizeof(Registro_CPU));
+            buffer->stream += (sizeof(Registro_CPU) + sizeof(int32_t));
+
 
             log_info(logger, "[KERNEL]: Llego PCB <%d>", pcb->PID);
 
@@ -366,17 +382,18 @@ void actualizar_pcb(Proceso *proceso, PCB *pcb)
 {
     pthread_mutex_lock(&mx_procesos); // proceso* esta en lista compartida procesos
     proceso->pcb->program_counter = pcb->program_counter;
+    proceso->pcb->registros_cpu = pcb->registros_cpu;
     proceso->pcb->tiempo_cpu_real = temporal_gettime(proceso->pcb->cronometro_exec);
     proceso->pcb->estimacion_cpu_anterior = proceso->pcb->estimacion_cpu_proxima_rafaga;
     pthread_mutex_unlock(&mx_procesos);
 }
 
-void actualizar_registros(Proceso *proceso, PCB *pcb)
+/* void actualizar_registros(Proceso *proceso, PCB *pcb)
 {
     pthread_mutex_lock(&mx_procesos); // proceso* esta en lista compartida procesos
     proceso->pcb->registros_cpu = pcb->registros_cpu;
     pthread_mutex_unlock(&mx_procesos);
-}
+} */
 
 t_queue *calcular_lista_ready_HRRN(t_queue *cola_ready)
 {
@@ -514,10 +531,11 @@ void manejar_hilo_io()
         proceso->pcb->cronometro_ready = temporal_create();
 
         sem_post(&semaforo_planificador);
-        sem_post(&semaforo_ejecutando);
-
+        
         queue_push(cola_ready, proceso);
         imprimir_cola(*cola_ready);
+
+        sem_post(&semaforo_ejecutando);
     }
 }
 
@@ -538,7 +556,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
         cambiar_estado(proceso, FINISHED);
         sem_post(&semaforo_multiprogramacion);
 
-        avisar_a_consola_fin_proceso(proceso);
+        finalizar_proceso(proceso);
         return;
     }
 
@@ -546,7 +564,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
     {
         recurso->instancias -= 1;
         list_add(proceso->pcb->recursos_asignados, nombre_recurso);
-        imprimir_lista(proceso->pcb->recursos_asignados);
+        
 
         log_info(logger, "[KERNEL]: PID: <%d> - WAIT: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
 
@@ -582,13 +600,12 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
         cambiar_estado(proceso, FINISHED);
         sem_post(&semaforo_multiprogramacion);
 
-        avisar_a_consola_fin_proceso(proceso);
+        finalizar_proceso(proceso);
         return;
     }
 
     recurso->instancias += 1;
     list_remove(proceso->pcb->recursos_asignados, nombre_recurso);
-    imprimir_lista(proceso->pcb->recursos_asignados);
 
     log_info(logger, "[KERNEL]: PID: <%d> - SIGNAL: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
 
@@ -600,7 +617,6 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
         proceso_bloqueado->estado = EXEC;
         //
         list_add(proceso->pcb->recursos_asignados, nombre_recurso);
-        imprimir_lista(proceso->pcb->recursos_asignados);
     }
 
     proceso->pcb->program_counter++;
@@ -642,11 +658,14 @@ void manejar_exit(Proceso *proceso, PCB *pcb)
     cambiar_estado(proceso, FINISHED);
     sem_post(&semaforo_multiprogramacion);
 
-    // avisar a memoria para que libere estructuras
+    finalizar_proceso(proceso);
+}
 
+void finalizar_proceso(Proceso* proceso){
+    // avisar a memoria para que libere estructuras
+    avisar_a_memoria_fin_proceso(proceso);
     // avisar a consola que finalizo
     avisar_a_consola_fin_proceso(proceso);
-
     //
     liberar_recursos(proceso);
     //
@@ -675,6 +694,14 @@ void avisar_a_consola_fin_proceso(Proceso *proceso)
     log_info(logger, "[KERNEL]: Avisando a CONSOLA que finalizo el proceso PID <%d> - SOCKET_CONSOLA: <%d>", proceso->pcb->PID, proceso->pcb->socket_consola);
     PAQUETE *paquete = crear_paquete(PROCESO_FINALIZADO);
     enviar_paquete_a_cliente(paquete, proceso->pcb->socket_consola);
+}
+
+void avisar_a_memoria_fin_proceso(Proceso *proceso)
+{
+    log_info(logger, "[KERNEL]: Avisando a MEMORIA que finalizo el proceso PID <%d>", proceso->pcb->PID);
+    PAQUETE *paquete = crear_paquete(FINALIZAR_PROCESO);
+    agregar_a_paquete(paquete, &proceso->pcb->PID, sizeof(int32_t));
+    enviar_paquete_a_cliente(paquete, socket_memoria);
 }
 
 void liberar_instruccion(Instruccion *instruccion)
@@ -711,10 +738,56 @@ void liberar_recursos(Proceso *proceso)
 
             log_info(logger, "[KERNEL] SUMAMOS RECURSO %s - %d ", recurso->nombre, recurso->instancias);
         }
-        imprimir_lista(proceso->pcb->recursos_asignados);
 
         list_destroy_and_destroy_elements(proceso->pcb->recursos_asignados, free);
     }
+}
+
+
+void manejar_hilo_memoria()
+{
+    while (true)
+    {
+        switch (obtener_codigo_operacion(socket_memoria))
+        {
+        case CREAR_PROCESO:
+            log_info(logger, "[KERNEL]: Llego tabla de segmentos de MEMORIA");
+
+            BUFFER *buffer = recibir_buffer(socket_memoria);
+
+            int32_t PID;
+            memcpy(&PID, buffer->stream, sizeof(int32_t));
+            buffer->stream += sizeof(int32_t);
+
+            t_list* tabla_segmentos = deserializar_segmentos(buffer);
+        
+            Proceso* proceso = obtener_proceso_por_pid(PID);
+            proceso->pcb->tabla_segmentos = tabla_segmentos;
+
+            for(int i = 0; i < list_size(proceso->pcb->tabla_segmentos); i++){
+                SEGMENTO* segmento = (SEGMENTO*) list_get(proceso->pcb->tabla_segmentos, i);
+                log_info(logger, "SEGMENTO: id %d - base %d - limite %d - validez %d", segmento->id, segmento->base, segmento->limite, segmento->validez);
+            }
+
+
+            return;
+
+        case FINALIZAR_PROCESO:
+            log_info(logger, "[KERNEL]: Llego FINALIZAR_PROCESO de MEMORIA");
+            return;
+
+        case DESCONEXION:
+            log_warning(logger, "[KERNEL]: Conexión de MEMORIA terminada.");
+            return;
+        }
+    }
+}
+
+void enviar_proceso_a_memoria(Proceso* proceso){
+    log_info(logger, "[KERNEL] Enviando a MEMORIA proceso PID <%d>", proceso->pcb->PID);
+    PAQUETE *paquete = crear_paquete(CREAR_PROCESO);
+    agregar_a_paquete(paquete, &proceso->pcb->PID, sizeof(int32_t));
+    enviar_paquete_a_cliente(paquete, socket_memoria);
 }
 
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion)
@@ -788,7 +861,7 @@ void manejar_create_segment(int32_t pid, int32_t id_segmento, int32_t tamanio_se
     agregar_a_paquete(paquete, &tamanio_segmento, sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
-    log_info(logger, "ENVIÉ PAQUETE A MEMORIA CON MOTIVO: <CREATE_SEGMENT>");
+    log_info(logger, "ENVIÉ PAQUETE A MEMORIA CON MOTIVO: <CREATE_SEGMENT> %d", tamanio_segmento);
 
     // RECIBIR RTA ... TODO
 }

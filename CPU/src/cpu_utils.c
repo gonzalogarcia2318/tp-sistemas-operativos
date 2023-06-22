@@ -519,7 +519,7 @@ void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
     PAQUETE *paquete2 = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete2, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete2, &pcb->program_counter, sizeof(int32_t));
-    agregar_a_paquete(paquete2, &instruccion->tiempo, sizeof(int32_t));
+    agregar_a_paquete(paquete2, &pcb->registros_cpu, sizeof(Registro_CPU));
     enviar_paquete_a_cliente(paquete2, socket_kernel);
     eliminar_paquete(paquete2);
     eliminar_paquete(paquete);
@@ -530,11 +530,16 @@ void ejecutar_f_open(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_OPEN> - <NOMBRE_ARCHIVO: %s>",
                 pcb->PID,
                 instruccion->nombreArchivo);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION f_open = F_OPEN;
-    agregar_a_paquete(paquete, &f_open, sizeof(int));
-    agregar_a_paquete(paquete, &instruccion->nombreArchivo, strlen(instruccion->nombreArchivo) + 1);
-    enviar_paquete_a_cliente(paquete, socket_kernel);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION f_open = F_OPEN;
+    //agregar_a_paquete(paquete, &f_open, sizeof(int));
+    //agregar_a_paquete(paquete, &instruccion->nombreArchivo, strlen(instruccion->nombreArchivo) + 1);
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
 }
 
@@ -543,11 +548,16 @@ void ejecutar_f_close(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // N
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_CLOSE> - <NOMBRE_ARCHIVO: %s>",
                 pcb->PID,
                 instruccion->nombreArchivo);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION f_close = F_CLOSE;
-    agregar_a_paquete(paquete, &f_close, sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    enviar_paquete_a_cliente(paquete, socket_kernel);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION f_close = F_CLOSE;
+    //agregar_a_paquete(paquete, &f_close, sizeof(int));
+    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
 }
 
@@ -557,12 +567,17 @@ void ejecutar_f_seek(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI
                 pcb->PID,
                 instruccion->nombreArchivo,
                 instruccion->posicion);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION f_seek = F_SEEK;
-    agregar_a_paquete(paquete, &f_seek, sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    agregar_a_paquete(paquete, &(instruccion->posicion), sizeof(int));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION f_seek = F_SEEK;
+    //agregar_a_paquete(paquete, &f_seek, sizeof(int));
+    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
+    //agregar_a_paquete(paquete, &(instruccion->posicion), sizeof(int));
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
 }
 
@@ -573,13 +588,18 @@ void ejecutar_f_read(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI
                 instruccion->nombreArchivo,
                 instruccion->direccionFisica,
                 instruccion->cantBytes);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION f_read = F_READ;
-    agregar_a_paquete(paquete, &f_read, sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    agregar_a_paquete(paquete, &(instruccion->direccionFisica), sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->cantBytes), sizeof(int));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION f_read = F_READ;
+    //agregar_a_paquete(paquete, &f_read, sizeof(int));
+    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
+    //agregar_a_paquete(paquete, &(instruccion->direccionFisica), sizeof(int));
+    //agregar_a_paquete(paquete, &(instruccion->cantBytes), sizeof(int));
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
 }
 
@@ -590,13 +610,18 @@ void ejecutar_f_write(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // N
                 instruccion->nombreArchivo,
                 instruccion->direccionFisica,
                 instruccion->cantBytes);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION f_write = F_WRITE;
-    agregar_a_paquete(paquete, &f_write, sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    agregar_a_paquete(paquete, &(instruccion->direccionFisica), sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->cantBytes), sizeof(int));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION f_write = F_WRITE;
+    //agregar_a_paquete(paquete, &f_write, sizeof(int));
+    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
+    //agregar_a_paquete(paquete, &(instruccion->direccionFisica), sizeof(int));
+    //agregar_a_paquete(paquete, &(instruccion->cantBytes), sizeof(int));
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
 }
 
@@ -606,12 +631,17 @@ void ejecutar_f_truncate(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) /
                 pcb->PID,
                 instruccion->nombreArchivo,
                 instruccion->tamanioArchivo);
-    enviar_pcb(pcb);
-    CODIGO_INSTRUCCION f_truncate = F_TRUNCATE;
-    agregar_a_paquete(paquete, &f_truncate, sizeof(int));
-    agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    agregar_a_paquete(paquete, &(instruccion->tamanioArchivo), sizeof(int));
-    enviar_paquete_a_cliente(paquete, socket_kernel);
+    //enviar_pcb(pcb);
+    //CODIGO_INSTRUCCION f_truncate = F_TRUNCATE;
+    //agregar_a_paquete(paquete, &f_truncate, sizeof(int));
+    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
+    //agregar_a_paquete(paquete, &(instruccion->tamanioArchivo), sizeof(int));
+    PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
+    agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
+    agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
 }
 

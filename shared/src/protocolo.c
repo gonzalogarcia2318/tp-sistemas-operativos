@@ -244,7 +244,7 @@ BUFFER *serializar_pcb(PCB *pcb)
     memcpy(stream + offset, buffer_instrucciones->stream, buffer_instrucciones->size);
     offset += buffer_instrucciones->size;
 
-    BUFFER *buffer_segmentos = serializar_segmentos(pcb->tabla_segmentos);
+    BUFFER *buffer_segmentos = serializar_segmentos(pcb->tabla_segmentos, pcb->PID);
     memcpy(stream + offset, &buffer_segmentos->size, sizeof(int32_t));
     offset += sizeof(int32_t);
 
@@ -259,7 +259,7 @@ BUFFER *serializar_pcb(PCB *pcb)
     return buffer;
 }
 
-BUFFER *serializar_segmentos(t_list *segmentos){
+BUFFER *serializar_segmentos(t_list *segmentos, int pid){
     BUFFER* buffer = malloc(sizeof(BUFFER));
 	buffer->size = 0;
 
@@ -270,8 +270,13 @@ BUFFER *serializar_segmentos(t_list *segmentos){
         buffer->size += calcular_tamanio_segmento(segmento);
 	}
 
+    buffer->size += sizeof(int32_t);
+
 	void* stream = malloc(buffer->size);
 	int offset = 0;
+
+    memcpy(stream, &pid, sizeof(int32_t));
+    offset += sizeof(int32_t);
 
 	i = 0;
 	for(i = 0; i < list_size(segmentos); i++){
@@ -296,10 +301,10 @@ BUFFER *serializar_segmento(SEGMENTO *segmento)
     void* stream = malloc(buffer->size);
     int offset = 0; // Desplazamiento
 
-    memcpy(stream + offset, &(segmento->base), sizeof(int32_t));
+    memcpy(stream + offset, &(segmento->id), sizeof(int32_t));
     offset += sizeof(int32_t);
 
-    memcpy(stream + offset, &(segmento->id), sizeof(int32_t));
+    memcpy(stream + offset, &(segmento->base), sizeof(int32_t));
     offset += sizeof(int32_t);
 
     memcpy(stream + offset, &(segmento->limite), sizeof(int32_t));
@@ -499,10 +504,10 @@ SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
     memcpy(&(segmento->id), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    memcpy(&(segmento->limite), stream, sizeof(int32_t));
+    memcpy(&(segmento->base), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    memcpy(&(segmento->base), stream, sizeof(int32_t));
+    memcpy(&(segmento->limite), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
     memcpy(&(segmento->validez), stream, sizeof(int32_t));
@@ -556,7 +561,7 @@ t_list* deserializar_instrucciones(BUFFER* buffer){
 t_list* deserializar_segmentos(BUFFER* buffer){
 	t_list* segmentos = list_create();
 
-	int size_segmento_acumulado = 0;
+	int size_segmento_acumulado = sizeof(int32_t); // PRIMERO VIENE EL PID
 	do {
 		SEGMENTO* segmento = deserializar_segmento(buffer, size_segmento_acumulado);
 		size_segmento_acumulado += calcular_tamanio_segmento(segmento);

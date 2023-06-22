@@ -122,6 +122,8 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
     {
         sem_post(&semaforo_planificador);
     }
+
+    
 }
 
 void confirmar_recepcion_a_consola(int socket_consola){

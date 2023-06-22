@@ -125,7 +125,7 @@ void crear_lista_procesos_globales()
 }
 ///////////////////////////////////////////PROCESOS KERNEL////////////////////////////////////////////////////////////////
 
-t_list* manejar_crear_proceso()
+t_list* manejar_crear_proceso(int *proceso_id)
 {
     BUFFER* buffer = recibir_buffer(socket_kernel);
     PROCESO_MEMORIA* proceso = malloc(sizeof(PROCESO_MEMORIA));
@@ -137,6 +137,8 @@ t_list* manejar_crear_proceso()
 
     proceso->pid = pid;
     proceso->tabla_de_segmentos = crear_tabla_de_segmentos();
+
+    *proceso_id = pid;
 
     log_warning(logger,"Creación de Proceso PID: <%d>", pid);
     free(buffer);
@@ -151,10 +153,10 @@ t_list* crear_tabla_de_segmentos()
     log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó la TABLA DE SEGMENTOS con éxito");
     return tabla_segmentos;
 }
-void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos)
+void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos, int pid)
 {
   PAQUETE* paquete = crear_paquete(CREAR_PROCESO);
-  paquete->buffer = serializar_segmentos(tabla_de_segmentos);
+  paquete->buffer = serializar_segmentos(tabla_de_segmentos, pid);
   enviar_paquete_a_cliente(paquete, socket_kernel);
   eliminar_paquete(paquete);
 }
