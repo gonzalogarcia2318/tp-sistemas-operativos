@@ -195,20 +195,31 @@ void recibir_instruccion_kernel()
                 tamanio_segmento
               );
 
-      int codigo = manejar_crear_segmento(pid, id_segmento, tamanio_segmento); //TODO
-
+      //int codigo = manejar_crear_segmento(pid, id_segmento, tamanio_segmento); //TODO
+      int codigo = 1; //Para probar
       switch (codigo)
       {
       case 1: //OK
-        //ENVIAR_DIRE_BASE
+        int base = 512; // para probar base
+        PAQUETE * paquete_ok = crear_paquete(CREAR_SEGMENTO);
+        agregar_a_paquete(paquete_ok, &pid, sizeof(int32_t));
+        agregar_a_paquete(paquete_ok, &base, sizeof(int32_t)); //ENVIAR_DIRE_BASE
+        enviar_paquete_a_cliente(paquete_ok, socket_kernel);
         break;
           
       case 2: //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
-        enviar_mensaje_a_cliente("HAY QUE CONSOLIDAR", socket_kernel); //REALMENTE SERÍA PAQUETE CON COD_OP : CONSOLIDAR
+
+        PAQUETE * paquete_consolidar = crear_paquete(CONSOLIDAR);
+        agregar_a_paquete(paquete_consolidar, &pid, sizeof(int32_t));
+        enviar_paquete_a_cliente(paquete_consolidar, socket_kernel);
+        //enviar_mensaje_a_cliente("HAY QUE CONSOLIDAR", socket_kernel); //REALMENTE SERÍA PAQUETE CON COD_OP : CONSOLIDAR
         break;
           
       case 3: //FALTA ESPACIO "Out of Memory"
-        enviar_mensaje_a_cliente("FALTA ESPACIO", socket_kernel);
+        PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
+        agregar_a_paquete(paquete_fallo, &pid, sizeof(int32_t));
+        enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
+        //enviar_mensaje_a_cliente("FALTA ESPACIO", socket_kernel);
         break;
 
       default:

@@ -40,7 +40,12 @@ typedef enum
     FINALIZAR_PROCESO,
     SEG_FAULT,
     RECEPCION_OK,
-    PROCESO_FINALIZADO
+    PROCESO_FINALIZADO,
+    CREAR_SEGMENTO,
+    CONSOLIDAR,
+    SOLICITAR_COMPACTACION,
+    COMPACTACION_TERMINADA,
+    FALTA_MEMORIA
 
 } CODIGO_OPERACION;
 
@@ -134,8 +139,8 @@ typedef struct
     int64_t tiempo_cpu_real;
     float estimacion_cpu_anterior;
     float response_Ratio;
-
     t_list *recursos_asignados;
+
 } PCB;
 
 typedef struct 
@@ -168,6 +173,7 @@ typedef struct
     int32_t base;
     int32_t limite;
     int32_t validez;
+
 } SEGMENTO;
 
 PCB *obtener_paquete_pcb(int socket_cpu);
