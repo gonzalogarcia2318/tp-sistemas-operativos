@@ -842,6 +842,12 @@ void manejar_hilo_memoria()
 
             break;
 
+
+        case BORRAR_SEGMENTO:
+            log_info(logger, "[KERNEL]: Llego BORRAR SEGEMNTO de MEMORIA");
+            
+            break;
+
         case FINALIZAR_PROCESO:
             log_info(logger, "[KERNEL]: Llego FINALIZAR_PROCESO de MEMORIA");
             break;

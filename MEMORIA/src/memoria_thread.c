@@ -237,7 +237,11 @@ void recibir_instruccion_kernel()
               );
       //int dire_base = manejar_delete_segment(pid, id_segmento); TODO
 
-      enviar_mensaje_a_cliente("DELETE_SEGMENT: <OK>",socket_kernel);
+        PAQUETE * paquete_borrar = crear_paquete(BORRAR_SEGMENTO);
+        agregar_a_paquete(paquete_borrar, &pid, sizeof(int32_t));
+        enviar_paquete_a_cliente(paquete_borrar, socket_kernel);
+
+      //enviar_mensaje_a_cliente("DELETE_SEGMENT: <OK>",socket_kernel);
       log_warning(logger,"PID: <PID> - Eliminar Segmento: <ID SEGMENTO> - Base: <DIRECCIÓN BASE> - TAMAÑO: <TAMAÑO>");
      
       break;
