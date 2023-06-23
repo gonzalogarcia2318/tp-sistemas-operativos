@@ -45,7 +45,7 @@ CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion);
 
 void avisar_a_consola_fin_proceso(Proceso *proceso);
 void avisar_a_memoria_fin_proceso(Proceso *proceso);
-void finalizar_proceso(Proceso* proceso);
+void finalizar_proceso(Proceso* proceso, char* motivo));
 
 void enviar_proceso_a_memoria(Proceso* proceso);
 
@@ -553,10 +553,10 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
     if (recurso == NULL)
     {
         log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - WAIT RECURSO NO EXISTENTE (%s)", proceso->pcb->PID, nombre_recurso);
-        cambiar_estado(proceso, FINISHED);
-        sem_post(&semaforo_multiprogramacion);
+        //cambiar_estado(proceso, FINISHED);
+        //sem_post(&semaforo_multiprogramacion);
 
-        finalizar_proceso(proceso);
+        finalizar_proceso(proceso, "INVALID_RESOURCE");
         return;
     }
 
@@ -597,10 +597,10 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
     if (recurso == NULL)
     {
         log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - SIGNAL DE RECURSO NO EXISTENTE (%s)", proceso->pcb->PID, nombre_recurso);
-        cambiar_estado(proceso, FINISHED);
-        sem_post(&semaforo_multiprogramacion);
+        //cambiar_estado(proceso, FINISHED);
+        //sem_post(&semaforo_multiprogramacion);
 
-        finalizar_proceso(proceso);
+        finalizar_proceso(proceso, "INVALID_RESOURCE");
         return;
     }
 
@@ -655,13 +655,18 @@ void manejar_exit(Proceso *proceso, PCB *pcb)
 {
     proceso->pcb->registros_cpu = pcb->registros_cpu;
 
+    //cambiar_estado(proceso, FINISHED);
+    //sem_post(&semaforo_multiprogramacion);
+
+    finalizar_proceso(proceso, "SUCCESS");
+}
+
+void finalizar_proceso(Proceso* proceso, char* motivo){
+    log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO - Motivo: <%s>", proceso->pcb->PID, motivo);
+
     cambiar_estado(proceso, FINISHED);
     sem_post(&semaforo_multiprogramacion);
 
-    finalizar_proceso(proceso);
-}
-
-void finalizar_proceso(Proceso* proceso){
     // avisar a memoria para que libere estructuras
     avisar_a_memoria_fin_proceso(proceso);
     // avisar a consola que finalizo
@@ -790,6 +795,10 @@ void manejar_hilo_memoria()
 
             log_info(logger, "Proceso PID: %d  - Base: %d ", PID, base);
 
+            // agregar segmento a pcb->tabla_segmentos
+
+            // DEVOLVER A CPU EL PROCESO -> NO PASA POR READY?
+
             break;
 
         case CONSOLIDAR:
@@ -838,13 +847,26 @@ void manejar_hilo_memoria()
 
             log_info(logger, "Proceso PID: %d", proceso->pcb->PID);
 
-           //finalizar_proceso(proceso);  Falta Manejarlo en Memoria
+            finalizar_proceso(proceso, "OUT_OF_MEMORY");  // Falta Manejarlo en Memoria
 
             break;
 
 
         case BORRAR_SEGMENTO:
             log_info(logger, "[KERNEL]: Llego BORRAR SEGEMNTO de MEMORIA");
+
+            BUFFER *buffer = recibir_buffer(socket_memoria);
+
+            memcpy(&PID, buffer->stream, sizeof(int32_t));
+            buffer->stream += sizeof(int32_t);
+
+            t_list* tabla_segmentos = deserializar_segmentos(buffer);
+        
+            proceso = obtener_proceso_por_pid(PID);
+            proceso->pcb->tabla_segmentos = tabla_segmentos;
+
+            // DEVOLVER A CPU EL PROCESO -> NO PASA POR READY?
+
             
             break;
 
@@ -858,6 +880,10 @@ void manejar_hilo_memoria()
         }
     }
 }
+
+/*void agregar_segmento_a_proceso(Proceso* proceso, ){
+
+}*/
 
 void enviar_proceso_a_memoria(Proceso* proceso){
     log_info(logger, "[KERNEL] Enviando a MEMORIA proceso PID <%d>", proceso->pcb->PID);
