@@ -36,7 +36,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso);
 void manejar_signal(Proceso *proceso, char *nombre_recurso);
 void manejar_yield(Proceso *proceso, PCB *pcb);
 void manejar_exit(Proceso *proceso, PCB *pcb);
-void manejar_create_segment(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
+void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t tamanio_segmento);
 void manejar_delete_segment(int32_t pid, int32_t id_segmento);
 void imprimir_cola(t_queue cola);
 
@@ -45,7 +45,7 @@ CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion);
 
 void avisar_a_consola_fin_proceso(Proceso *proceso);
 void avisar_a_memoria_fin_proceso(Proceso *proceso);
-void finalizar_proceso(Proceso* proceso, char* motivo));
+void finalizar_proceso(Proceso* proceso, char* motivo);
 
 void enviar_proceso_a_memoria(Proceso* proceso);
 
@@ -53,6 +53,9 @@ void liberar_proceso(Proceso *proceso);
 void liberar_instruccion(Instruccion *instruccion);
 
 void imprimir_lista(t_list* lista);
+
+void actualizar_base_del_segmento_en_proceso(Proceso* proceso, int id_segmento, int base);
+void imprimir_segmentos(Proceso* proceso);
 
 int main(int argc, char **argv)
 {
@@ -315,7 +318,7 @@ void manejar_paquete_cpu()
                             pcb->PID,
                             instruccion->idSegmento,
                             instruccion->tamanioSegmento);
-                manejar_create_segment(pcb->PID, instruccion->idSegmento, instruccion->tamanioSegmento);
+                manejar_create_segment(proceso, instruccion->idSegmento, instruccion->tamanioSegmento);
                 break;
 
             case DELETE_SEGMENT:
@@ -662,7 +665,7 @@ void manejar_exit(Proceso *proceso, PCB *pcb)
 }
 
 void finalizar_proceso(Proceso* proceso, char* motivo){
-    log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO - Motivo: <%s>", proceso->pcb->PID, motivo);
+    log_warning(logger, "[KERNEL]: PID: <%d> - FINALIZADO - Motivo: <%s>", proceso->pcb->PID, motivo);
 
     cambiar_estado(proceso, FINISHED);
     sem_post(&semaforo_multiprogramacion);
@@ -755,6 +758,8 @@ void manejar_hilo_memoria()
     int32_t PID;
     Proceso* proceso;
     int32_t base;
+    int32_t id_segmento;
+    t_list* tabla_segmentos;
 
     while (true)
     {
@@ -769,15 +774,12 @@ void manejar_hilo_memoria()
             memcpy(&PID, buffer->stream, sizeof(int32_t));
             buffer->stream += sizeof(int32_t);
 
-            t_list* tabla_segmentos = deserializar_segmentos(buffer);
+            tabla_segmentos = deserializar_segmentos(buffer);
         
             proceso = obtener_proceso_por_pid(PID);
             proceso->pcb->tabla_segmentos = tabla_segmentos;
+            imprimir_segmentos(proceso);
 
-            for(int i = 0; i < list_size(proceso->pcb->tabla_segmentos); i++){
-                SEGMENTO* segmento = (SEGMENTO*) list_get(proceso->pcb->tabla_segmentos, i);
-                log_info(logger, "SEGMENTO: id %d - base %d - limite %d - validez %d", segmento->id, segmento->base, segmento->limite, segmento->validez);
-            }
             break;
 
         case CREAR_SEGMENTO:
@@ -787,6 +789,9 @@ void manejar_hilo_memoria()
 
             memcpy(&PID, buffer_segmento->stream + sizeof(int32_t), sizeof(int32_t));
             buffer_segmento->stream += (sizeof(int32_t)*2);
+
+            memcpy(&id_segmento, buffer_segmento->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer_segmento->stream += (sizeof(int32_t)*2);
            
             memcpy(&base, buffer_segmento->stream + sizeof(int32_t), sizeof(int32_t));
             buffer_segmento->stream += (sizeof(int32_t)*2);
@@ -795,7 +800,8 @@ void manejar_hilo_memoria()
 
             log_info(logger, "Proceso PID: %d  - Base: %d ", PID, base);
 
-            // agregar segmento a pcb->tabla_segmentos
+            actualizar_base_del_segmento_en_proceso(proceso, id_segmento, base);
+            imprimir_segmentos(proceso);
 
             // DEVOLVER A CPU EL PROCESO -> NO PASA POR READY?
 
@@ -855,12 +861,12 @@ void manejar_hilo_memoria()
         case BORRAR_SEGMENTO:
             log_info(logger, "[KERNEL]: Llego BORRAR SEGEMNTO de MEMORIA");
 
-            BUFFER *buffer = recibir_buffer(socket_memoria);
+            BUFFER *buffer_borrar = recibir_buffer(socket_memoria);
 
-            memcpy(&PID, buffer->stream, sizeof(int32_t));
-            buffer->stream += sizeof(int32_t);
+            memcpy(&PID, buffer_borrar->stream, sizeof(int32_t));
+            buffer_borrar->stream += sizeof(int32_t);
 
-            t_list* tabla_segmentos = deserializar_segmentos(buffer);
+            tabla_segmentos = deserializar_segmentos(buffer_borrar);
         
             proceso = obtener_proceso_por_pid(PID);
             proceso->pcb->tabla_segmentos = tabla_segmentos;
@@ -874,16 +880,24 @@ void manejar_hilo_memoria()
             log_info(logger, "[KERNEL]: Llego FINALIZAR_PROCESO de MEMORIA");
             break;
 
-        case DESCONEXION:
-            log_warning(logger, "[KERNEL]: Conexión de MEMORIA terminada.");
+        default:
+            log_warning(logger, "[KERNEL]: Operacion desconocida desde MEMORIA.");
             break;
         }
     }
 }
 
-/*void agregar_segmento_a_proceso(Proceso* proceso, ){
+void actualizar_base_del_segmento_en_proceso(Proceso* proceso, int id_segmento, int base){
+    bool comparar_ids_segmento(SEGMENTO* segmento)
+    {
+        return segmento->id == id_segmento;
+    }
 
-}*/
+    SEGMENTO *segmento = list_find(proceso->pcb->tabla_segmentos, (void *)comparar_ids_segmento);
+
+    segmento->base = base;
+    log_info(logger, "[KERNEL] PID: %d - Actualizamos segmento %d con base %d", proceso->pcb->PID, segmento->id, segmento->base);
+}
 
 void enviar_proceso_a_memoria(Proceso* proceso){
     log_info(logger, "[KERNEL] Enviando a MEMORIA proceso PID <%d>", proceso->pcb->PID);
@@ -953,17 +967,26 @@ void cambiar_estado(Proceso *proceso, ESTADO estado)
     log_warning(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s> - Estado Actual: <%s>", proceso->pcb->PID, descripcion_estado(anterior), descripcion_estado(proceso->estado));
 }
 
-void manejar_create_segment(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
+void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t tamanio_segmento)
 {
+    SEGMENTO *segmento = malloc(sizeof(SEGMENTO));
+    segmento->id = id_segmento;
+    segmento->base = 0;
+    segmento->limite = 0;
+    segmento->validez = 0;
+
+    list_add(proceso->pcb->tabla_segmentos, segmento);
+
     PAQUETE *paquete = crear_paquete(INSTRUCCION);
     int32_t cs = CREATE_SEGMENT;
     agregar_a_paquete(paquete, &cs, sizeof(int32_t));
-    agregar_a_paquete(paquete, &pid, sizeof(int32_t));
-    agregar_a_paquete(paquete, &id_segmento, sizeof(int32_t));
+    agregar_a_paquete(paquete, &proceso->pcb->PID, sizeof(int32_t));
+    agregar_a_paquete(paquete, &segmento->id, sizeof(int32_t));
     agregar_a_paquete(paquete, &tamanio_segmento, sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
-    log_info(logger, "ENVIÉ PAQUETE A MEMORIA CON MOTIVO: <CREATE_SEGMENT> %d", tamanio_segmento);
+
+    log_info(logger, "ENVIÉ PAQUETE A MEMORIA CON MOTIVO: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
 
     // RECIBIR RTA ... TODO Manejado en HILO MEMORIA 
 
@@ -990,4 +1013,14 @@ void imprimir_lista(t_list* lista){
         char* el = list_get(lista, i) + '\0';
         log_info(logger, "%s ; ", el);
     }
+}
+
+void imprimir_segmentos(Proceso* proceso){
+    log_info(logger, "-----------------");
+    log_info(logger, "PID: %d - SEGMENTOS", proceso->pcb->PID);
+    for(int i = 0; i < list_size(proceso->pcb->tabla_segmentos); i++){
+        SEGMENTO* segmento = (SEGMENTO*) list_get(proceso->pcb->tabla_segmentos, i);
+        log_info(logger, "-> ID %d - Base %d - Limite %d - Validez %d", segmento->id, segmento->base, segmento->limite, segmento->validez);
+    }
+    log_info(logger, "-----------------");
 }

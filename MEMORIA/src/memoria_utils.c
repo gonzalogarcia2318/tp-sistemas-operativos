@@ -169,7 +169,9 @@ void manejar_finalizar_proceso()
             buffer->stream += (sizeof(int32_t) * 2);
     log_info(logger,"RECIBI ELIMINAR_PROCESO: PID:<%d>", pid);
 
-    PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
+    // SALE UN ERROR -> LLEGA MUCHAS VECES A KERNEL QUE FINALIZO EL PROCESO?
+    // obtener_proceso_de_globales(pid); no devuelve nada
+    /*PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
 
     SEGMENTO* seg_aux;
     
@@ -186,7 +188,7 @@ void manejar_finalizar_proceso()
     eliminar_proceso_de_globales(pid);
     free(proceso);
 
-    log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);
+    log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);*/
 }
 
 PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid)

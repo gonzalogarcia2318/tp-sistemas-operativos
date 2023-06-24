@@ -89,6 +89,7 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
     segmento0->base = 0;
     segmento0->id =0;
     segmento0->limite=100;
+    // TODO: REVISAR: LIMITE 100? SEGMENTO 0 DEBERIA VENIR DE MEMORIA AL PRINCIPIO CUANDO LE AVISAMOS QUE CREAMOS EL PROCESO? 
 
     //memset(&proceso->pcb->registros_cpu,0,(112)); //Blanquea todos los registros con 0
 

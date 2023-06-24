@@ -24,7 +24,7 @@ void escuchar_kernel(int socket_kernel)
     
     case FINALIZAR_PROCESO:
       manejar_finalizar_proceso();
-      enviar_mensaje_a_cliente("FINALIZAR_PROCESO: <OK>",socket_kernel);
+      //enviar_mensaje_a_cliente("FINALIZAR_PROCESO: <OK>",socket_kernel);
       break;
     
     case INSTRUCCION:
@@ -200,9 +200,10 @@ void recibir_instruccion_kernel()
       switch (codigo)
       {
       case 1: //OK
-        int base = 512; // para probar base
+        int base = 512 * id_segmento; // para probar base
         PAQUETE * paquete_ok = crear_paquete(CREAR_SEGMENTO);
         agregar_a_paquete(paquete_ok, &pid, sizeof(int32_t));
+        agregar_a_paquete(paquete_ok, &id_segmento, sizeof(int32_t));
         agregar_a_paquete(paquete_ok, &base, sizeof(int32_t)); //ENVIAR_DIRE_BASE
         enviar_paquete_a_cliente(paquete_ok, socket_kernel);
         break;
