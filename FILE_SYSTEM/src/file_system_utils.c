@@ -6,6 +6,7 @@ Config *config_superbloque;
 Hilo hilo_fileSystem;
 SUPERBLOQUE superbloque;
 t_bitarray *bitmap ;
+FILE* archivo_bloques;
 int socket_file_system;
 int socket_memoria;
 int socket_kernel;
@@ -62,7 +63,7 @@ int levantar_bitmap(char *path)
 {
     FILE *file;
     char* bitarray;
-    size_t size = superbloque.BLOCK_COUNT/8;
+    size_t size = superbloque.BLOCK_COUNT;
 
     file = fopen(path, "rb+");
     if (file == NULL) {
@@ -87,7 +88,6 @@ int levantar_bitmap(char *path)
 
 int iniciar_archivo_de_bloques(char* path_ab)
 {
-  FILE* archivo_bloques;
   int tamanio_ab = superbloque.BLOCK_COUNT * superbloque.BLOCK_SIZE;
  
   archivo_bloques = fopen(path_ab,"r+");

@@ -1,5 +1,8 @@
 #include "file_system_thread.h"
 
+extern t_bitarray *bitmap ;
+extern FILE* archivo_bloques;
+
 bool manejar_paquete_kernel(int socket_kernel)
 {
 
@@ -36,7 +39,7 @@ void recibir_instruccion_kernel()
   t_list* lista =  obtener_paquete_estructura_dinamica(socket_kernel);
 
   CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION*)list_get(lista,0);
-  char* nombre_archivo = (char*)list_get(lista,5); //Verificar posicion de la instruccion
+  char* nombre_archivo = (char*)list_get(lista,1); //Verificar posicion de la instruccion
   int32_t direccion_fisica = 0;
   int32_t tamanio = 0;
   int32_t puntero_archivo = 0; //DEFINIR DE DONDE SALE ESTE DATO
@@ -113,12 +116,12 @@ void recibir_instruccion_kernel()
       break;
         
     case F_TRUNCATE:
-      tamanio = *(int32_t*)list_get(lista,2);
+      tamanio = *(int32_t*)list_get(lista,1);
       log_warning(logger, "TRUNCAR ARCHIVO: <NOMBRE_ARCHIVO: %s> - Tamaño: <TAMAÑO: %d>",
                           nombre_archivo,
                           tamanio);
 
-      //ejecutar_f_truncate(nombre_archivo,tamanio); TODO
+      ejecutar_f_truncate(nombre_archivo,tamanio); 
 
       enviar_mensaje_a_cliente("F_TRUNCATE: OK", socket_kernel);
       break;
@@ -158,7 +161,7 @@ int crear_archivo(char* nombre){
 
 int existe_archivo(char* nombre){
 
-  char* path = "config/fcb/Prueba.config"; //Hace el path correcto, revisar porque falla
+  char* path = "config/fcb/Prueba.config"; //Hacer el path correcto, revisar porque falla
   // string_append(&path,nombre);
   // string_append(&path,".config");
   t_config *fcb=  config_create(path);
@@ -170,4 +173,30 @@ int existe_archivo(char* nombre){
   {
     return SUCCESS;
   } 
+}
+
+void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
+   char* path = "config/fcb/Prueba.config"; //Hacer el path correcto, revisar porque falla
+  // string_append(&path,nombre);
+  // string_append(&path,".config");
+   t_config *fcb=  config_create(path);
+   int tamanio = config_get_int_value(fcb, "TAMANIO_ARCHIVO");
+   int puntero_directo = config_get_int_value(fcb, "PUNTERO_DIRECTO");
+   int puntero_indirecto = config_get_int_value(fcb, "PUNTERO_INDIRECTO");
+   
+  if(a_truncar>= tamanio){
+    //ampliar tamañano
+    //buscar bloques libres recorriendo el bitmap
+    //una vez conseguido los bloques, asignar los punteros de acuerdo a la cantidad de bloques que sea necesario(bytes)
+    //actualizar el tamaño del archivo en FCB
+  }
+  else
+  {
+    //reducir tamanio
+    //marcar como libres ls bloques en el bitmap
+    //descartar los bloques , actualizando los valores de los punteros(descartando desde el final del archivo hacia el principio)
+    //actualizar el tamaño del archivo en FCB
+  }
+  
+
 }
