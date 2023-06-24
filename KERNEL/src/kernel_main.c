@@ -8,17 +8,18 @@ t_queue *cola_io;
 sem_t semaforo_planificador;
 sem_t semaforo_ejecutando;
 sem_t semaforo_ready;
-
 sem_t semaforo_multiprogramacion;
-
 sem_t semaforo_new;
 sem_t semaforo_io;
+
+sem_t file_system_disponible;
+sem_t esperar_respuesta_fileSystem;
 
 pthread_mutex_t mx_procesos;
 
 t_list *procesos;
 t_list *recursos;
-
+t_list * archivos_abiertos_global;
 t_list *listaReady;
 
 void manejar_paquete_cpu();
@@ -57,15 +58,22 @@ void imprimir_lista(t_list* lista);
 void actualizar_base_del_segmento_en_proceso(Proceso* proceso, int id_segmento, int base);
 void imprimir_segmentos(Proceso* proceso);
 
+
+
 int main(int argc, char **argv)
 {
 
     // TODO: Destruir la lista al final.
     procesos = list_create();
+    archivos_abiertos_global = list_create();
     cola_ready = queue_create();
     cola_io = queue_create();
 
     sem_init(&semaforo_new, 0, 0);
+    
+    sem_init(&esperar_respuesta_fileSystem , 0 , 0);
+    sem_init(&file_system_disponible , 0 , 1);
+
     pthread_mutex_init(&mx_procesos, NULL);
     sem_init(&semaforo_io, 0, 0);
 
@@ -110,6 +118,10 @@ int main(int argc, char **argv)
     pthread_create(&hilo_memoria, NULL, (void *)manejar_hilo_memoria, NULL);
     pthread_detach(hilo_memoria);
 
+    Hilo hilo_fileSystem;
+    pthread_create(&hilo_fileSystem, NULL, (void *)manejar_hilo_fileSystem, NULL);
+    pthread_detach(hilo_fileSystem);
+
     // manejar_proceso_consola();
 
     sem_init(&semaforo_planificador, 0, 1);
@@ -123,7 +135,7 @@ int main(int argc, char **argv)
 
     sem_wait(&semaforo_new); // Para que no empiece sin que no haya ningun proceso
 
-    sleep(8);
+    sleep(5);
 
     while (true)
     {
@@ -257,27 +269,30 @@ void manejar_paquete_cpu()
             case F_OPEN:
                 log_info(logger, "[KERNEL] Llego Instruccion F_OPEN - Proceso PID:<%d> - Archivo: <%s>", proceso->pcb->PID, instruccion->nombreArchivo);
 
-                // HACER
+                // Encapsular en llamada a file system con semaforo -- file_system_disponible
 
-                // CODIGO_INSTRUCCION* f_open = F_OPEN;
-                // agregar_a_paquete(paquete_instruccion,&f_open,sizeof(CODIGO_INSTRUCCION));
-                // enviar_paquete_a_servidor(paquete, socket_file_system);
-                // char *mensaje = obtener_mensaje_del_servidor(socket_file_system);
-                // log_info(logger, "KERNEL: Recibi un mensaje de FS con motivo de F_OPEN:%s", mensaje);
-                //
+                manejar_f_open(proceso,instruccion->nombreArchivo);
+
                 break;
 
             case F_CLOSE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_CLOSE - Proceso PID:<%d> - Archivo: <%s>", proceso->pcb->PID, instruccion->nombreArchivo);
-                // HACER
-                //
+                
+                // Encapsular en llamada a file system con semaforo -- file_system_disponible
+                
+                manejar_f_close(proceso,instruccion->nombreArchivo);
+                
                 break;
 
             case F_SEEK:
                 log_info(logger, "[KERNEL] Llego Instruccion F_SEEK");
                 log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->posicion);
-                // HACER
-                //
+                
+                
+                 manejar_f_seek(proceso,instruccion->nombreArchivo, instruccion->posicion);
+                
+               
+               
                 break;
 
             case F_READ:
@@ -290,6 +305,12 @@ void manejar_paquete_cpu()
                 log_info(logger, "Parametros: %s - %d - %d", instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
                 // HACER
                 //
+
+                manejar_f_read(proceso,instruccion->nombreArchivo, instruccion->direccionFisica);
+
+
+                 //Al finalizar Proceso F_READ
+                sem_post(&esperar_respuesta_fileSystem);
                 break;
 
             case F_WRITE:
@@ -302,13 +323,26 @@ void manejar_paquete_cpu()
                 log_info(logger, "Parametros: %s - %d - %d", instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
                 // HACER
                 //
+
+                manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->direccionFisica,instruccion->cantBytes );
+
+
+                //Al finalizar Proceso F_WRITE
+                sem_post(&esperar_respuesta_fileSystem);
                 break;
 
             case F_TRUNCATE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_TRUNCATE");
                 log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->tamanioArchivo);
                 // HACER
-                //
+                
+                
+                manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->tamanioArchivo );
+
+                
+                
+                //Al finalizar Proceso F_TRUNCATE
+                sem_post(&esperar_respuesta_fileSystem);
                 break;
 
             case CREATE_SEGMENT:
@@ -466,6 +500,44 @@ void imprimir_cola(t_queue cola)
     free(lista_pids);
 }
 
+
+void manejar_hilo_fileSystem(){
+
+
+    while(true){
+
+        sem_wait(&esperar_respuesta_fileSystem);
+
+        sem_wait(&file_system_disponible);
+
+        switch (obtener_codigo_operacion(socket_file_system))
+        {
+            
+        case FINALIZO_TRUNCADO:
+        break;
+
+        case FINALIZO_LECTURA:
+        break;
+
+        case FINALIZO_ESCRITURA:
+        break;
+
+        default:
+        break;
+
+
+        }
+        sem_post(&file_system_disponible);
+
+
+    }
+
+
+
+}
+
+
+
 void manejar_hilo_ejecutar()
 {
 
@@ -541,6 +613,89 @@ void manejar_hilo_io()
         sem_post(&semaforo_ejecutando);
     }
 }
+
+
+void manejar_f_open(PROCESO * proceso , char * nombre_archivo){
+
+    
+    if(existe_en_tabla_global(nombre_archivo)){
+
+        agregar_entrada_tabla_por_proceso();  
+        
+
+        if(archivo_esta_en_uso()){
+            
+            proceso = BLOCK;
+            agregar_a_cola_bloqueado_archivo();
+
+        }else{
+
+           archivo.PID_en_uso = proceso.PID;     
+
+        }
+
+
+    }else{
+
+        int existe_archivo;
+
+        sem_wait(&file_system_disponible);
+        existe_archivo = llamar_a_fileSystem(nombre_archivo);
+        sem_post(&file_system_disponible);
+
+        if(!existe_archivo){
+            
+            int respuesta;
+
+            sem_wait(&file_system_disponible);
+            if(avisar_fileSystem_crear_archivo()){
+                //SE CREO ATR!
+            }else{
+                //FALLO
+            }
+            sem_post(&file_system_disponible);
+
+        }
+
+        agregar_entrada_tabla_global();
+        agregar_entrada_tabla_por_proceso();
+
+
+        devolver_ejecucion_cpu();
+
+    }
+
+        
+}
+
+int llamar_a_fileSystem(char * nombre_archivo){
+
+    PAQUETE * paquete = crear_paquete(EXISTE_ARCHIVO);
+    agregar_a_paquete(paquete,nombre_archivo,strlen(nombre_archivo));
+    enviar_paquete_a_servidor(paquete,socket_file_system);
+
+    BUFFER * buffer = recibir_buffer(socket_file_system);
+
+    int existe_archivo;
+    memcpy(&existe_archivo, buffer->stream, sizeof(int));
+
+    return existe_archivo;
+}
+
+int avisar_fileSystem_crear_archivo(char * nombre_archivo){
+
+    PAQUETE * paquete = crear_paquete(CREAR_ARCHIVO);
+    agregar_a_paquete(paquete,nombre_archivo,strlen(nombre_archivo));
+    enviar_paquete_a_servidor(paquete,socket_file_system);
+
+    BUFFER * buffer = recibir_buffer(socket_file_system);
+
+    int creacion;
+    memcpy(&existe_archivo, buffer->stream, sizeof(int));
+
+    return creacion;
+}
+
 
 void manejar_wait(Proceso *proceso, char *nombre_recurso)
 {
