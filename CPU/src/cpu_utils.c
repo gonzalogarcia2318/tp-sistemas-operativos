@@ -280,7 +280,7 @@ int ejecutar_instruccion(Instruccion *Instruccion, PCB *pcb) // EXECUTE //CADA I
     else if (!strcmp(nombre_instru, "CREATE_SEGMENT")) // CAMIL
     {
         ejecutar_create_segment(paquete, Instruccion, pcb);
-        return 1;
+        return 0;
     }
     else if (!strcmp(nombre_instru, "DELETE_SEGMENT")) // CAMIL
     {

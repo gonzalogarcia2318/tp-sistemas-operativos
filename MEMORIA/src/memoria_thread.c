@@ -1,5 +1,7 @@
 #include "memoria_thread.h"
 
+t_list* tabla_test;
+
 void escuchar_kernel(int socket_kernel)
 {
   log_info(logger,"[MEMORIA]: Escuchando KERNEL...");
@@ -18,6 +20,7 @@ void escuchar_kernel(int socket_kernel)
     case CREAR_PROCESO:
       int pid;
       t_list* tabla_de_segmentos = manejar_crear_proceso(&pid);
+      tabla_test = tabla_de_segmentos;
       enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos, pid);
       log_info(logger,"ENVÍE TABLA DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE CREAR_PROCESO");
       break;
@@ -238,9 +241,7 @@ void recibir_instruccion_kernel()
               );
       //int dire_base = manejar_delete_segment(pid, id_segmento); TODO
 
-        PAQUETE * paquete_borrar = crear_paquete(BORRAR_SEGMENTO);
-        agregar_a_paquete(paquete_borrar, &pid, sizeof(int32_t));
-        enviar_paquete_a_cliente(paquete_borrar, socket_kernel);
+      enviar_tabla_de_segmentos_a_kernel_BORRAR(tabla_test, pid);
 
       //enviar_mensaje_a_cliente("DELETE_SEGMENT: <OK>",socket_kernel);
       log_warning(logger,"PID: <PID> - Eliminar Segmento: <ID SEGMENTO> - Base: <DIRECCIÓN BASE> - TAMAÑO: <TAMAÑO>");

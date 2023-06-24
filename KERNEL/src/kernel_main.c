@@ -803,7 +803,10 @@ void manejar_hilo_memoria()
             actualizar_base_del_segmento_en_proceso(proceso, id_segmento, base);
             imprimir_segmentos(proceso);
 
-            // DEVOLVER A CPU EL PROCESO -> NO PASA POR READY?
+            // DEVOLVER A CPU EL PROCESO
+            proceso->pcb->program_counter++;
+            enviar_pcb_a_cpu(proceso->pcb);
+            proceso->pcb->cronometro_exec = temporal_create();
 
             break;
 
@@ -859,7 +862,7 @@ void manejar_hilo_memoria()
 
 
         case BORRAR_SEGMENTO:
-            log_info(logger, "[KERNEL]: Llego BORRAR SEGEMNTO de MEMORIA");
+            log_info(logger, "[KERNEL]: Llego BORRAR SEGMENTO de MEMORIA");
 
             BUFFER *buffer_borrar = recibir_buffer(socket_memoria);
 
@@ -871,8 +874,12 @@ void manejar_hilo_memoria()
             proceso = obtener_proceso_por_pid(PID);
             proceso->pcb->tabla_segmentos = tabla_segmentos;
 
-            // DEVOLVER A CPU EL PROCESO -> NO PASA POR READY?
+            imprimir_segmentos(proceso);
 
+            // DEVOLVER A CPU EL PROCESO
+            proceso->pcb->program_counter++;
+            enviar_pcb_a_cpu(proceso->pcb);
+            proceso->pcb->cronometro_exec = temporal_create();
             
             break;
 
