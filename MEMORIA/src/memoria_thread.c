@@ -18,10 +18,9 @@ void escuchar_kernel(int socket_kernel)
       free(mensaje);
       break;
     case CREAR_PROCESO:
-      int pid;
-      t_list* tabla_de_segmentos = manejar_crear_proceso(&pid);
+      t_list* tabla_de_segmentos = manejar_crear_proceso();
       tabla_test = tabla_de_segmentos;
-      enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos, pid);
+      enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos);
       log_info(logger,"ENVÍE TABLA DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE CREAR_PROCESO");
       break;
     

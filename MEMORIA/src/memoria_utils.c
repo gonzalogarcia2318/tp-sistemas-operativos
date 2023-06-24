@@ -125,7 +125,7 @@ void crear_lista_procesos_globales()
 }
 ///////////////////////////////////////////PROCESOS KERNEL////////////////////////////////////////////////////////////////
 
-t_list* manejar_crear_proceso(int *proceso_id)
+t_list* manejar_crear_proceso()
 {
     BUFFER* buffer = recibir_buffer(socket_kernel);
     PROCESO_MEMORIA* proceso = malloc(sizeof(PROCESO_MEMORIA));
@@ -138,7 +138,7 @@ t_list* manejar_crear_proceso(int *proceso_id)
     proceso->pid = pid;
     proceso->tabla_de_segmentos = crear_tabla_de_segmentos();
 
-    *proceso_id = pid;
+    list_add(procesos_globales, proceso);
 
     log_warning(logger,"Creación de Proceso PID: <%d>", pid);
     free(buffer);
@@ -153,10 +153,10 @@ t_list* crear_tabla_de_segmentos()
     log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó la TABLA DE SEGMENTOS con éxito");
     return tabla_segmentos;
 }
-void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos, int pid)
+void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos)
 {
   PAQUETE* paquete = crear_paquete(CREAR_PROCESO);
-  paquete->buffer = serializar_segmentos(tabla_de_segmentos, pid);
+  paquete->buffer = serializar_segmentos(tabla_de_segmentos);
   enviar_paquete_a_cliente(paquete, socket_kernel);
   eliminar_paquete(paquete);
 }
@@ -179,7 +179,8 @@ void manejar_finalizar_proceso()
 
     // SALE UN ERROR -> LLEGA MUCHAS VECES A KERNEL QUE FINALIZO EL PROCESO?
     // obtener_proceso_de_globales(pid); no devuelve nada
-    /*PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
+    // LO AGREGAMOS EN manejar_crear_proceso() --> deberia andar
+    PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
 
     SEGMENTO* seg_aux;
     
@@ -196,7 +197,7 @@ void manejar_finalizar_proceso()
     eliminar_proceso_de_globales(pid);
     free(proceso);
 
-    log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);*/
+    log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);
 }
 
 PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid)

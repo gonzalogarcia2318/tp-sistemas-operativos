@@ -162,7 +162,6 @@ int main(int argc, char **argv)
             
             enviar_proceso_a_memoria(proceso_para_ready);
   
-
             proceso_para_ready->pcb->cronometro_ready = temporal_create();
 
             queue_push(cola_ready, (Proceso *)proceso_para_ready);
@@ -1066,6 +1065,26 @@ void enviar_proceso_a_memoria(Proceso* proceso){
     PAQUETE *paquete = crear_paquete(CREAR_PROCESO);
     agregar_a_paquete(paquete, &proceso->pcb->PID, sizeof(int32_t));
     enviar_paquete_a_cliente(paquete, socket_memoria);
+
+    // Bloqueante
+    switch (obtener_codigo_operacion(socket_memoria))
+    {   
+        case CREAR_PROCESO:
+            log_info(logger, "[KERNEL]: Llego tabla de segmentos de MEMORIA");
+
+            BUFFER *buffer = recibir_buffer(socket_memoria);
+
+            tabla_segmentos = deserializar_segmentos(buffer);
+        
+            proceso->pcb->tabla_segmentos = tabla_segmentos;
+            imprimir_segmentos(proceso);
+
+        break;
+        default: 
+            log_error(logger, "[KERNEL] ERROR DE MEMORIA AL CREAR PROCESO");
+        break;
+    }
+
 }
 
 CODIGO_INSTRUCCION obtener_codigo_instruccion_numero(char *instruccion)

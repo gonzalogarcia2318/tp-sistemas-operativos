@@ -81,14 +81,8 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
     pcb->socket_consola = socket_consola;
 
     Proceso *proceso = malloc(sizeof(Proceso));
-    SEGMENTO * segmento0 = malloc (sizeof(SEGMENTO));
 
     pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
-
-    segmento0->base = 0;
-    segmento0->id =0;
-    segmento0->limite=100;
-    // TODO: REVISAR: LIMITE 100? SEGMENTO 0 DEBERIA VENIR DE MEMORIA AL PRINCIPIO CUANDO LE AVISAMOS QUE CREAMOS EL PROCESO? 
 
     proceso->estado = NEW;
     proceso->pcb = pcb;
@@ -98,7 +92,6 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
     proceso->pcb->archivos_abiertos = list_create();
     
     proceso->pcb->tabla_segmentos = list_create();
-    list_add(proceso->pcb->tabla_segmentos, segmento0);
 
     proceso->pcb->recursos_asignados = list_create();
 

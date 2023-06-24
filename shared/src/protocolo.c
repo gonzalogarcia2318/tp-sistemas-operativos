@@ -244,7 +244,7 @@ BUFFER *serializar_pcb(PCB *pcb)
     memcpy(stream + offset, buffer_instrucciones->stream, buffer_instrucciones->size);
     offset += buffer_instrucciones->size;
 
-    BUFFER *buffer_segmentos = serializar_segmentos(pcb->tabla_segmentos, pcb->PID);
+    BUFFER *buffer_segmentos = serializar_segmentos(pcb->tabla_segmentos);
     memcpy(stream + offset, &buffer_segmentos->size, sizeof(int32_t));
     offset += sizeof(int32_t);
 
@@ -259,7 +259,7 @@ BUFFER *serializar_pcb(PCB *pcb)
     return buffer;
 }
 
-BUFFER *serializar_segmentos(t_list *segmentos, int pid){
+BUFFER *serializar_segmentos(t_list *segmentos){
     BUFFER* buffer = malloc(sizeof(BUFFER));
 	buffer->size = 0;
 
@@ -270,13 +270,8 @@ BUFFER *serializar_segmentos(t_list *segmentos, int pid){
         buffer->size += calcular_tamanio_segmento(segmento);
 	}
 
-    buffer->size += sizeof(int32_t);
-
 	void* stream = malloc(buffer->size);
 	int offset = 0;
-
-    memcpy(stream, &pid, sizeof(int32_t));
-    offset += sizeof(int32_t);
 
 	i = 0;
 	for(i = 0; i < list_size(segmentos); i++){
@@ -568,7 +563,7 @@ t_list* deserializar_instrucciones(BUFFER* buffer){
 t_list* deserializar_segmentos(BUFFER* buffer){
 	t_list* segmentos = list_create();
 
-	int size_segmento_acumulado = sizeof(int32_t); // PRIMERO VIENE EL PID
+	int size_segmento_acumulado = 0;
 	do {
 		SEGMENTO* segmento = deserializar_segmento(buffer, size_segmento_acumulado);
 		size_segmento_acumulado += calcular_tamanio_segmento(segmento);
