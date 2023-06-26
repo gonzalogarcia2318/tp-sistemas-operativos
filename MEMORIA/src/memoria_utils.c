@@ -228,7 +228,6 @@ void eliminar_proceso_de_globales(int32_t pid)
             if(proc_mem_aux->pid == pid)
             {
                 list_replace(procesos_globales,i,NULL);
-                free(proc_mem_aux);
             }  
         }  
     }
