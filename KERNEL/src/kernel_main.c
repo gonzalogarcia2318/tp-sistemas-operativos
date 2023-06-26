@@ -376,6 +376,20 @@ void manejar_paquete_cpu()
             sem_post(&semaforo_ejecutando);
 
             break;
+
+        case SEG_FAULT:
+            log_warning(logger, "[KERNEL]: LLEGO SEGMENTATION_FAULT DE CPU. ");
+            BUFFER *buffer_seg_fault = recibir_buffer(socket_cpu);
+
+            int pid_seg_fault;
+            memcpy(&pid_seg_fault, buffer_seg_fault->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer_seg_fault->stream += (sizeof(int32_t) * 2);
+
+
+            Proceso *proceso_a_finalizar = obtener_proceso_por_pid(pid_seg_fault);
+
+            finalizar_proceso(proceso_a_finalizar, "SEG_FAULT");
+            break;
         }
     }
 }
