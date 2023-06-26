@@ -40,7 +40,17 @@ typedef enum
     FINALIZAR_PROCESO,
     SEG_FAULT,
     RECEPCION_OK,
-    PROCESO_FINALIZADO
+    PROCESO_FINALIZADO,
+    CREAR_SEGMENTO,
+    BORRAR_SEGMENTO,
+    CONSOLIDAR,
+    SOLICITAR_COMPACTACION,
+    COMPACTACION_TERMINADA,
+    FALTA_MEMORIA,
+    FINALIZO_TRUNCADO,
+    FINALIZO_LECTURA,
+    FINALIZO_ESCRITURA,
+    EXISTE_ARCHIVO
 
 } CODIGO_OPERACION;
 
@@ -117,23 +127,44 @@ typedef struct
     char valor_RDX[16];
 } Registro_CPU;
 
+
+typedef struct{
+
+int32_t descriptor_archivo;        // Int o FILE*
+char * nombre_archivo;
+int32_t PID_en_uso;
+t_queue cola_block;
+
+}ARCHIVO_GLOBAL;
+
+typedef struct{
+
+int32_t descriptor_archivo;         // Int o FILE*
+char * nombre_archivo;
+int32_t puntero_ubicacion;          //Ver Si long o int 
+
+}ARCHIVO_PROCESO;
+
+
 typedef struct
 {
     int32_t PID;
     int32_t socket_consola;
     t_list *instrucciones;
-    int32_t program_counter; //DEBE INICIALIZARSE EN 0.
-    Registro_CPU registros_cpu;   // Tipo struct REGISTROS_CPU
+    int32_t program_counter;        //DEBE INICIALIZARSE EN 0.
+    Registro_CPU registros_cpu;     // Tipo struct REGISTROS_CPU
     t_list *tabla_segmentos;
     float estimacion_cpu_proxima_rafaga;
     time_t tiempo_ready;
-    char *archivos_abiertos; // Lista de struct ARCHIVOS_ABIERTOS
+    t_list * archivos_abiertos;     // Lista de struct ARCHIVO_PROCESO
     time_t tiempo_cpu_real_inicial;
     t_temporal* cronometro_ready;
     t_temporal* cronometro_exec;
     int64_t tiempo_cpu_real;
     float estimacion_cpu_anterior;
     float response_Ratio;
+    t_list *recursos_asignados;
+    
 
 } PCB;
 
@@ -167,6 +198,7 @@ typedef struct
     int32_t base;
     int32_t limite;
     int32_t validez;
+
 } SEGMENTO;
 
 PCB *obtener_paquete_pcb(int socket_cpu);

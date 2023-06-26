@@ -51,6 +51,7 @@ void crear_estructuras_administrativas();
 t_list* manejar_crear_proceso();
     t_list* crear_tabla_de_segmentos();
     void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos);
+    void enviar_tabla_de_segmentos_a_kernel_BORRAR(t_list* tabla_de_segmentos, int pid); // BORRAR - SOLO PARA PROBAR
 void manejar_finalizar_proceso();
     PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid);
     void eliminar_proceso_de_globales(int32_t pid);

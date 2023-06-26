@@ -65,5 +65,8 @@ rune1: all
 rune2: all
 	./$(PROCESS_NAME) config/consola.config ./error2.txt
 
+runs1: all
+	./$(PROCESS_NAME) config/consola.config ./create_segment.txt
+
 run-args: all
 	./${PROCESS_NAME} $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))

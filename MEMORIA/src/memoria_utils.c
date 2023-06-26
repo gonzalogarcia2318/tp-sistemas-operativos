@@ -138,6 +138,8 @@ t_list* manejar_crear_proceso()
     proceso->pid = pid;
     proceso->tabla_de_segmentos = crear_tabla_de_segmentos();
 
+    list_add(procesos_globales, proceso);
+
     log_warning(logger,"Creación de Proceso PID: <%d>", pid);
     free(buffer);
     return proceso->tabla_de_segmentos;
@@ -159,6 +161,14 @@ void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos)
   eliminar_paquete(paquete);
 }
 
+void enviar_tabla_de_segmentos_a_kernel_BORRAR(t_list* tabla_de_segmentos, int pid)
+{
+  PAQUETE* paquete = crear_paquete(BORRAR_SEGMENTO);
+  paquete->buffer = serializar_segmentos(tabla_de_segmentos);
+  enviar_paquete_a_cliente(paquete, socket_kernel);
+  eliminar_paquete(paquete);
+}
+
 void manejar_finalizar_proceso()
 {
     BUFFER* buffer = recibir_buffer(socket_kernel);
@@ -167,6 +177,9 @@ void manejar_finalizar_proceso()
             buffer->stream += (sizeof(int32_t) * 2);
     log_info(logger,"RECIBI ELIMINAR_PROCESO: PID:<%d>", pid);
 
+    // SALE UN ERROR -> LLEGA MUCHAS VECES A KERNEL QUE FINALIZO EL PROCESO?
+    // obtener_proceso_de_globales(pid); no devuelve nada
+    // LO AGREGAMOS EN manejar_crear_proceso() --> deberia andar
     PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
 
     SEGMENTO* seg_aux;
