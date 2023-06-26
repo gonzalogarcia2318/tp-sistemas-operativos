@@ -164,7 +164,7 @@ void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos)
 void enviar_tabla_de_segmentos_a_kernel_BORRAR(t_list* tabla_de_segmentos, int pid)
 {
   PAQUETE* paquete = crear_paquete(BORRAR_SEGMENTO);
-  paquete->buffer = serializar_segmentos(tabla_de_segmentos, pid);
+  paquete->buffer = serializar_segmentos(tabla_de_segmentos);
   enviar_paquete_a_cliente(paquete, socket_kernel);
   eliminar_paquete(paquete);
 }

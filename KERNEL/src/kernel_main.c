@@ -26,6 +26,7 @@ void manejar_paquete_cpu();
 void manejar_hilo_io();
 void manejar_hilo_ejecutar();
 void manejar_hilo_memoria();
+void manejar_hilo_fileSystem();
 
 void cambiar_estado(Proceso *proceso, ESTADO estado);
 void actualizar_pcb(Proceso *proceso, PCB *pcb);
@@ -38,7 +39,7 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso);
 void manejar_yield(Proceso *proceso, PCB *pcb);
 void manejar_exit(Proceso *proceso, PCB *pcb);
 void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t tamanio_segmento);
-void manejar_delete_segment(int32_t pid, int32_t id_segmento);
+void manejar_delete_segment(Proceso* proceso, int32_t id_segmento);
 void imprimir_cola(t_queue cola);
 
 void quitar_salto_de_linea(char *cadena);
@@ -55,9 +56,11 @@ void liberar_instruccion(Instruccion *instruccion);
 
 void imprimir_lista(t_list* lista);
 
-void actualizar_base_del_segmento_en_proceso(Proceso* proceso, int id_segmento, int base);
 void imprimir_segmentos(Proceso* proceso);
 
+void liberar_recursos(Proceso *proceso);
+
+void devolver_proceso_a_cpu(Proceso* proceso);
 
 
 int main(int argc, char **argv)
@@ -114,9 +117,10 @@ int main(int argc, char **argv)
     pthread_create(&hilo_ejecutar, NULL, (void *)manejar_hilo_ejecutar, NULL);
     pthread_detach(hilo_ejecutar);
 
-    Hilo hilo_memoria;
-    pthread_create(&hilo_memoria, NULL, (void *)manejar_hilo_memoria, NULL);
-    pthread_detach(hilo_memoria);
+    // SACAMOS hilo_memoria -> estamos esperando las respuestas de manera sincronica
+    //Hilo hilo_memoria;
+    //pthread_create(&hilo_memoria, NULL, (void *)manejar_hilo_memoria, NULL);
+    //pthread_detach(hilo_memoria);
 
     Hilo hilo_fileSystem;
     pthread_create(&hilo_fileSystem, NULL, (void *)manejar_hilo_fileSystem, NULL);
@@ -270,7 +274,7 @@ void manejar_paquete_cpu()
 
                 // Encapsular en llamada a file system con semaforo -- file_system_disponible
 
-                manejar_f_open(proceso,instruccion->nombreArchivo);
+                //manejar_f_open(proceso,instruccion->nombreArchivo);
 
                 break;
 
@@ -279,7 +283,7 @@ void manejar_paquete_cpu()
                 
                 // Encapsular en llamada a file system con semaforo -- file_system_disponible
                 
-                manejar_f_close(proceso,instruccion->nombreArchivo);
+                //manejar_f_close(proceso,instruccion->nombreArchivo);
                 
                 break;
 
@@ -288,7 +292,7 @@ void manejar_paquete_cpu()
                 log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->posicion);
                 
                 
-                 manejar_f_seek(proceso,instruccion->nombreArchivo, instruccion->posicion);
+                //manejar_f_seek(proceso,instruccion->nombreArchivo, instruccion->posicion);
                 
                
                
@@ -305,7 +309,7 @@ void manejar_paquete_cpu()
                 // HACER
                 //
 
-                manejar_f_read(proceso,instruccion->nombreArchivo, instruccion->direccionFisica);
+                //manejar_f_read(proceso,instruccion->nombreArchivo, instruccion->direccionFisica);
 
 
                  //Al finalizar Proceso F_READ
@@ -323,7 +327,7 @@ void manejar_paquete_cpu()
                 // HACER
                 //
 
-                manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->direccionFisica,instruccion->cantBytes );
+                //manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->direccionFisica,instruccion->cantBytes );
 
 
                 //Al finalizar Proceso F_WRITE
@@ -336,7 +340,7 @@ void manejar_paquete_cpu()
                 // HACER
                 
                 
-                manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->tamanioArchivo );
+                //manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->tamanioArchivo );
 
                 
                 
@@ -360,7 +364,7 @@ void manejar_paquete_cpu()
                 log_warning(logger, "PID: <%d> - Eliminar Segmento - Id Segmento: <%d>",
                             pcb->PID,
                             instruccion->idSegmento);
-                manejar_delete_segment(pcb->PID, instruccion->idSegmento);
+                manejar_delete_segment(proceso, instruccion->idSegmento);
                 break;
 
             default:
@@ -614,10 +618,10 @@ void manejar_hilo_io()
 }
 
 
-void manejar_f_open(PROCESO * proceso , char * nombre_archivo){
+void manejar_f_open(Proceso * proceso , char * nombre_archivo){
 
     
-    if(existe_en_tabla_global(nombre_archivo)){
+    /*if(existe_en_tabla_global(nombre_archivo)){
 
         agregar_entrada_tabla_por_proceso();  
         
@@ -662,7 +666,7 @@ void manejar_f_open(PROCESO * proceso , char * nombre_archivo){
 
         devolver_ejecucion_cpu();
 
-    }
+    }*/
 
         
 }
@@ -690,7 +694,7 @@ int avisar_fileSystem_crear_archivo(char * nombre_archivo){
     BUFFER * buffer = recibir_buffer(socket_file_system);
 
     int creacion;
-    memcpy(&existe_archivo, buffer->stream, sizeof(int));
+    //memcpy(&existe_archivo, buffer->stream, sizeof(int));
 
     return creacion;
 }
@@ -905,161 +909,6 @@ void liberar_recursos(Proceso *proceso)
     }
 }
 
-
-void manejar_hilo_memoria()
-{
-
-    int32_t PID;
-    Proceso* proceso;
-    int32_t base;
-    int32_t id_segmento;
-    t_list* tabla_segmentos;
-
-    while (true)
-    {
-        switch (obtener_codigo_operacion(socket_memoria))
-        {
-            
-        case CREAR_PROCESO:
-            log_info(logger, "[KERNEL]: Llego tabla de segmentos de MEMORIA");
-
-            BUFFER *buffer = recibir_buffer(socket_memoria);
-
-            memcpy(&PID, buffer->stream, sizeof(int32_t));
-            buffer->stream += sizeof(int32_t);
-
-            tabla_segmentos = deserializar_segmentos(buffer);
-        
-            proceso = obtener_proceso_por_pid(PID);
-            proceso->pcb->tabla_segmentos = tabla_segmentos;
-            imprimir_segmentos(proceso);
-
-            break;
-
-        case CREAR_SEGMENTO:
-        log_info(logger, "[KERNEL]: Se puede crear el segmento !! ");
-
-            BUFFER *buffer_segmento = recibir_buffer(socket_memoria);
-
-            memcpy(&PID, buffer_segmento->stream + sizeof(int32_t), sizeof(int32_t));
-            buffer_segmento->stream += (sizeof(int32_t)*2);
-
-            memcpy(&id_segmento, buffer_segmento->stream + sizeof(int32_t), sizeof(int32_t));
-            buffer_segmento->stream += (sizeof(int32_t)*2);
-           
-            memcpy(&base, buffer_segmento->stream + sizeof(int32_t), sizeof(int32_t));
-            buffer_segmento->stream += (sizeof(int32_t)*2);
-
-            proceso = obtener_proceso_por_pid(PID);
-
-            log_info(logger, "Proceso PID: %d  - Base: %d ", PID, base);
-
-            actualizar_base_del_segmento_en_proceso(proceso, id_segmento, base);
-            imprimir_segmentos(proceso);
-
-            // DEVOLVER A CPU EL PROCESO
-            proceso->pcb->program_counter++;
-            enviar_pcb_a_cpu(proceso->pcb);
-            proceso->pcb->cronometro_exec = temporal_create();
-
-            break;
-
-        case CONSOLIDAR:
-        log_info(logger, "[KERNEL]: CONSOLIDAR para crear segmento de memoria !! ");
-
-            BUFFER *buffer_consolidar = recibir_buffer(socket_memoria);
-
-            memcpy(&PID, buffer_consolidar->stream + sizeof(int32_t), sizeof(int32_t));
-            buffer_consolidar->stream += (sizeof(int32_t)*2);
-
-            proceso = obtener_proceso_por_pid(PID);
-
-            log_info(logger, "Proceso PID: %d", proceso->pcb->PID); 
-
-            /*
-                Puede consolidar ? SI --- Envio Peticion
-                NO --- Espero hasta que se pueda...Envio Peticion
-
-                Deberiamos esperar con un semaforo? 
-            */
-
-            //verificar_operaciones_FS_y_Memoria();     (F_READ y F_WRITE)
-
-            //avisar_puede_crear_segmento();  COD OP: SOLICITAR_COMPACTACION
-
-            break;
-
-         case COMPACTACION_TERMINADA:
-            
-            log_info(logger, "[KERNEL]: Memoria Termino la consolidacion !! ");
-            log_info(logger, "[KERNEL]: Recibimos TABLA DE SEGMENTOS de TODOS LOS PROCESOS ");
-
-            //actualizar_segmentos_procesos();
-
-            break;
-
-        case FALTA_MEMORIA:
-        log_info(logger, "[KERNEL]: FALTA MEMORIAAAAA!! Terminar el proceso con error ");
-
-            BUFFER *buffer_fallo = recibir_buffer(socket_memoria);
-
-            memcpy(&PID, buffer_fallo->stream + sizeof(int32_t), sizeof(int32_t));
-            buffer_fallo->stream += (sizeof(int32_t)*2);
-
-            proceso = obtener_proceso_por_pid(PID);
-
-            log_info(logger, "Proceso PID: %d", proceso->pcb->PID);
-
-            finalizar_proceso(proceso, "OUT_OF_MEMORY");  // Falta Manejarlo en Memoria
-
-            break;
-
-
-        case BORRAR_SEGMENTO:
-            log_info(logger, "[KERNEL]: Llego BORRAR SEGMENTO de MEMORIA");
-
-            BUFFER *buffer_borrar = recibir_buffer(socket_memoria);
-
-            memcpy(&PID, buffer_borrar->stream, sizeof(int32_t));
-            buffer_borrar->stream += sizeof(int32_t);
-
-            tabla_segmentos = deserializar_segmentos(buffer_borrar);
-        
-            proceso = obtener_proceso_por_pid(PID);
-            proceso->pcb->tabla_segmentos = tabla_segmentos;
-
-            imprimir_segmentos(proceso);
-
-            // DEVOLVER A CPU EL PROCESO
-            proceso->pcb->program_counter++;
-            enviar_pcb_a_cpu(proceso->pcb);
-            proceso->pcb->cronometro_exec = temporal_create();
-            
-            break;
-
-        case FINALIZAR_PROCESO:
-            log_info(logger, "[KERNEL]: Llego FINALIZAR_PROCESO de MEMORIA");
-            break;
-
-        default:
-            log_warning(logger, "[KERNEL]: Operacion desconocida desde MEMORIA.");
-            break;
-        }
-    }
-}
-
-void actualizar_base_del_segmento_en_proceso(Proceso* proceso, int id_segmento, int base){
-    bool comparar_ids_segmento(SEGMENTO* segmento)
-    {
-        return segmento->id == id_segmento;
-    }
-
-    SEGMENTO *segmento = list_find(proceso->pcb->tabla_segmentos, (void *)comparar_ids_segmento);
-
-    segmento->base = base;
-    log_info(logger, "[KERNEL] PID: %d - Actualizamos segmento %d con base %d", proceso->pcb->PID, segmento->id, segmento->base);
-}
-
 void enviar_proceso_a_memoria(Proceso* proceso){
     log_info(logger, "[KERNEL] Enviando a MEMORIA proceso PID <%d>", proceso->pcb->PID);
     PAQUETE *paquete = crear_paquete(CREAR_PROCESO);
@@ -1074,9 +923,7 @@ void enviar_proceso_a_memoria(Proceso* proceso){
 
             BUFFER *buffer = recibir_buffer(socket_memoria);
 
-            tabla_segmentos = deserializar_segmentos(buffer);
-        
-            proceso->pcb->tabla_segmentos = tabla_segmentos;
+            proceso->pcb->tabla_segmentos = deserializar_segmentos(buffer);
             imprimir_segmentos(proceso);
 
         break;
@@ -1148,6 +995,12 @@ void cambiar_estado(Proceso *proceso, ESTADO estado)
     log_warning(logger, "[KERNEL] Proceso PID:<%d> - Estado Anterior: <%s> - Estado Actual: <%s>", proceso->pcb->PID, descripcion_estado(anterior), descripcion_estado(proceso->estado));
 }
 
+void devolver_proceso_a_cpu(Proceso* proceso){
+    proceso->pcb->program_counter++;
+    enviar_pcb_a_cpu(proceso->pcb);
+    proceso->pcb->cronometro_exec = temporal_create();
+}
+
 void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t tamanio_segmento)
 {
     SEGMENTO *segmento = malloc(sizeof(SEGMENTO));
@@ -1167,26 +1020,98 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
 
-    log_info(logger, "ENVIÉ PAQUETE A MEMORIA CON MOTIVO: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
+    log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
 
-    // RECIBIR RTA ... TODO Manejado en HILO MEMORIA 
+    BUFFER *buffer;
+
+    switch (obtener_codigo_operacion(socket_memoria))
+    {  
+       case CREAR_SEGMENTO:
+            log_info(logger, "[KERNEL]: Se puede crear el segmento !! ");
+
+            buffer = recibir_buffer(socket_memoria);
+           
+            memcpy(&segmento->base, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t)*2);
+
+            imprimir_segmentos(proceso);
+
+            // DEVOLVER A CPU EL PROCESO
+            devolver_proceso_a_cpu(proceso);
+            //proceso->pcb->program_counter++;
+            //enviar_pcb_a_cpu(proceso->pcb);
+            //proceso->pcb->cronometro_exec = temporal_create();
+
+            break; 
+        case CONSOLIDAR:
+            log_info(logger, "[KERNEL]: CONSOLIDAR para crear segmento de memoria !! ");
+
+            buffer = recibir_buffer(socket_memoria);
+
+            /*
+                Puede consolidar ? SI --- Envio Peticion
+                NO --- Espero hasta que se pueda...Envio Peticion
+                -> cuando se envie peticion para compactar
+                -> despues nos quedamos esperando a COMPACTACION_TERMINADA
+                -> y actualizar_segmentos_procesos()
+
+                Deberiamos esperar con un semaforo? 
+            */
+
+            //verificar_operaciones_FS_y_Memoria();     (F_READ y F_WRITE)
+
+            //avisar_puede_crear_segmento();  COD OP: SOLICITAR_COMPACTACION
+
+            break;
+
+        case FALTA_MEMORIA:
+            log_info(logger, "[KERNEL]: FALTA MEMORIAAAAA!! Terminar el proceso con error ");
+
+            finalizar_proceso(proceso, "OUT_OF_MEMORY");  // Falta Manejarlo en Memoria
+
+            break;
+        default: 
+            log_error(logger, "[KERNEL] ERROR DE MEMORIA AL CREAR SEGMENTO");
+        break;
+    }
 
 }
 
-void manejar_delete_segment(int32_t pid, int32_t id_segmento)
+void manejar_delete_segment(Proceso* proceso, int32_t id_segmento)
 {
     PAQUETE *paquete = crear_paquete(INSTRUCCION);
     int32_t ds = DELETE_SEGMENT;
     agregar_a_paquete(paquete, &ds, sizeof(int32_t));
-    agregar_a_paquete(paquete, &pid, sizeof(int32_t));
+    agregar_a_paquete(paquete, &proceso->pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete, &id_segmento, sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
-    log_info(logger, "ENVIÉ PAQUETE A MEMORIA CON MOTIVO: <DELETE_SEGMENT>");
 
-    // RECIBIR RTA ... TODO Manejado en HILO MEMORIA
+    log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <DELETE_SEGMENT> - id segmento: %d", id_segmento);
 
-    //respuesta de la Memoria la tabla de segmentos actualizada.
+    BUFFER *buffer;
+
+    switch (obtener_codigo_operacion(socket_memoria))
+    {  
+        case BORRAR_SEGMENTO:
+            log_info(logger, "[KERNEL]: Llego BORRAR SEGMENTO de MEMORIA");
+
+            buffer = recibir_buffer(socket_memoria);
+
+            proceso->pcb->tabla_segmentos = deserializar_segmentos(buffer);
+            imprimir_segmentos(proceso);
+
+            // DEVOLVER A CPU EL PROCESO
+            devolver_proceso_a_cpu(proceso);
+            //proceso->pcb->program_counter++;
+            //enviar_pcb_a_cpu(proceso->pcb);
+            //proceso->pcb->cronometro_exec = temporal_create();
+            
+            break;
+        default: 
+            log_error(logger, "[KERNEL] ERROR DE MEMORIA AL BORRAR SEGMENTO");
+        break;
+    }
 }
 
 void imprimir_lista(t_list* lista){

@@ -191,21 +191,33 @@ void recibir_instruccion_kernel()
       int32_t tamanio_segmento;
       memcpy(&tamanio_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
+
+      // <<< BORRAR -> SOLO PARA PROBAR KERNEL
+      SEGMENTO *segmento = malloc(sizeof(SEGMENTO));
+      segmento->id = id_segmento;
+      segmento->limite = 0;
+      segmento->validez = 0;
+      // >>>
+
       log_info(logger,"INSTRUCCIÓN KERNEL: CREATE_SEGMENT - PID:<%d> - ID_SEG:<%d> - TS: <%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
                 pid,
                 id_segmento,
                 tamanio_segmento
               );
 
+
       //int codigo = manejar_crear_segmento(pid, id_segmento, tamanio_segmento); //TODO
       int codigo = 1; //Para probar
       switch (codigo)
       {
       case 1: //OK
+        // <<< BORRAR -> SOLO PARA PROBAR KERNEL
         int base = 512 * id_segmento; // para probar base
+        segmento->base = base;
+        list_add(tabla_test, segmento);
+        // >>>
+
         PAQUETE * paquete_ok = crear_paquete(CREAR_SEGMENTO);
-        agregar_a_paquete(paquete_ok, &pid, sizeof(int32_t));
-        agregar_a_paquete(paquete_ok, &id_segmento, sizeof(int32_t));
         agregar_a_paquete(paquete_ok, &base, sizeof(int32_t)); //ENVIAR_DIRE_BASE
         enviar_paquete_a_cliente(paquete_ok, socket_kernel);
         break;
@@ -213,14 +225,12 @@ void recibir_instruccion_kernel()
       case 2: //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
 
         PAQUETE * paquete_consolidar = crear_paquete(CONSOLIDAR);
-        agregar_a_paquete(paquete_consolidar, &pid, sizeof(int32_t));
         enviar_paquete_a_cliente(paquete_consolidar, socket_kernel);
         //enviar_mensaje_a_cliente("HAY QUE CONSOLIDAR", socket_kernel); //REALMENTE SERÍA PAQUETE CON COD_OP : CONSOLIDAR
         break;
           
       case 3: //FALTA ESPACIO "Out of Memory"
         PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
-        agregar_a_paquete(paquete_fallo, &pid, sizeof(int32_t));
         enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
         //enviar_mensaje_a_cliente("FALTA ESPACIO", socket_kernel);
         break;
@@ -239,8 +249,11 @@ void recibir_instruccion_kernel()
                 id_segmento
               );
       //int dire_base = manejar_delete_segment(pid, id_segmento); TODO
-
+      
+      // <<< BORRAR -> SOLO PARA PROBAR KERNEL
+      list_remove(tabla_test, id_segmento-1); 
       enviar_tabla_de_segmentos_a_kernel_BORRAR(tabla_test, pid);
+      // >>>
 
       //enviar_mensaje_a_cliente("DELETE_SEGMENT: <OK>",socket_kernel);
       log_warning(logger,"PID: <PID> - Eliminar Segmento: <ID SEGMENTO> - Base: <DIRECCIÓN BASE> - TAMAÑO: <TAMAÑO>");
