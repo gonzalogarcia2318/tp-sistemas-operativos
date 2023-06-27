@@ -61,10 +61,14 @@ void escribir_en_memoria(char* contenido,int32_t direccion_fisica,int32_t bytes_
     void aplicar_retardo_espacio_usuario();
 
 int manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
-    int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
-        int aplicar_algoritmo_asignacion(int32_t tamanio_segmento); //TODO
     bool puedo_crear_nuevo_segmento_proceso(t_list* tabla_de_segmentos);
     int hay_espacio_memoria(int32_t tamanio_segmento);
+    int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
+        int aplicar_algoritmo_asignacion(int32_t tamanio_segmento);
+            int aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento);
+            int aplicar_algoritmo_asignacion_BEST(int32_t tamanio_segmento);
+            int aplicar_algoritmo_asignacion_WORST(int32_t tamanio_segmento);
+    
     t_list* obtener_tabla_de_segmentos(int32_t pid);
 void eliminar_segmento(); // TODO
 #endif

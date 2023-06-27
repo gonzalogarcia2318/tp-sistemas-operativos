@@ -192,55 +192,39 @@ void recibir_instruccion_kernel()
       memcpy(&tamanio_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
 
-      // <<< BORRAR -> SOLO PARA PROBAR KERNEL
-      SEGMENTO *segmento = malloc(sizeof(SEGMENTO));
-      segmento->id = id_segmento;
-      segmento->limite = 0;
-      segmento->validez = 0;
-      // >>>
-
       log_info(logger,"INSTRUCCIÓN KERNEL: CREATE_SEGMENT - PID:<%d> - ID_SEG:<%d> - TS: <%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
                 pid,
                 id_segmento,
                 tamanio_segmento
               );
 
-
-      //int codigo = manejar_crear_segmento(pid, id_segmento, tamanio_segmento); //TODO
-      int codigo = 1; //Para probar
-      switch (codigo)
+      int base = manejar_crear_segmento(pid, id_segmento, tamanio_segmento);
+      
+      if (base > 0) //OK
       {
-      case 1: //OK
-        // <<< BORRAR -> SOLO PARA PROBAR KERNEL
-        int base = 512 * id_segmento; // para probar base
-        segmento->base = base;
-        list_add(tabla_test, segmento);
-        // >>>
-
         PAQUETE * paquete_ok = crear_paquete(CREAR_SEGMENTO);
         agregar_a_paquete(paquete_ok, &base, sizeof(int32_t)); //ENVIAR_DIRE_BASE
         enviar_paquete_a_cliente(paquete_ok, socket_kernel);
         break;
-          
-      case 2: //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
-
+      }
+      else if (base == -2) //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
+      {
         PAQUETE * paquete_consolidar = crear_paquete(CONSOLIDAR);
         enviar_paquete_a_cliente(paquete_consolidar, socket_kernel);
-        //enviar_mensaje_a_cliente("HAY QUE CONSOLIDAR", socket_kernel); //REALMENTE SERÍA PAQUETE CON COD_OP : CONSOLIDAR
-        break;
-          
-      case 3: //FALTA ESPACIO "Out of Memory"
-        PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
-        enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
-        //enviar_mensaje_a_cliente("FALTA ESPACIO", socket_kernel);
-        break;
-
-      default:
-        log_error(logger, "ERROR EN FUNCIÓN: manejar_create_segment(2)");
         break;
       }
-
-      break;
+      else if (base == -3) //FALTA ESPACIO "Out of Memory"
+      {
+        PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
+        enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
+        break;
+      }
+      else // base = 0 (ERROR EN ALGUNA FUNCIÓN ANTERIOR, VERIFICAR LOGS)
+      {
+        log_error(logger,"ERROR AL ASIGNAR BASE");
+        break;
+      }
+    break;
 
     case DELETE_SEGMENT: //TODO
   

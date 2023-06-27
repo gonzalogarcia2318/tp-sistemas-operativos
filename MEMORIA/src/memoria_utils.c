@@ -284,7 +284,7 @@ int manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_seg
     t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
 
     if(!puedo_crear_nuevo_segmento_proceso(tabla_de_segmentos))
-        return 3; //ERROR "Out of Memory" por tabla de segmentos llena.
+        return -3; //ERROR "Out of Memory" por tabla de segmentos llena.
 
     int caso = hay_espacio_memoria(tamanio_segmento);
     
@@ -299,39 +299,18 @@ int manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_seg
                     dire_base,
                     tamanio_segmento
                     );
-        return 1;
+        return dire_base;
     case 2:
         //HAY QUE CONSOLIDAR -> AVISAR A KERNEL 
-        return 2;
+        return -2;
     case 3:
         //ERROR: OUT OF MEMORY -> AVISAR A KERNEL
-        return 3;
+        return -3;
     default:
         break;
     }
 }
 
-int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
-{
-    SEGMENTO* segmento_nuevo = malloc(sizeof(SEGMENTO));
-    segmento_nuevo->id = id_segmento;
-    segmento_nuevo->limite = tamanio_segmento;
-    segmento_nuevo->validez = 1;
-
-    int base = aplicar_algoritmo_asignacion(tamanio_segmento); // TODO
-
-    segmento_nuevo->base = base;
-
-    t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
-    list_add(tabla_de_segmentos,segmento_nuevo);
-
-    return base;
-}
-
-int aplicar_algoritmo_asignacion(int32_t tamanio_segmento)
-{
-    return 0; //TODO
-}
 
 bool puedo_crear_nuevo_segmento_proceso(t_list* tabla_de_segmentos)
 {
@@ -383,6 +362,136 @@ int hay_espacio_memoria(int32_t tamanio_segmento)
     else
         return 3; //FALTA ESPACIO
     
+}
+
+int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
+{
+    SEGMENTO* segmento_nuevo = malloc(sizeof(SEGMENTO));
+    segmento_nuevo->id = id_segmento;
+    segmento_nuevo->limite = tamanio_segmento;
+    segmento_nuevo->validez = 1;
+
+    int base = aplicar_algoritmo_asignacion(tamanio_segmento);
+
+    segmento_nuevo->base = base;
+
+    t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
+    list_add(tabla_de_segmentos,segmento_nuevo);
+
+    return base;
+}
+
+int aplicar_algoritmo_asignacion(int32_t tamanio_segmento)
+{
+    int base = 0;
+
+    if(!strcmp(MemoriaConfig.ALGORITMO_ASIGNACION,"FIRST"))
+    {
+        base = aplicar_algoritmo_asignacion_FIRST(tamanio_segmento);
+        return base;
+    }
+    else if(!strcmp(MemoriaConfig.ALGORITMO_ASIGNACION,"BEST"))
+    {
+        base = aplicar_algoritmo_asignacion_BEST(tamanio_segmento);
+        return base;
+    }
+    else if(!strcmp(MemoriaConfig.ALGORITMO_ASIGNACION,"WORST"))
+    {
+        base = aplicar_algoritmo_asignacion_WORST(tamanio_segmento);
+        return base;
+    }
+    else
+    {
+        log_error(logger,"ALGORITMO DE ASIGNACIÓN DESCONOCIDO");
+        return base;
+    }
+}
+
+int aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento)
+{
+    int size = list_size(huecos_libres);
+    int base = 0;
+
+    for (int i = 0; i < size; i++)
+    {
+        SEGMENTO* hueco = list_get(huecos_libres,i);
+        if(hueco->limite >= tamanio_segmento)
+        {
+            base = hueco->base;
+            hueco->base +=tamanio_segmento;
+            hueco->limite-=tamanio_segmento;
+            return base;
+        }
+    }
+
+    log_error(logger,"NO ENCONTRE UN HUECO DISPONIBLE AL aplicar_algoritmo_asignación_FIRST(1)");//NO DEBERÍA PASAR PORQUE LO VERIFICA ANTES
+    return 0;
+}
+
+int aplicar_algoritmo_asignacion_BEST(int32_t tamanio_segmento)
+{
+    int size = list_size(huecos_libres);
+    int base = 0;
+    SEGMENTO* hueco_menor = NULL;
+
+    for (int i = 0; i < size; i++)
+    {
+        SEGMENTO* hueco_aux = list_get(huecos_libres,i);
+        if(hueco_aux->limite >= tamanio_segmento)
+        {
+            if(hueco_menor == NULL)
+            {
+                hueco_menor = hueco_aux;
+            }
+            else if(hueco_aux->limite < hueco_menor->limite)
+            {
+                hueco_menor = hueco_aux;
+            }
+        }
+    }
+    if(hueco_menor == NULL)
+    {
+        log_error(logger,"NO ENCONTRE UN HUECO DISPONIBLE AL aplicar_algoritmo_asignación_BEST(1)"); //NO DEBERÍA PASAR PORQUE LO VERIFICA ANTES
+        return 0;
+    }
+
+    base = hueco_menor->base;
+    hueco_menor->base +=tamanio_segmento;
+    hueco_menor->limite-=tamanio_segmento;
+    return base;
+}
+
+int aplicar_algoritmo_asignacion_WORST(int32_t tamanio_segmento)
+{
+    int size = list_size(huecos_libres);
+    int base = 0;
+    SEGMENTO* hueco_mayor = NULL;
+
+    for (int i = 0; i < size; i++)
+    {
+        SEGMENTO* hueco_aux = list_get(huecos_libres,i);
+        if(hueco_aux->limite >= tamanio_segmento)
+        {
+            if(hueco_mayor == NULL)
+            {
+                hueco_mayor = hueco_aux;
+            }
+            else if(hueco_aux->limite > hueco_mayor->limite)
+            {
+                hueco_mayor = hueco_aux;
+            }
+        }
+    }
+    if(hueco_mayor == NULL)
+    {
+        log_error(logger,"NO ENCONTRE UN HUECO DISPONIBLE AL aplicar_algoritmo_asignación_WORST(1)"); //NO DEBERÍA PASAR PORQUE LO VERIFICA ANTES
+        return 0;
+    }
+
+    base = hueco_mayor->base;
+    hueco_mayor->base +=tamanio_segmento;
+    hueco_mayor->limite-=tamanio_segmento;
+    return base;
 }
 
 t_list* obtener_tabla_de_segmentos(int32_t pid)
