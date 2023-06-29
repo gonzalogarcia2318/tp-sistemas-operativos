@@ -1,6 +1,7 @@
 #include "file_system_thread.h"
 
 extern t_bitarray *bitmap ;
+extern SUPERBLOQUE superbloque;
 extern FILE* archivo_bloques;
 
 bool manejar_paquete_kernel(int socket_kernel)
@@ -180,15 +181,35 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
   // string_append(&path,nombre);
   // string_append(&path,".config");
    t_config *fcb=  config_create(path);
-   int tamanio = config_get_int_value(fcb, "TAMANIO_ARCHIVO");
-   int puntero_directo = config_get_int_value(fcb, "PUNTERO_DIRECTO");
-   int puntero_indirecto = config_get_int_value(fcb, "PUNTERO_INDIRECTO");
+   uint32_t tamanio = config_get_int_value(fcb, "TAMANIO_ARCHIVO");
+   uint32_t puntero_directo = config_get_int_value(fcb, "PUNTERO_DIRECTO");
+   uint32_t puntero_indirecto = config_get_int_value(fcb, "PUNTERO_INDIRECTO");
+  //maximoValor puntero
+  int maxPuntero = 99; // calcularlo
+  // buffers
+  char puntero_directo_str[maxPuntero];  
+  char puntero_indirecto_str[maxPuntero]; 
+  char tamanio_archivo_str[maxPuntero];   
    
   if(a_truncar>= tamanio){
-    //ampliar tamañano
-    //buscar bloques libres recorriendo el bitmap
-    //una vez conseguido los bloques, asignar los punteros de acuerdo a la cantidad de bloques que sea necesario(bytes)
+    //calcular bloques necesarios
+    int cant = ceil((double)(a_truncar - tamanio) / superbloque.BLOCK_SIZE);
+    int bloques_necesarios = (cant >=2) ? 2 : 1;
+  
+    //buscar bloques libres
+    puntero_directo = buscar_bloque_libre();
+    // Convertir uint32_t a string
+    snprintf(puntero_directo_str, sizeof(puntero_directo_str), "%u", puntero_directo);
+    config_set_value(fcb,"PUNTERO_DIRECTO", puntero_directo_str); 
+
+      if(bloques_necesarios > 1){
+        puntero_indirecto = buscar_bloque_libre();
+        snprintf(puntero_indirecto_str, sizeof(puntero_indirecto_str), "%u", puntero_indirecto);
+        config_set_value(fcb,"PUNTERO_INDIRECTO", puntero_indirecto_str); 
+      }
     //actualizar el tamaño del archivo en FCB
+    snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", tamanio + a_truncar);
+    config_set_value(fcb,"TAMANIO_ARCHIVO", tamanio_archivo_str);
   }
   else
   {
@@ -198,5 +219,23 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
     //actualizar el tamaño del archivo en FCB
   }
   
+}
 
+int buscar_bloque_libre(){
+  int ptr = 0;
+  off_t index = 0;
+  char* path = "config/bitmap.dat";
+  FILE *file = fopen(path, "rb+");
+
+  fread(&bitmap, sizeof(t_bitarray), 1, file); //validar el size of
+  bool valor = bitarray_test_bit(bitmap, index); //para debugear
+  while (!bitarray_test_bit(bitmap, index))
+  {
+    ptr = index * superbloque.BLOCK_SIZE;
+    index++;
+  }
+  bitarray_set_bit(bitmap, index);
+  fwrite(&bitmap,  sizeof(t_bitarray), 1, file); //validar el size of
+  fclose(file);
+  return ptr; 
 }

@@ -23,9 +23,9 @@ int main()
                 return EXIT_FAILURE;
 
             //PRUEBAS
-            // if(crear_archivo("Prueba") == FAILURE)
-            //     return EXIT_FAILURE;
-
+            if(crear_archivo("Prueba") == FAILURE)
+                return EXIT_FAILURE;
+            ejecutar_f_truncate("Prueba", 66);  
             // int existeDos = existe_archivo("Prueba");    
 
             conectar_con_kernel();
