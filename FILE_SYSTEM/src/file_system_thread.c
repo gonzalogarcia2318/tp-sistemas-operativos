@@ -193,8 +193,8 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
    
   if(a_truncar>= tamanio){
     //calcular bloques necesarios
-    int cant = ceil((double)(a_truncar - tamanio) / superbloque.BLOCK_SIZE);
-    int bloques_necesarios = (cant >=2) ? 2 : 1;
+    int bloques_necesarios = ceil((double)(a_truncar - tamanio) / superbloque.BLOCK_SIZE); 
+    int bloques_minimos = (bloques_necesarios >=2) ? 2 : 1;
   
     //buscar bloques libres
     puntero_directo = buscar_bloque_libre();
@@ -204,8 +204,17 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
 
       if(bloques_necesarios > 1){
         puntero_indirecto = buscar_bloque_libre();
+
+        fopen(FileSystemConfig.PATH_BLOQUES,"W+");
+
+        for(int bloques_restantes = bloques_necesarios-1;bloques_restantes>0;bloques_restantes--){
+          fseek(archivo_bloques,puntero_indirecto,0);
+          uint32_t bloque_sgt = buscar_bloque_libre();
+          fwrite(bloque_sgt,sizeof(uint32_t),1,archivo_bloques);
+        }
+        fclose(archivo_bloques);
         snprintf(puntero_indirecto_str, sizeof(puntero_indirecto_str), "%u", puntero_indirecto);
-        config_set_value(fcb,"PUNTERO_INDIRECTO", puntero_indirecto_str); 
+        config_set_value(fcb,"PUNTERO_INDIRECTO", puntero_indirecto_str);
       }
     //actualizar el tamaño del archivo en FCB
     snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", tamanio + a_truncar);
@@ -223,19 +232,23 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
 
 int buscar_bloque_libre(){
   int ptr = 0;
-  off_t index = 0;
+  off_t index;
   char* path = "config/bitmap.dat";
   FILE *file = fopen(path, "rb+");
 
   fread(&bitmap, sizeof(t_bitarray), 1, file); //validar el size of
-  bool valor = bitarray_test_bit(bitmap, index); //para debugear
-  while (!bitarray_test_bit(bitmap, index))
-  {
-    ptr = index * superbloque.BLOCK_SIZE;
-    index++;
+  // bool valor = bitarray_test_bit(bitmap, index); //para debugear
+
+  for(index= 0;index<bitmap->size;index++){
+    
+    if(!bitarray_test_bit(bitmap, index)){
+      break;
+    }
   }
+  ptr = index * superbloque.BLOCK_SIZE;
+
   bitarray_set_bit(bitmap, index);
-  fwrite(&bitmap,  sizeof(t_bitarray), 1, file); //validar el size of
+  //fwrite(&bitmap,  sizeof(t_bitarray), 1, file); //validar el size of
   fclose(file);
   return ptr; 
 }

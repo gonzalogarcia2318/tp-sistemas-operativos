@@ -7,6 +7,7 @@ Hilo hilo_fileSystem;
 SUPERBLOQUE superbloque;
 t_bitarray *bitmap ;
 FILE* archivo_bloques;
+char* bitarray;
 int socket_file_system;
 int socket_memoria;
 int socket_kernel;
@@ -62,7 +63,6 @@ void rellenar_configuracion_superbloque(Config* config_sb)
 int levantar_bitmap(char *path)
 {
     FILE *file;
-    char* bitarray;
     size_t size = superbloque.BLOCK_COUNT;
 
     file = fopen(path, "rb+");
@@ -76,7 +76,7 @@ int levantar_bitmap(char *path)
 
          bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
          fwrite(&bitmap, sizeof(t_bitarray), 1, file);
-          log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
+         log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
     }
 
     fread(&bitmap, sizeof(t_bitarray), 1, file);
