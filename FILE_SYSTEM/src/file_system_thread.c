@@ -181,7 +181,7 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
   // string_append(&path,nombre);
   // string_append(&path,".config");
    t_config *fcb=  config_create(path);
-   uint32_t tamanio = config_get_int_value(fcb, "TAMANIO_ARCHIVO");
+   int tamanio = config_get_int_value(fcb, "TAMANIO_ARCHIVO");
    uint32_t puntero_directo = config_get_int_value(fcb, "PUNTERO_DIRECTO");
    uint32_t puntero_indirecto = config_get_int_value(fcb, "PUNTERO_INDIRECTO");
   //maximoValor puntero
@@ -205,12 +205,12 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
       if(bloques_necesarios > 1){
         puntero_indirecto = buscar_bloque_libre();
 
-        fopen(FileSystemConfig.PATH_BLOQUES,"W+");
+        archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"wb+");
 
         for(int bloques_restantes = bloques_necesarios-1;bloques_restantes>0;bloques_restantes--){
-          fseek(archivo_bloques,puntero_indirecto,0);
+          fseek(archivo_bloques,puntero_indirecto,SEEK_SET);
           uint32_t bloque_sgt = buscar_bloque_libre();
-          fwrite(bloque_sgt,sizeof(uint32_t),1,archivo_bloques);
+          fwrite(bloque_sgt,sizeof(uint32_t),1,archivo_bloques); //FALLA
         }
         fclose(archivo_bloques);
         snprintf(puntero_indirecto_str, sizeof(puntero_indirecto_str), "%u", puntero_indirecto);
@@ -236,7 +236,7 @@ int buscar_bloque_libre(){
   char* path = "config/bitmap.dat";
   FILE *file = fopen(path, "rb+");
 
-  fread(&bitmap, sizeof(t_bitarray), 1, file); //validar el size of
+  fread(bitmap, sizeof(bitmap->size), 1, file); //validar el size of
   // bool valor = bitarray_test_bit(bitmap, index); //para debugear
 
   for(index= 0;index<bitmap->size;index++){

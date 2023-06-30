@@ -63,8 +63,8 @@ void rellenar_configuracion_superbloque(Config* config_sb)
 int levantar_bitmap(char *path)
 {
     FILE *file;
-    size_t size = superbloque.BLOCK_COUNT;
-
+    size_t size = superbloque.BLOCK_COUNT/8; // porque el create se hace en bytes
+    bitarray = malloc(size);
     file = fopen(path, "rb+");
     if (file == NULL) {
         // Si el archivo no existe, se crea
@@ -75,11 +75,11 @@ int levantar_bitmap(char *path)
         }
 
          bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
-         fwrite(&bitmap, sizeof(t_bitarray), 1, file);
+         fwrite(bitmap, sizeof(t_bitarray), 1, file);
          log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
     }
 
-    fread(&bitmap, sizeof(t_bitarray), 1, file);
+    fread(&bitmap, sizeof(t_bitarray), 1, file); //ARREGLAR
     fclose(file);
 
     log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap levantado correctamente");
