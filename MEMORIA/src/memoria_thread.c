@@ -26,7 +26,6 @@ void escuchar_kernel(int socket_kernel)
     
     case FINALIZAR_PROCESO:
       manejar_finalizar_proceso();
-      //enviar_mensaje_a_cliente("FINALIZAR_PROCESO: <OK>",socket_kernel);
       break;
     
     case INSTRUCCION:
@@ -232,16 +231,32 @@ void recibir_instruccion_kernel()
                 pid,
                 id_segmento
               );
-      //int dire_base = manejar_delete_segment(pid, id_segmento); TODO
+
+      t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
+      SEGMENTO* segmento = obtener_segmento_de_tabla_de_segmentos(tabla_de_segmentos,id_segmento);
+
+      if(segmento == NULL)
+      {
+        log_error(logger,"ERROR AL RECUPERAR SEGMENTO DE TABLA DE SEGMENTOS DEL PROCESO");
+        break;
+      }
+
+      manejar_eliminar_segmento(segmento);
+
+      log_warning(logger,"PID: <%d> - Eliminar Segmento: ID SEGMENTO: <%d> - BASE: <%d> - TAMAÑO: <%d>",
+                          pid,
+                          id_segmento,
+                          segmento->base,
+                          segmento->limite
+                  );
+
+      enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos); 
       
       // <<< BORRAR -> SOLO PARA PROBAR KERNEL
       list_remove(tabla_test, id_segmento-1); 
       enviar_tabla_de_segmentos_a_kernel_BORRAR(tabla_test, pid);
       // >>>
 
-      //enviar_mensaje_a_cliente("DELETE_SEGMENT: <OK>",socket_kernel);
-      log_warning(logger,"PID: <PID> - Eliminar Segmento: <ID SEGMENTO> - Base: <DIRECCIÓN BASE> - TAMAÑO: <TAMAÑO>");
-     
       break;
 
     default:

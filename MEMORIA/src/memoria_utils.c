@@ -177,25 +177,19 @@ void manejar_finalizar_proceso()
             buffer->stream += (sizeof(int32_t) * 2);
     log_info(logger,"RECIBI ELIMINAR_PROCESO: PID:<%d>", pid);
 
-    // SALE UN ERROR -> LLEGA MUCHAS VECES A KERNEL QUE FINALIZO EL PROCESO?
-    // obtener_proceso_de_globales(pid); no devuelve nada
-    // LO AGREGAMOS EN manejar_crear_proceso() --> deberia andar
     PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
 
-    SEGMENTO* seg_aux;
-    
     int size = list_size(proceso->tabla_de_segmentos);
-    list_remove(proceso->tabla_de_segmentos,0); //NO ELIMINO EL SEGMENTO GLOBAL
+    SEGMENTO* seg_aux;
 
-    for (int i = 1; i < size; i++)
+    for (int i = 1; i < size; i++) //NO ELIMINO EL SEGMENTO COMPARTIDO
     {
         seg_aux = list_get(proceso->tabla_de_segmentos, i);
-        //eliminar_segmento(seg_aux) ELIMINAR DE ESPACIO DE USUARIO Y CAMBIAR EN HUECOS LIBRES : TODO
-        //free(seg_aux);
+        manejar_eliminar_segmento(seg_aux); // REDIMENSIONA HUECOS. NO LIBERA EL SEGMENTO, LO MARCA COMO VALIDEZ = 0;
+        free(seg_aux);
     }
     list_destroy(proceso->tabla_de_segmentos);
-    eliminar_proceso_de_globales(pid);
-    free(proceso);
+    eliminar_proceso_de_globales(pid); //FREE INCLUIDO
 
     log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);
 }
@@ -207,12 +201,12 @@ PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid)
 
     for(int i = 0; i < size; i++)
     {
-        if(list_get(procesos_globales, i) != NULL)
+        proc_mem_aux = list_get(procesos_globales, i);
+
+        if(proc_mem_aux->pid == pid)
         {
-            proc_mem_aux = list_get(procesos_globales, i);
-            if(proc_mem_aux->pid == pid)
             return proc_mem_aux;
-        }
+        } 
     }
 }
 void eliminar_proceso_de_globales(int32_t pid)
@@ -222,13 +216,12 @@ void eliminar_proceso_de_globales(int32_t pid)
 
     for(int i = 0; i < size; i++)
     {
-        if(list_get(procesos_globales, i) != NULL)
+        proc_mem_aux = list_get(procesos_globales, i);
+
+        if(proc_mem_aux->pid == pid)
         {
-            proc_mem_aux = list_get(procesos_globales, i);
-            if(proc_mem_aux->pid == pid)
-            {
-                list_replace(procesos_globales,i,NULL);
-            }  
+            list_remove(procesos_globales,i);
+            free(proc_mem_aux);
         }  
     }
 }
@@ -279,7 +272,7 @@ void aplicar_retardo_espacio_usuario()
 
 ///////////////////////////////////////////CREAR SEGMENTO//////////////////////////////////////////////
 
-int manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
+int32_t manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
 {
     t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
 
@@ -292,7 +285,7 @@ int manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_seg
     {
     case 1:
         //OK -> ASIGNAR SEGÚN ALGORITMO ASIGNACIÓN 
-        int dire_base = crear_segmento(pid, id_segmento, tamanio_segmento);
+        int32_t dire_base = crear_segmento(pid, id_segmento, tamanio_segmento);
         log_warning(logger,"PID: <%d> - Crear Segmento: ID SEGMENTO:<%d> - Base: <%d> - TAMAÑO: <%d>",
                     pid,
                     id_segmento,
@@ -339,12 +332,12 @@ bool puedo_crear_nuevo_segmento_proceso(t_list* tabla_de_segmentos)
 int hay_espacio_memoria(int32_t tamanio_segmento)
 {
     int size = list_size(huecos_libres);
-    SEGMENTO* seg_aux;
+    SEGMENTO* hueco_aux;
 
     for (int i = 0; i < size; i++)
     {
-        seg_aux = list_get(huecos_libres,i);
-        if(seg_aux->limite >= tamanio_segmento)
+        hueco_aux = list_get(huecos_libres,i);
+        if(hueco_aux->limite >= tamanio_segmento)
             return 1; //HAY ESPACIO CONTIGUO: OK
     }
 
@@ -352,8 +345,8 @@ int hay_espacio_memoria(int32_t tamanio_segmento)
 
     for (int i = 0; i < size; i++)
     {
-        seg_aux = list_get(huecos_libres,i);
-        espacio_acumulado += seg_aux->limite;
+        hueco_aux = list_get(huecos_libres,i);
+        espacio_acumulado += hueco_aux->limite;
     }
 
     if(espacio_acumulado >= tamanio_segmento)
@@ -364,14 +357,14 @@ int hay_espacio_memoria(int32_t tamanio_segmento)
     
 }
 
-int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
+int32_t crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
 {
     SEGMENTO* segmento_nuevo = malloc(sizeof(SEGMENTO));
     segmento_nuevo->id = id_segmento;
     segmento_nuevo->limite = tamanio_segmento;
     segmento_nuevo->validez = 1;
 
-    int base = aplicar_algoritmo_asignacion(tamanio_segmento);
+    int32_t base = aplicar_algoritmo_asignacion(tamanio_segmento);
 
     segmento_nuevo->base = base;
 
@@ -381,9 +374,9 @@ int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento)
     return base;
 }
 
-int aplicar_algoritmo_asignacion(int32_t tamanio_segmento)
+int32_t aplicar_algoritmo_asignacion(int32_t tamanio_segmento)
 {
-    int base = 0;
+    int32_t base = 0;
 
     if(!strcmp(MemoriaConfig.ALGORITMO_ASIGNACION,"FIRST"))
     {
@@ -407,7 +400,7 @@ int aplicar_algoritmo_asignacion(int32_t tamanio_segmento)
     }
 }
 
-int aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento)
+int32_t aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento)
 {
     int size = list_size(huecos_libres);
     int base = 0;
@@ -415,7 +408,13 @@ int aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento)
     for (int i = 0; i < size; i++)
     {
         SEGMENTO* hueco = list_get(huecos_libres,i);
-        if(hueco->limite >= tamanio_segmento)
+        if(hueco->limite == tamanio_segmento) //SEGMENTO CALZA JUSTO EN EL HUECO
+        {
+            base = hueco->base;
+            eliminar_hueco(hueco);
+            return base;
+        }
+        else if(hueco->limite > tamanio_segmento)
         {
             base = hueco->base;
             hueco->base +=tamanio_segmento;
@@ -428,10 +427,10 @@ int aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento)
     return 0;
 }
 
-int aplicar_algoritmo_asignacion_BEST(int32_t tamanio_segmento)
+int32_t aplicar_algoritmo_asignacion_BEST(int32_t tamanio_segmento)
 {
     int size = list_size(huecos_libres);
-    int base = 0;
+    int32_t base = 0;
     SEGMENTO* hueco_menor = NULL;
 
     for (int i = 0; i < size; i++)
@@ -449,22 +448,33 @@ int aplicar_algoritmo_asignacion_BEST(int32_t tamanio_segmento)
             }
         }
     }
+
     if(hueco_menor == NULL)
     {
         log_error(logger,"NO ENCONTRE UN HUECO DISPONIBLE AL aplicar_algoritmo_asignación_BEST(1)"); //NO DEBERÍA PASAR PORQUE LO VERIFICA ANTES
         return 0;
     }
 
-    base = hueco_menor->base;
-    hueco_menor->base +=tamanio_segmento;
-    hueco_menor->limite-=tamanio_segmento;
-    return base;
+    if(hueco_menor->limite == tamanio_segmento) //SEGMENTO CALZA JUSTO EN EL HUECO
+    {
+        base = hueco_menor->base;
+        eliminar_hueco(hueco_menor);
+        return base;
+    }
+    else
+    {
+        base = hueco_menor->base;
+        hueco_menor->base +=tamanio_segmento;
+        hueco_menor->limite-=tamanio_segmento;
+        return base;
+    }
 }
+    
 
-int aplicar_algoritmo_asignacion_WORST(int32_t tamanio_segmento)
+int32_t aplicar_algoritmo_asignacion_WORST(int32_t tamanio_segmento)
 {
     int size = list_size(huecos_libres);
-    int base = 0;
+    int32_t base = 0;
     SEGMENTO* hueco_mayor = NULL;
 
     for (int i = 0; i < size; i++)
@@ -482,16 +492,26 @@ int aplicar_algoritmo_asignacion_WORST(int32_t tamanio_segmento)
             }
         }
     }
+
     if(hueco_mayor == NULL)
     {
         log_error(logger,"NO ENCONTRE UN HUECO DISPONIBLE AL aplicar_algoritmo_asignación_WORST(1)"); //NO DEBERÍA PASAR PORQUE LO VERIFICA ANTES
         return 0;
     }
 
-    base = hueco_mayor->base;
-    hueco_mayor->base +=tamanio_segmento;
-    hueco_mayor->limite-=tamanio_segmento;
-    return base;
+    if(hueco_mayor->limite == tamanio_segmento) //SEGMENTO CALZA JUSTO EN EL HUECO
+    {
+        base = hueco_mayor->base;
+        eliminar_hueco(hueco_mayor);
+        return base;
+    }
+    else
+    {
+        base = hueco_mayor->base;
+        hueco_mayor->base +=tamanio_segmento;
+        hueco_mayor->limite-=tamanio_segmento;
+        return base;
+    }
 }
 
 t_list* obtener_tabla_de_segmentos(int32_t pid)
@@ -501,7 +521,108 @@ t_list* obtener_tabla_de_segmentos(int32_t pid)
     return tabla_de_segmentos;
 }
 
-void eliminar_segmento()
+SEGMENTO* obtener_segmento_de_tabla_de_segmentos(t_list* tabla_de_segmentos,int32_t id_segmento)
 {
-    //TODO
+    int size = list_size(tabla_de_segmentos);
+    SEGMENTO* seg_buscado;
+
+    for (int i = 0; i < size; i++)
+    {
+        seg_buscado = list_get(tabla_de_segmentos,i);
+        if(seg_buscado->id == id_segmento)
+        {
+            return seg_buscado;
+        }
+    }
+    return NULL;
+}
+
+void manejar_eliminar_segmento(SEGMENTO* segmento)
+{
+    int32_t base = segmento->base;
+    int32_t limite = segmento->limite;
+
+    redimensionar_huecos_contiguos(base, limite);
+
+    segmento->validez = 0;
+}
+
+void redimensionar_huecos_contiguos(int32_t base_segmento, int32_t limite_segmento)
+{
+    int size = list_size(huecos_libres);
+   
+    int tiene_hueco_detras = 0;
+    int tiene_hueco_delante = 0;
+
+    SEGMENTO* hueco_detras = NULL;
+    SEGMENTO* hueco_delante = NULL;
+    SEGMENTO* hueco_aux;
+
+    for (int i = 0; i < size; i++)
+    {
+        hueco_aux = list_get(huecos_libres,i);
+
+        if((hueco_aux->base + hueco_aux->limite) == base_segmento) //TIENE HUECO DETRAS
+        {
+            tiene_hueco_detras = 1;
+            hueco_detras = hueco_aux;
+        }
+
+        if(hueco_aux->base == (base_segmento + limite_segmento)) //TIENE HUECO DELANTE
+        {
+            tiene_hueco_delante = 1;
+            hueco_delante = hueco_aux;
+        }
+
+        if(tiene_hueco_delante && tiene_hueco_detras) break;
+    }
+    
+    if(tiene_hueco_delante && tiene_hueco_detras) //CONSOLIDAR HUECOS
+    {
+        hueco_detras->limite += limite_segmento;
+        hueco_detras->limite += hueco_delante->limite;
+
+        eliminar_hueco(hueco_delante); //FREE INCLUIDO
+        log_info(logger,"ELIMINÉ UN HUECO POR MOTIVO DE ELIMINAR SEGMENTO, DADO QUE CONSOLIDÉ DOS HUECOS");
+        return;
+    }
+    else if(tiene_hueco_delante)//TOMA EL LUGAR DE LA BASE DEL SEGMENTO Y OCUPA SU ESPACIO
+    {
+        hueco_delante->base = base_segmento;
+        hueco_delante->limite += limite_segmento;
+        return;
+    }
+    else if(tiene_hueco_detras)//OCUPA SU ESPACIO
+    {
+        hueco_detras->limite += limite_segmento;
+        return;
+    }
+    else //NO TIENE HUECOS ALEDAÑIOS => CREO UNO.
+    {
+        SEGMENTO* hueco = malloc(sizeof(SEGMENTO));
+        hueco->base = base_segmento;
+        hueco->limite = limite_segmento;
+
+        list_add(huecos_libres,hueco);
+        log_info(logger,"CREÉ UN HUECO POR MOTIVO DE ELIMINAR SEGMENTO, DADO QUE NO POSEE HUECOS ALEDAÑOS");
+        return;
+    }
+}
+
+void eliminar_hueco(SEGMENTO* hueco)
+{
+    int size = list_size(huecos_libres);
+    SEGMENTO* hueco_aux;
+
+    for (int i = 0; i < size; i++)
+    {
+       hueco_aux = list_get(huecos_libres,i);
+
+       if(hueco_aux->base == hueco->base)
+       {
+        list_remove(huecos_libres,i);
+        free(hueco_aux);
+        return;
+       }
+    }
 }

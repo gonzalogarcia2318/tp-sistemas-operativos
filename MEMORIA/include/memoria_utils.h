@@ -60,15 +60,19 @@ char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro);
 void escribir_en_memoria(char* contenido,int32_t direccion_fisica,int32_t bytes_registro);
     void aplicar_retardo_espacio_usuario();
 
-int manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
+int32_t manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
     bool puedo_crear_nuevo_segmento_proceso(t_list* tabla_de_segmentos);
     int hay_espacio_memoria(int32_t tamanio_segmento);
-    int crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
-        int aplicar_algoritmo_asignacion(int32_t tamanio_segmento);
-            int aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento);
-            int aplicar_algoritmo_asignacion_BEST(int32_t tamanio_segmento);
-            int aplicar_algoritmo_asignacion_WORST(int32_t tamanio_segmento);
+    int32_t crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio_segmento);
+        int32_t aplicar_algoritmo_asignacion(int32_t tamanio_segmento);
+            int32_t aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento);
+            int32_t aplicar_algoritmo_asignacion_BEST(int32_t tamanio_segmento);
+            int32_t aplicar_algoritmo_asignacion_WORST(int32_t tamanio_segmento);
     
     t_list* obtener_tabla_de_segmentos(int32_t pid);
-void eliminar_segmento(); // TODO
+    SEGMENTO* obtener_segmento_de_tabla_de_segmentos(t_list* tabla_de_segmentos,int32_t id_segmento);
+
+void manejar_eliminar_segmento(SEGMENTO* segmento);
+    void redimensionar_huecos_contiguos(int32_t base_segmento, int32_t limite_segmento);
+        void eliminar_hueco(SEGMENTO* hueco);
 #endif
