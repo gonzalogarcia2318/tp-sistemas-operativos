@@ -64,7 +64,7 @@ int levantar_bitmap(char *path)
 {
     FILE *file;
     size_t size = superbloque.BLOCK_COUNT/8; // porque el create se hace en bytes
-    bitarray = malloc(size);
+
     file = fopen(path, "rb+");
     if (file == NULL) {
         // Si el archivo no existe, se crea
@@ -73,13 +73,13 @@ int levantar_bitmap(char *path)
            log_error(logger,"Error al crear el archivo BITMAP");
             return FAILURE;
         }
-
+         bitarray = malloc(size);
          bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
          fwrite(bitmap, sizeof(t_bitarray), 1, file);
          log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
     }
 
-    fread(&bitmap, sizeof(t_bitarray), 1, file); //ARREGLAR
+    fread(&bitmap, sizeof(t_bitarray), 1, file); 
     fclose(file);
 
     log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap levantado correctamente");

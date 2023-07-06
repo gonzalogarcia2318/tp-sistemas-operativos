@@ -161,11 +161,12 @@ int crear_archivo(char* nombre){
 }
 
 int existe_archivo(char* nombre){
-
-  char* path = "config/fcb/Prueba.config"; //Hacer el path correcto, revisar porque falla
-  // string_append(&path,nombre);
-  // string_append(&path,".config");
-  t_config *fcb=  config_create(path);
+  //mejorar
+  Config * config = config_create("config/file_system.config");
+  char* pathCompleto = config_get_string_value(config, "PATH_FCB");
+  string_append(&pathCompleto,nombre);
+  string_append(&pathCompleto,".config");
+  t_config *fcb=  config_create(pathCompleto);
 
   if(fcb == NULL){
     return FAILURE;
@@ -176,11 +177,15 @@ int existe_archivo(char* nombre){
   } 
 }
 
-void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
-   char* path = "config/fcb/Prueba.config"; //Hacer el path correcto, revisar porque falla
+void ejecutar_f_truncate(char* nombre,int a_truncar){
+  //mejorar
+  Config * config = config_create("config/file_system.config");
+  char* pathCompleto = config_get_string_value(config, "PATH_FCB");
+  string_append(&pathCompleto,nombre);
+  string_append(&pathCompleto,".config");
   // string_append(&path,nombre);
   // string_append(&path,".config");
-   t_config *fcb=  config_create(path);
+   t_config *fcb=  config_create(pathCompleto);
    int tamanio = config_get_int_value(fcb, "TAMANIO_ARCHIVO");
    uint32_t puntero_directo = config_get_int_value(fcb, "PUNTERO_DIRECTO");
    uint32_t puntero_indirecto = config_get_int_value(fcb, "PUNTERO_INDIRECTO");
@@ -210,7 +215,7 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
         for(int bloques_restantes = bloques_necesarios-1;bloques_restantes>0;bloques_restantes--){
           fseek(archivo_bloques,puntero_indirecto,SEEK_SET);
           uint32_t bloque_sgt = buscar_bloque_libre();
-          fwrite(bloque_sgt,sizeof(uint32_t),1,archivo_bloques); //FALLA
+          fwrite(&bloque_sgt,sizeof(uint32_t),1,archivo_bloques);
         }
         fclose(archivo_bloques);
         snprintf(puntero_indirecto_str, sizeof(puntero_indirecto_str), "%u", puntero_indirecto);
@@ -219,6 +224,7 @@ void ejecutar_f_truncate(char* nombre_archivo,int a_truncar){
     //actualizar el tamaño del archivo en FCB
     snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", tamanio + a_truncar);
     config_set_value(fcb,"TAMANIO_ARCHIVO", tamanio_archivo_str);
+    config_save(fcb);
   }
   else
   {
@@ -236,8 +242,8 @@ int buscar_bloque_libre(){
   char* path = "config/bitmap.dat";
   FILE *file = fopen(path, "rb+");
 
-  fread(bitmap, sizeof(bitmap->size), 1, file); //validar el size of
-  // bool valor = bitarray_test_bit(bitmap, index); //para debugear
+  fread(bitmap, sizeof(bitmap->size), 1, file);
+
 
   for(index= 0;index<bitmap->size;index++){
     
@@ -248,7 +254,6 @@ int buscar_bloque_libre(){
   ptr = index * superbloque.BLOCK_SIZE;
 
   bitarray_set_bit(bitmap, index);
-  //fwrite(&bitmap,  sizeof(t_bitarray), 1, file); //validar el size of
   fclose(file);
   return ptr; 
 }
