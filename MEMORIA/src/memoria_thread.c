@@ -31,7 +31,13 @@ void escuchar_kernel(int socket_kernel)
     case INSTRUCCION:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida de KERNEL");
       recibir_instruccion_kernel();
-      break; 
+      break;
+
+    case CONSOLIDAR:
+      log_info(logger,"Recibi de Kernel: CONSOLIDAR");
+      compactar();
+      // ENVIAR TABLAS DE PÁGINA A KERNEL.
+      break;
     
     case DESCONEXION:
       log_warning(logger, "[MEMORIA]: Conexión con KERNEL terminada.");
@@ -130,7 +136,7 @@ void recibir_instruccion_cpu()
     case MOV_IN:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
 
-      char* contenido = malloc((tamanio_registro + 1) * sizeof(char));
+      char* contenido;
 
       strcpy(contenido,leer_de_memoria(direccion_fisica,tamanio_registro));
       

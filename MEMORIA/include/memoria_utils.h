@@ -27,6 +27,7 @@ extern void* espacio_usuario;
 extern SEGMENTO* segmento_compartido;
 extern t_list* huecos_libres;
 extern t_list* procesos_globales;
+extern t_list* tabla_de_segmentos_globales;
 
 typedef struct
 {
@@ -47,6 +48,7 @@ void crear_estructuras_administrativas();
     void crear_espacio_usuario();
     void crear_lista_huecos_libres();
     void crear_lista_procesos_globales();
+    void crear_tabla_segmentos_globales();
 
 t_list* manejar_crear_proceso();
     t_list* crear_tabla_de_segmentos();
@@ -68,11 +70,18 @@ int32_t manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio
             int32_t aplicar_algoritmo_asignacion_FIRST(int32_t tamanio_segmento);
             int32_t aplicar_algoritmo_asignacion_BEST(int32_t tamanio_segmento);
             int32_t aplicar_algoritmo_asignacion_WORST(int32_t tamanio_segmento);
-    
+        void agregar_segmento_a_tabla_global(SEGMENTO*);
     t_list* obtener_tabla_de_segmentos(int32_t pid);
     SEGMENTO* obtener_segmento_de_tabla_de_segmentos(t_list* tabla_de_segmentos,int32_t id_segmento);
 
 void manejar_eliminar_segmento(SEGMENTO* segmento);
-    void redimensionar_huecos_contiguos(int32_t base_segmento, int32_t limite_segmento);
-        void eliminar_hueco(SEGMENTO* hueco);
+    void redimensionar_huecos_eliminar_segmento(int32_t base_segmento, int32_t limite_segmento);
+        void eliminar_hueco(int32_t base_hueco);
+    void eliminar_segmento_de_globales(int32_t id_segmento);
+    void eliminar_segmento_de_tabla_segmentos_proceso(int32_t pid, int32_t id_segmento);
+
+void compactar();
+    void redimensionar_huecos_compactar(int32_t base, int32_t limite);
+    void imprimir_tabla_segmentos_globales();
+    void aplicar_retardo_compactacion();
 #endif

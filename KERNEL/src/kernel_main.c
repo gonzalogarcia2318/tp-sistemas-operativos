@@ -1018,10 +1018,11 @@ void devolver_proceso_a_cpu(Proceso* proceso){
 void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t tamanio_segmento)
 {
     SEGMENTO *segmento = malloc(sizeof(SEGMENTO));
+    segmento->pid = proceso->pcb->PID;
     segmento->id = id_segmento;
     segmento->base = 0;
     segmento->limite = 0;
-    segmento->validez = 0;
+    //segmento->validez = 0;
 
     list_add(proceso->pcb->tabla_segmentos, segmento);
 
@@ -1140,7 +1141,7 @@ void imprimir_segmentos(Proceso* proceso){
     log_info(logger, "PID: %d - SEGMENTOS", proceso->pcb->PID);
     for(int i = 0; i < list_size(proceso->pcb->tabla_segmentos); i++){
         SEGMENTO* segmento = (SEGMENTO*) list_get(proceso->pcb->tabla_segmentos, i);
-        log_info(logger, "-> ID %d - Base %d - Limite %d - Validez %d", segmento->id, segmento->base, segmento->limite, segmento->validez);
+        log_info(logger, "-> PID %d - ID %d - Base %d - Limite %d", segmento->pid, segmento->id, segmento->base, segmento->limite);
     }
     log_info(logger, "-----------------");
 }
