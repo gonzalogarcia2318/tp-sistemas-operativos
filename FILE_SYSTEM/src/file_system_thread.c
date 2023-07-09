@@ -217,6 +217,12 @@ void ejecutar_f_truncate(char* nombre,int a_truncar){
         for(int bloques_restantes = bloques_necesarios-1;bloques_restantes>0;bloques_restantes--){
           fseek(archivo_bloques,puntero_indirecto,SEEK_SET);
           uint32_t bloque_sgt = buscar_bloque_libre();
+
+          log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+                          nombre,
+                          puntero_indirecto/superbloque.BLOCK_SIZE,
+                          bloque_sgt/superbloque.BLOCK_SIZE);
+
           fwrite(&bloque_sgt,sizeof(uint32_t),1,archivo_bloques);
         }
         fclose(archivo_bloques);
@@ -286,8 +292,11 @@ int buscar_bloque_libre(){
 
 
   for(index= 0;index<bitmap->size;index++){
-    
-    if(!bitarray_test_bit(bitmap, index)){
+    bool estado = bitarray_test_bit(bitmap, index);
+    log_warning(logger, "ACCESO A BITMAP: <NUMERO BLOQUE: %d> - Estado: <ESTADO>: %d>",
+                          index,
+                          estado);
+    if(!estado){
       break;
     }
   }
