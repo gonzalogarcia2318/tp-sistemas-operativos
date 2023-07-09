@@ -98,6 +98,8 @@ t_list *leer_instrucciones(char *path_instrucciones)
 
 Instruccion *parsear_instruccion_por_linea(char *linea)
 {
+    quitar_salto_de_linea(linea);
+    
     char **linea_splitted = string_split(linea, " ");
 
     // TODO: free(instruccion) cuando se termine de usar
@@ -156,7 +158,7 @@ Instruccion *parsear_instruccion_por_linea(char *linea)
     else if (strcmp(instruccion->nombreInstruccion, "CREATE_SEGMENT") == 0)
     {
         instruccion->idSegmento = atoi(linea_splitted[1]);
-        instruccion->valor = linea_splitted[2];
+        instruccion->tamanioSegmento = atoi(linea_splitted[2]);
     }
     else if (strcmp(instruccion->nombreInstruccion, "DELETE_SEGMENT") == 0)
     {
@@ -167,3 +169,9 @@ Instruccion *parsear_instruccion_por_linea(char *linea)
 
     return instruccion;
 }
+
+// void quitar_salto_de_linea(char *cadena)
+// {
+//     int longitud = strcspn(cadena, "\n");
+//     cadena[longitud] = '\0';
+// }

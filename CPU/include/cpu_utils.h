@@ -62,5 +62,5 @@ void manejar_instrucciones(PCB*); //ES GENERAL PARA TODAS, INCLUYE FETCH
         void ejecutar_yield(PAQUETE*,PCB*);
         void ejecutar_exit(PAQUETE*,PCB*);
 
-    void quitar_salto_de_linea(char *);
+    
 #endif

@@ -296,20 +296,20 @@ BUFFER *serializar_segmento(SEGMENTO *segmento)
     void* stream = malloc(buffer->size);
     int offset = 0; // Desplazamiento
 
-    
-    
-    memcpy(stream + offset, &(segmento->base), sizeof(int32_t));
+    memcpy(stream + offset, &(segmento->pid), sizeof(int32_t));
     offset += sizeof(int32_t);
 
- 
     memcpy(stream + offset, &(segmento->id), sizeof(int32_t));
     offset += sizeof(int32_t);
 
-    
+    memcpy(stream + offset, &(segmento->base), sizeof(int32_t));
+    offset += sizeof(int32_t);
+
     memcpy(stream + offset, &(segmento->limite), sizeof(int32_t));
     offset += sizeof(int32_t);
  
-
+    //memcpy(stream + offset, &(segmento->validez), sizeof(int32_t));
+    //offset += sizeof(int32_t);
     // Guarda el tamaño y los datos serializados en la estructura BUFFER
     buffer->stream = stream;
 
@@ -348,8 +348,6 @@ PCB *deserializar_pcb(BUFFER *buffer)
     memcpy(&(pcb->registros_cpu), stream, 112);
     stream += 112;
 
-
-  
     free(buffer_segmentos);
     free(buffer_instrucciones);
 
@@ -421,6 +419,9 @@ BUFFER *serializar_instruccion(Instruccion *instruccion)
     offset += strlen(instruccion->recurso) + 1;
 
     memcpy(stream + offset, &(instruccion->idSegmento), sizeof(int32_t));
+    offset += sizeof(int32_t);
+
+    memcpy(stream + offset, &(instruccion->tamanioSegmento), sizeof(int32_t));
 
     // Guarda el tamaño y los datos serializados en la estructura BUFFER
     buffer->stream = stream;
@@ -489,6 +490,10 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     stream += instruccion->recurso_long + 1;
 
     memcpy(&(instruccion->idSegmento), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    memcpy(&(instruccion->tamanioSegmento), stream, sizeof(int32_t));
+
 
     return instruccion;
 }
@@ -499,15 +504,20 @@ SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
     void* stream = buffer->stream;
     stream += stream_offset;
 
+    memcpy(&(segmento->pid), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
     memcpy(&(segmento->id), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
+    memcpy(&(segmento->base), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
     memcpy(&(segmento->limite), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-
-    memcpy(&(segmento->base), stream, sizeof(int32_t));
-    stream += sizeof(int32_t);
+    //memcpy(&(segmento->validez), stream, sizeof(int32_t));
+    //stream += sizeof(int32_t);
 
     return segmento;
 }
@@ -570,7 +580,7 @@ t_list* deserializar_segmentos(BUFFER* buffer){
 }
 
 int calcular_tamanio_instruccion(Instruccion *instruccion){
-    int tamanio = sizeof(int32_t) * 11       
+    int tamanio = sizeof(int32_t) * 12       
             + strlen(instruccion->valor) + 1
             + strlen(instruccion->nombreInstruccion) + 1
             + strlen(instruccion->registro) + 1
@@ -580,7 +590,7 @@ int calcular_tamanio_instruccion(Instruccion *instruccion){
 }
 
 int calcular_tamanio_segmento(SEGMENTO *segmento){
-    int tamanio = sizeof(int32_t) * 3;                
+    int tamanio = sizeof(int32_t) * 4;                
     return tamanio;
 }
 
@@ -679,4 +689,24 @@ Registro_CPU *deserializar_registros(BUFFER *buffer)
     stream += 16+1;
 
     return registros;
+}
+void quitar_salto_de_linea(char *cadena) 
+{
+    int longitud = strcspn(cadena, "\n");
+    cadena[longitud] = '\0';
+}
+int32_t obtener_tamanio_registro(char* nombre_registro)
+{
+  quitar_salto_de_linea(nombre_registro);
+  if( !strcmp(nombre_registro, "AX") || !strcmp(nombre_registro, "BX") || !strcmp(nombre_registro, "CX") || !strcmp(nombre_registro, "DX"))
+    return (int32_t)4;
+  
+  else if(!strcmp(nombre_registro, "EAX") || !strcmp(nombre_registro, "EBX") || !strcmp(nombre_registro, "ECX") || !strcmp(nombre_registro, "EDX"))
+    return (int32_t)8;
+  
+  else if(!strcmp(nombre_registro, "RAX") || !strcmp(nombre_registro, "RBX") || !strcmp(nombre_registro, "RCX") || !strcmp(nombre_registro, "RDX"))
+    return (int32_t)16;
+  
+  else
+    return(int32_t)0;
 }

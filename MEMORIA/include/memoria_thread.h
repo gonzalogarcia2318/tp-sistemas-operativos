@@ -9,6 +9,7 @@
 void escuchar_kernel(int socket_kernel);
     void recibir_instruccion_kernel();
 void escuchar_file_system(int socket_fs);
+    void recibir_instruccion_file_system();
 void escuchar_cpu(int socket_cpu);
     void recibir_instruccion_cpu();
 #endif

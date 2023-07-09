@@ -12,6 +12,7 @@ int main()
     {
         if(conectar_con_memoria() == SUCCESS)
         {
+            conectar_con_kernel();
 
             if(iniciar_config_superbloque() == FAILURE)
                 return EXIT_FAILURE;
@@ -28,13 +29,8 @@ int main()
             // if(crear_archivo("Test") == FAILURE)
             //     return EXIT_FAILURE;
 
-            // ejecutar_f_truncate("Prueba", 256);  
-            // ejecutar_f_truncate("Prueba", 128);
-            // ejecutar_f_truncate("Test", 128);  
-            // ejecutar_f_truncate("Test", 64);  
-        
-
             conectar_con_kernel();
+          
         }
         else
             return EXIT_FAILURE;

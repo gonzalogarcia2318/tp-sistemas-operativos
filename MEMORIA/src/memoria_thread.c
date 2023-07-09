@@ -1,11 +1,15 @@
 #include "memoria_thread.h"
 
+t_list* tabla_test;
+
 void escuchar_kernel(int socket_kernel)
 {
   log_info(logger,"[MEMORIA]: Escuchando KERNEL...");
+
   while (true)
   {
     char *mensaje;
+
     switch (obtener_codigo_operacion(socket_kernel))
     {
     case MENSAJE:
@@ -13,11 +17,27 @@ void escuchar_kernel(int socket_kernel)
       log_info(logger, "[MEMORIA]: Mensaje recibido de KERNEL: %s", mensaje);
       free(mensaje);
       break;
-
+    case CREAR_PROCESO:
+      t_list* tabla_de_segmentos = manejar_crear_proceso();
+      tabla_test = tabla_de_segmentos;
+      enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos);
+      log_info(logger,"ENVÍE TABLA DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE CREAR_PROCESO");
+      break;
+    
+    case FINALIZAR_PROCESO:
+      manejar_finalizar_proceso();
+      break;
+    
     case INSTRUCCION:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida de KERNEL");
       recibir_instruccion_kernel();
-      break; 
+      break;
+
+    case CONSOLIDAR:
+      log_info(logger,"Recibi de Kernel: CONSOLIDAR");
+      compactar();
+      // ENVIAR TABLAS DE PÁGINA A KERNEL.
+      break;
     
     case DESCONEXION:
       log_warning(logger, "[MEMORIA]: Conexión con KERNEL terminada.");
@@ -47,6 +67,10 @@ void escuchar_file_system(int socket_fs)
     case DESCONEXION:
       log_warning(logger, "[MEMORIA]: Conexión con FILE SYSTEM terminada.");
       return;
+    
+    case INSTRUCCION:
+      log_warning(logger,"[MEMORIA]: INSTRUCCION recibida de FILE SYSTEM");
+      recibir_instruccion_file_system();
 
     default:
       log_warning(logger, "[MEMORIA]: Operacion desconocida.");
@@ -84,32 +108,64 @@ void escuchar_cpu(int socket_cpu)
 
 void recibir_instruccion_cpu()
 {
-  int direccion_fisica = 0;
-  Lista* lista_recepcion;
-  lista_recepcion = obtener_paquete_como_lista(socket_cpu);
+  BUFFER *buffer = recibir_buffer(socket_cpu);
 
-  CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION *)list_get(lista_recepcion,0);
+  int32_t cod_instruccion;
+  int32_t pid;
+  int32_t direccion_fisica;
+  int32_t tamanio_registro;
+  
+  memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+  memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+  memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+  memcpy(&tamanio_registro, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2);
+
+  log_info(logger,"INSTRUCCIÓN CPU: COD:<%d> - PID:<%d> - DF:<%d> - TR: <%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
+            cod_instruccion,
+            pid,
+            direccion_fisica,
+            tamanio_registro
+          );
 
   switch (cod_instruccion)
   {
     case MOV_IN:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
-      direccion_fisica = *(int*)list_get(lista_recepcion,1);
-      //...
-      //leer de memoria y devolver valor de la dire_fisica dada
-      //...TODO
-      enviar_mensaje_a_cliente("VALOR_LEIDO",socket_cpu);
-      log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <VALOR_LEIDO> COMO MOTIVO DE FIN DE MOV_IN");
+
+      char* contenido;
+
+      strcpy(contenido,leer_de_memoria(direccion_fisica,tamanio_registro));
+      
+      log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <%d> - Acción: <LEER> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
+                          pid,
+                          direccion_fisica,
+                          tamanio_registro
+                  );
+      enviar_mensaje_a_cliente(contenido,socket_cpu);
+      log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <%s> COMO MOTIVO DE FIN DE MOV_IN", contenido);
+      free(contenido);
       break;
 
     case MOV_OUT:
+      char* valor_a_escribir = malloc(sizeof(char) * (tamanio_registro + 1));
+      memcpy(&valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio_registro + 1));
+            buffer->stream += (tamanio_registro + 1); 
+
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_OUT");
-      direccion_fisica = *(int*)list_get(lista_recepcion,1);
-      char* valor_a_escribir = string_duplicate((char*)list_get(lista_recepcion,2));
-      //...
-      //escribir valor en memoria
-      //...TODO
-      enviar_mensaje_a_cliente("OK",socket_cpu);
+      log_info(logger, "VALOR A ESCRIBIR: <%s>", valor_a_escribir); //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
+      
+      escribir_en_memoria(valor_a_escribir,direccion_fisica,tamanio_registro);
+
+      log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <%d> - Acción: <ESCRIBIR> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
+                          pid,
+                          direccion_fisica,
+                          tamanio_registro
+                  );
+      enviar_mensaje_a_cliente("[MEMORIA]: MOV_OUT:<OK>",socket_cpu);
       log_info(logger,"MEMORIA: ENVIE EL MENSAJE <OK> A CPU COMO MOTIVO DE FIN DE MOV_OUT");
       break;
     
@@ -117,55 +173,122 @@ void recibir_instruccion_cpu()
     log_warning(logger, "[MEMORIA]: Código Instrucción desconocido.");
     break;
   }
-  
-  list_destroy(lista_recepcion);
 }
 
 void recibir_instruccion_kernel()
 {
-  Lista* lista_recepcion;
-  lista_recepcion = obtener_paquete_como_lista(socket_kernel);
-  
-  CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION *)list_get(lista_recepcion,0);
-  int pid = *(int*)list_get(lista_recepcion,1);
-  int id_segmento = *(int*)list_get(lista_recepcion,2);
-  int dire_base = *(int*)list_get(lista_recepcion,3);
-  int tamanio = *(int*)list_get(lista_recepcion,4);
+  BUFFER* buffer = recibir_buffer(socket_kernel);
+  int32_t cod_instruccion;
+  int32_t pid;
+  int32_t id_segmento;
+
+  memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+        buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+  memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+        buffer->stream += (sizeof(int32_t) * 2); 
+  memcpy(&id_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+        buffer->stream += (sizeof(int32_t) * 2);
   
   switch (cod_instruccion)
   {
-    case CREATE_SEGMENT:
+    case CREATE_SEGMENT: //TODO
       
-      log_info(logger,"CREAR SEGMENTO: <PID: %d> - Crear Segmento: <ID SEGMENTO: %d> - Base: <DIRECCION BASE: %d> - tamaño: <TAMAÑO: %d>",
-                      pid,
-                      id_segmento,
-                      dire_base,
-                      tamanio
-              );
-                   
-      //ejecutar_create_segment(...); TODO
+      int32_t tamanio_segmento;
+      memcpy(&tamanio_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
 
-      enviar_mensaje_a_cliente("CREATE_SEGMENT: OK", socket_kernel);
-      break;
-
-    case DELETE_SEGMENT:
-      
-      log_info(logger, "ELIMINAR SEGMENTO: <PID: %d> - Eliminar Segmento: <ID SEGMENTO: %d> - Base: <DIRECCION BASE: %d> - tamaño: <TAMAÑO: %d>",
-                      pid,
-                      id_segmento,
-                      dire_base,
-                      tamanio
+      log_info(logger,"INSTRUCCIÓN KERNEL: CREATE_SEGMENT - PID:<%d> - ID_SEG:<%d> - TS: <%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
+                pid,
+                id_segmento,
+                tamanio_segmento
               );
 
-      //ejecutar_delete_segment(...); TODO
+      int base = manejar_crear_segmento(pid, id_segmento, tamanio_segmento);
+      
+      if (base > 0) //OK
+      {
+        PAQUETE * paquete_ok = crear_paquete(CREAR_SEGMENTO);
+        agregar_a_paquete(paquete_ok, &base, sizeof(int32_t)); //ENVIAR_DIRE_BASE
+        enviar_paquete_a_cliente(paquete_ok, socket_kernel);
+        break;
+      }
+      else if (base == -2) //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
+      {
+        PAQUETE * paquete_consolidar = crear_paquete(CONSOLIDAR);
+        enviar_paquete_a_cliente(paquete_consolidar, socket_kernel);
+        break;
+      }
+      else if (base == -3) //FALTA ESPACIO "Out of Memory"
+      {
+        PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
+        enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
+        break;
+      }
+      else // base = 0 (ERROR EN ALGUNA FUNCIÓN ANTERIOR, VERIFICAR LOGS)
+      {
+        log_error(logger,"ERROR AL ASIGNAR BASE");
+        break;
+      }
+    break;
 
-      enviar_mensaje_a_cliente("DELETE_SEGMENT: OK", socket_kernel);
+    case DELETE_SEGMENT: //TODO
+  
+      log_info(logger,"INSTRUCCIÓN KERNEL: DELETE_SEGMENT - PID:<%d> - ID_SEG:<%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
+                pid,
+                id_segmento
+              );
+
+      t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
+      SEGMENTO* segmento = obtener_segmento_de_tabla_de_segmentos(tabla_de_segmentos,id_segmento);
+
+      if(segmento == NULL)
+      {
+        log_error(logger,"ERROR AL RECUPERAR SEGMENTO DE TABLA DE SEGMENTOS DEL PROCESO");
+        break;
+      }
+
+      manejar_eliminar_segmento(segmento);
+
+      log_warning(logger,"PID: <%d> - Eliminar Segmento: ID SEGMENTO: <%d> - BASE: <%d> - TAMAÑO: <%d>",
+                          pid,
+                          id_segmento,
+                          segmento->base,
+                          segmento->limite
+                  );
+
+      enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos); 
+      
+      // <<< BORRAR -> SOLO PARA PROBAR KERNEL
+      list_remove(tabla_test, id_segmento-1); 
+      enviar_tabla_de_segmentos_a_kernel_BORRAR(tabla_test, pid);
+      // >>>
+
       break;
 
     default:
       log_warning(logger, "[MEMORIA]: Código Instrucción desconocido.");
       break;
   }
+}
 
-  list_destroy(lista_recepcion);
+void recibir_instruccion_file_system()
+{
+  Lista* lista = obtener_paquete_como_lista(socket_file_system);
+
+  int numero_op = *(int*)list_get(lista,0);
+
+  switch (numero_op)
+  {
+  case F_WRITE:
+    //...
+    break;
+  
+  case F_READ:
+    //....
+    break;
+
+  default:
+    log_error(logger,"CODIGO DE OP DESCONOCIDO AL RECIBIR INSTRUCCION FS");
+    return;
+  }
 }

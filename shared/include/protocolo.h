@@ -3,7 +3,9 @@
 
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/temporal.h>
 #include <math.h>
+#include <time.h>
 #include <commons/string.h>
 #include <commons/collections/list.h>
 #include <commons/collections/queue.h>
@@ -34,8 +36,21 @@ typedef enum
     OP_PCB,
     INSTRUCCION,
     INSTRUCCIONES,
+    CREAR_PROCESO,
     FINALIZAR_PROCESO,
-    SEG_FAULT
+    SEG_FAULT,
+    RECEPCION_OK,
+    PROCESO_FINALIZADO,
+    CREAR_SEGMENTO,
+    BORRAR_SEGMENTO,
+    CONSOLIDAR,
+    SOLICITAR_COMPACTACION,
+    COMPACTACION_TERMINADA,
+    FALTA_MEMORIA,
+    FINALIZO_TRUNCADO,
+    FINALIZO_LECTURA,
+    FINALIZO_ESCRITURA,
+    EXISTE_ARCHIVO
 
 } CODIGO_OPERACION;
 
@@ -112,16 +127,45 @@ typedef struct
     char valor_RDX[16];
 } Registro_CPU;
 
+
+typedef struct{
+
+int32_t descriptor_archivo;        // Int o FILE*
+char * nombre_archivo;
+int32_t PID_en_uso;
+t_queue cola_block;
+
+}ARCHIVO_GLOBAL;
+
+typedef struct{
+
+int32_t descriptor_archivo;         // Int o FILE*
+char * nombre_archivo;
+int32_t puntero_ubicacion;          //Ver Si long o int 
+
+}ARCHIVO_PROCESO;
+
+
 typedef struct
 {
     int32_t PID;
+    int32_t socket_consola;
     t_list *instrucciones;
-    int32_t program_counter; //DEBE INICIALIZARSE EN 0.
-    Registro_CPU registros_cpu;   // Tipo struct REGISTROS_CPU
+    int32_t program_counter;        //DEBE INICIALIZARSE EN 0.
+    Registro_CPU registros_cpu;     // Tipo struct REGISTROS_CPU
     t_list *tabla_segmentos;
-    double proxima_rafaga;
-    char *tiempo_ready;
-    char *archivos_abiertos; // Lista de struct ARCHIVOS_ABIERTOS
+    float estimacion_cpu_proxima_rafaga;
+    time_t tiempo_ready;
+    t_list * archivos_abiertos;     // Lista de struct ARCHIVO_PROCESO
+    time_t tiempo_cpu_real_inicial;
+    t_temporal* cronometro_ready;
+    t_temporal* cronometro_exec;
+    int64_t tiempo_cpu_real;
+    float estimacion_cpu_anterior;
+    float response_Ratio;
+    t_list *recursos_asignados;
+    
+
 } PCB;
 
 typedef struct 
@@ -150,10 +194,11 @@ typedef struct
 
 typedef struct
 {
+    int32_t pid;
     int32_t id;
     int32_t base;
     int32_t limite;
-
+    //int32_t validez;
 } SEGMENTO;
 
 PCB *obtener_paquete_pcb(int socket_cpu);
@@ -169,6 +214,7 @@ t_list* deserializar_instrucciones(BUFFER* buffer);
 
 BUFFER *serializar_registros(Registro_CPU *registros);
 Registro_CPU *deserializar_registros(BUFFER *buffer);
+int32_t obtener_tamanio_registro(char* nombre_registro);
 
 BUFFER *serializar_segmentos(t_list *segmentos);
 BUFFER *serializar_segmento(SEGMENTO *segmento);
@@ -181,5 +227,6 @@ int calcular_tamanio_segmento(SEGMENTO *segmento);
 int calcular_tamanio_segmentos(t_list *segmentos);
 
 void imprimir_buffer( BUFFER* buffer);
+void quitar_salto_de_linea(char *);
 
 #endif

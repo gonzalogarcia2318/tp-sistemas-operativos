@@ -22,6 +22,7 @@ extern sem_t semaforo_new;
 extern sem_t semaforo_planificador;
 extern t_list *procesos;
 extern pthread_mutex_t mx_procesos;
+extern t_list * archivos_abiertos_global;
 
 void planificar();
 void iniciar_logger_kernel();

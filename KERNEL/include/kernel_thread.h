@@ -14,7 +14,7 @@ typedef enum
 
 typedef struct
 {
-    PCB * pcb;
+    PCB *pcb;
     ESTADO estado;
 } Proceso;
 
@@ -26,15 +26,16 @@ typedef struct
 
 typedef struct
 {
-    char* nombre;
+    char *nombre;
     int instancias;
-    t_queue* cola_block;
+    t_queue *cola_block;
 } Recurso;
 
 void esperar_consola(int socket_kernel);
 void manejar_paquete_consola(int socket_consola);
 void manejar_proceso_consola();
 void enviar_pcb_a_cpu(PCB *);
+void confirmar_recepcion_a_consola(int socket_consola);
 
 Proceso *obtener_proceso_por_pid(int32_t PID);
 
