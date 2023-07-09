@@ -43,7 +43,7 @@ void recibir_instruccion_kernel()
   char* nombre_archivo = (char*)list_get(lista,1); //Verificar posicion de la instruccion
   int32_t direccion_fisica = 0;
   int32_t tamanio = 0;
-  int32_t puntero_archivo = 0; //DEFINIR DE DONDE SALE ESTE DATO
+  int32_t puntero_archivo = 0;
 
   switch (cod_instruccion)
   {
@@ -87,24 +87,29 @@ void recibir_instruccion_kernel()
       break;
         
     case F_READ:
-      direccion_fisica = *(int32_t*) list_get(lista, 2); 
+      direccion_fisica = *(int32_t*) list_get(lista, 4); 
       tamanio = *(int32_t*)list_get(lista,3); 
-      puntero_archivo = 0; //DEFINIR DE DONDE SALE ESTE DATO
+      puntero_archivo = *(int32_t*) list_get(lista, 2); 
       log_warning(logger,"LEER ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
                           nombre_archivo,
                           puntero_archivo,
                           direccion_fisica,
                           tamanio);
                           
-      //ejecutar_f_read(nombre_archivo,puntero_archivo,direccion_fisica,tamanio); TODO
-
-      enviar_mensaje_a_cliente("F_READ: OK", socket_kernel);
+      if(ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio,direccion_fisica) == SUCCESS){
+          enviar_mensaje_a_cliente("F_READ: OK", socket_kernel);
+      }
+      else
+      {
+        enviar_mensaje_a_cliente("F_READ: ERROR", socket_kernel);
+      }
+      
       break;
         
     case F_WRITE:
-      direccion_fisica = *(int32_t*) list_get(lista, 2); 
+      direccion_fisica = *(int32_t*) list_get(lista, 4); 
       tamanio = *(int32_t*)list_get(lista,3); 
-      puntero_archivo = 0; //DEFINIR DE DONDE SALE ESTE DATO
+      puntero_archivo =  *(int32_t*) list_get(lista, 2); 
       log_warning(logger,"ESCRIBIR ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
                           nombre_archivo,
                           puntero_archivo,
@@ -305,4 +310,39 @@ int buscar_bloque_libre(){
   bitarray_set_bit(bitmap, index);
   fclose(file);
   return ptr; 
+}
+
+int ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
+  //abrir archivo de bloques
+  archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"rb+");
+  char* valor_leido;
+
+  fseek(archivo_bloques,puntero_archivo,SEEK_SET);
+  fread(&valor_leido,sizeof(tamanio),1,archivo_bloques);
+
+  log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s",
+                          valor_leido);
+  //enviar a memoria(direccion_fisica, valor_leido)
+
+ //int mensaje = esperar_mensaje_memoria()
+
+ fclose(archivo_bloques);
+
+ //return mensaje;
+}
+
+int ejecutar_f_write(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
+
+  archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"wb+");
+  char *datos;
+  //datos= obtener info de memoria(direccion_fisica)
+
+  fseek(archivo_bloques,puntero_archivo,SEEK_SET);
+  fwrite(&datos,sizeof(tamanio),1,archivo_bloques);
+
+  log_warning(logger, "VALOR ESCRITO: Archivo: <DATOS>: %s",
+                          datos);
+
+  fclose(archivo_bloques);
+ //return ok;
 }
