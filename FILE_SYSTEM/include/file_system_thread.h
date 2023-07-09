@@ -19,4 +19,5 @@ bool manejar_paquete_kernel(int socket_kernel);
 void recibir_instruccion_kernel();
 int crear_archivo(char* );
 int existe_archivo(char*);
+void ejecutar_f_truncate();
 #endif
