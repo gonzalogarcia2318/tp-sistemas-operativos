@@ -296,6 +296,9 @@ BUFFER *serializar_segmento(SEGMENTO *segmento)
     void* stream = malloc(buffer->size);
     int offset = 0; // Desplazamiento
 
+    memcpy(stream + offset, &(segmento->pid), sizeof(int32_t));
+    offset += sizeof(int32_t);
+
     memcpy(stream + offset, &(segmento->id), sizeof(int32_t));
     offset += sizeof(int32_t);
 
@@ -305,8 +308,8 @@ BUFFER *serializar_segmento(SEGMENTO *segmento)
     memcpy(stream + offset, &(segmento->limite), sizeof(int32_t));
     offset += sizeof(int32_t);
  
-    memcpy(stream + offset, &(segmento->validez), sizeof(int32_t));
-    offset += sizeof(int32_t);
+    //memcpy(stream + offset, &(segmento->validez), sizeof(int32_t));
+    //offset += sizeof(int32_t);
     // Guarda el tamaño y los datos serializados en la estructura BUFFER
     buffer->stream = stream;
 
@@ -345,8 +348,6 @@ PCB *deserializar_pcb(BUFFER *buffer)
     memcpy(&(pcb->registros_cpu), stream, 112);
     stream += 112;
 
-
-  
     free(buffer_segmentos);
     free(buffer_instrucciones);
 
@@ -503,6 +504,9 @@ SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
     void* stream = buffer->stream;
     stream += stream_offset;
 
+    memcpy(&(segmento->pid), stream, sizeof(int32_t));
+    stream += sizeof(int32_t);
+
     memcpy(&(segmento->id), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
@@ -512,8 +516,8 @@ SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
     memcpy(&(segmento->limite), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    memcpy(&(segmento->validez), stream, sizeof(int32_t));
-    stream += sizeof(int32_t);
+    //memcpy(&(segmento->validez), stream, sizeof(int32_t));
+    //stream += sizeof(int32_t);
 
     return segmento;
 }

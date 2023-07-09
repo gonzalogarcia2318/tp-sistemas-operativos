@@ -26,13 +26,18 @@ void escuchar_kernel(int socket_kernel)
     
     case FINALIZAR_PROCESO:
       manejar_finalizar_proceso();
-      //enviar_mensaje_a_cliente("FINALIZAR_PROCESO: <OK>",socket_kernel);
       break;
     
     case INSTRUCCION:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida de KERNEL");
       recibir_instruccion_kernel();
-      break; 
+      break;
+
+    case CONSOLIDAR:
+      log_info(logger,"Recibi de Kernel: CONSOLIDAR");
+      compactar();
+      // ENVIAR TABLAS DE PÁGINA A KERNEL.
+      break;
     
     case DESCONEXION:
       log_warning(logger, "[MEMORIA]: Conexión con KERNEL terminada.");
@@ -131,7 +136,7 @@ void recibir_instruccion_cpu()
     case MOV_IN:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
 
-      char* contenido = malloc((tamanio_registro + 1) * sizeof(char));
+      char* contenido;
 
       strcpy(contenido,leer_de_memoria(direccion_fisica,tamanio_registro));
       
@@ -192,55 +197,39 @@ void recibir_instruccion_kernel()
       memcpy(&tamanio_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
 
-      // <<< BORRAR -> SOLO PARA PROBAR KERNEL
-      SEGMENTO *segmento = malloc(sizeof(SEGMENTO));
-      segmento->id = id_segmento;
-      segmento->limite = 0;
-      segmento->validez = 0;
-      // >>>
-
       log_info(logger,"INSTRUCCIÓN KERNEL: CREATE_SEGMENT - PID:<%d> - ID_SEG:<%d> - TS: <%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
                 pid,
                 id_segmento,
                 tamanio_segmento
               );
 
-
-      //int codigo = manejar_crear_segmento(pid, id_segmento, tamanio_segmento); //TODO
-      int codigo = 1; //Para probar
-      switch (codigo)
+      int base = manejar_crear_segmento(pid, id_segmento, tamanio_segmento);
+      
+      if (base > 0) //OK
       {
-      case 1: //OK
-        // <<< BORRAR -> SOLO PARA PROBAR KERNEL
-        int base = 512 * id_segmento; // para probar base
-        segmento->base = base;
-        list_add(tabla_test, segmento);
-        // >>>
-
         PAQUETE * paquete_ok = crear_paquete(CREAR_SEGMENTO);
         agregar_a_paquete(paquete_ok, &base, sizeof(int32_t)); //ENVIAR_DIRE_BASE
         enviar_paquete_a_cliente(paquete_ok, socket_kernel);
         break;
-          
-      case 2: //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
-
+      }
+      else if (base == -2) //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
+      {
         PAQUETE * paquete_consolidar = crear_paquete(CONSOLIDAR);
         enviar_paquete_a_cliente(paquete_consolidar, socket_kernel);
-        //enviar_mensaje_a_cliente("HAY QUE CONSOLIDAR", socket_kernel); //REALMENTE SERÍA PAQUETE CON COD_OP : CONSOLIDAR
-        break;
-          
-      case 3: //FALTA ESPACIO "Out of Memory"
-        PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
-        enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
-        //enviar_mensaje_a_cliente("FALTA ESPACIO", socket_kernel);
-        break;
-
-      default:
-        log_error(logger, "ERROR EN FUNCIÓN: manejar_create_segment(2)");
         break;
       }
-
-      break;
+      else if (base == -3) //FALTA ESPACIO "Out of Memory"
+      {
+        PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
+        enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
+        break;
+      }
+      else // base = 0 (ERROR EN ALGUNA FUNCIÓN ANTERIOR, VERIFICAR LOGS)
+      {
+        log_error(logger,"ERROR AL ASIGNAR BASE");
+        break;
+      }
+    break;
 
     case DELETE_SEGMENT: //TODO
   
@@ -248,16 +237,32 @@ void recibir_instruccion_kernel()
                 pid,
                 id_segmento
               );
-      //int dire_base = manejar_delete_segment(pid, id_segmento); TODO
+
+      t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
+      SEGMENTO* segmento = obtener_segmento_de_tabla_de_segmentos(tabla_de_segmentos,id_segmento);
+
+      if(segmento == NULL)
+      {
+        log_error(logger,"ERROR AL RECUPERAR SEGMENTO DE TABLA DE SEGMENTOS DEL PROCESO");
+        break;
+      }
+
+      manejar_eliminar_segmento(segmento);
+
+      log_warning(logger,"PID: <%d> - Eliminar Segmento: ID SEGMENTO: <%d> - BASE: <%d> - TAMAÑO: <%d>",
+                          pid,
+                          id_segmento,
+                          segmento->base,
+                          segmento->limite
+                  );
+
+      enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos); 
       
       // <<< BORRAR -> SOLO PARA PROBAR KERNEL
       list_remove(tabla_test, id_segmento-1); 
       enviar_tabla_de_segmentos_a_kernel_BORRAR(tabla_test, pid);
       // >>>
 
-      //enviar_mensaje_a_cliente("DELETE_SEGMENT: <OK>",socket_kernel);
-      log_warning(logger,"PID: <PID> - Eliminar Segmento: <ID SEGMENTO> - Base: <DIRECCIÓN BASE> - TAMAÑO: <TAMAÑO>");
-     
       break;
 
     default:
