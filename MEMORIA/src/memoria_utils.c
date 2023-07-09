@@ -72,11 +72,6 @@ void conectar_con_cpu()
     
 }
 
-void terminar_ejecucion(){
-    log_warning(logger, "[MEMORIA]: Finalizando ejecucion...");
-    log_destroy(logger);
-    config_destroy(config);
-}
 ///////////////////////////////////////////ESTRUCTURAS ADMINISTRATIVAS/////////////////////////////////////////
 
 void crear_estructuras_administrativas()
@@ -837,4 +832,26 @@ void aplicar_retardo_compactacion()
     int segundos = MemoriaConfig.RETARDO_COMPACTACION/1000;
     log_info(logger,"Retraso de <%d> segundos por compactacion",segundos);
     sleep(segundos);
+}
+
+//////////////////////////////////TERMINAR DE EJECUTAR///////////////////////////////////
+
+void terminar_ejecucion_memoria()
+{
+    log_warning(logger, "[MEMORIA]: Finalizando ejecucion...");
+    
+    free(espacio_usuario);
+    log_info(logger,"LIBERADO ESPACIO USUARIO");
+    //free(segmento_compartido);
+    //log_info(logger,"LIBERADO SEGMENTO COMPARTIDO"); LO HACE LIBERAR TABLA DE SEGMENTOS GLOBALES
+
+    list_destroy_and_destroy_elements(huecos_libres,(void*)free);
+    log_info(logger,"LIBERADO HUECOS LIBRES");
+    list_destroy_and_destroy_elements(procesos_globales,(void*)free);
+    log_info(logger,"LIBERADO PROCESOS GLOBALES");
+    list_destroy_and_destroy_elements(tabla_de_segmentos_globales,(void*)free);
+    log_info(logger,"LIBERADO TABLA DE SEGMENTOS GLOBALES");
+
+    log_destroy(logger);
+    config_destroy(config);
 }

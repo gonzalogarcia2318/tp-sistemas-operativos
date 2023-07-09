@@ -68,10 +68,22 @@ void escuchar_file_system(int socket_fs)
       log_warning(logger, "[MEMORIA]: Conexión con FILE SYSTEM terminada.");
       return;
     
-    case INSTRUCCION:
+    case READ:
       log_warning(logger,"[MEMORIA]: INSTRUCCION recibida de FILE SYSTEM");
-      recibir_instruccion_file_system();
+      //RECIBO DF
+      //TAMAÑO (en bytes)
+      //leo...
+      //Devolver contenido a FS
+      break;
 
+    case WRITE:
+      log_warning(logger,"[MEMORIA]: INSTRUCCION recibida de FILE SYSTEM");
+      //RECIBO DF
+      //TAMAÑO (en bytes)
+      //CONTENIDO char*
+      //Escribo... 
+      //DEVUELVO OK A FS.
+      break;
     default:
       log_warning(logger, "[MEMORIA]: Operacion desconocida.");
       break;
@@ -268,27 +280,5 @@ void recibir_instruccion_kernel()
     default:
       log_warning(logger, "[MEMORIA]: Código Instrucción desconocido.");
       break;
-  }
-}
-
-void recibir_instruccion_file_system()
-{
-  Lista* lista = obtener_paquete_como_lista(socket_file_system);
-
-  int numero_op = *(int*)list_get(lista,0);
-
-  switch (numero_op)
-  {
-  case F_WRITE:
-    //...
-    break;
-  
-  case F_READ:
-    //....
-    break;
-
-  default:
-    log_error(logger,"CODIGO DE OP DESCONOCIDO AL RECIBIR INSTRUCCION FS");
-    return;
   }
 }

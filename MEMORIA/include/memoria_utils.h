@@ -41,7 +41,6 @@ int iniciar_servidor_memoria();
 void conectar_con_kernel();
 void conectar_con_file_system();
 void conectar_con_cpu();
-void terminar_ejecucion();
 
 void crear_estructuras_administrativas();
     void crear_segmento_compartido();
@@ -84,4 +83,7 @@ void compactar();
     void redimensionar_huecos_compactar(int32_t base, int32_t limite);
     void imprimir_tabla_segmentos_globales();
     void aplicar_retardo_compactacion();
+
+void terminar_ejecucion_memoria();
+
 #endif
