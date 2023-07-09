@@ -12,7 +12,7 @@ int main()
     {
         if(conectar_con_memoria() == SUCCESS)
         {
-            conectar_con_kernel();
+            //conectar_con_kernel();
 
             if(iniciar_config_superbloque() == FAILURE)
                 return EXIT_FAILURE;

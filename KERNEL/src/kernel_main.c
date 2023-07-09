@@ -780,7 +780,9 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
     }
 
     recurso->instancias += 1;
-    list_remove(proceso->pcb->recursos_asignados, nombre_recurso);
+    log_info(logger, "signal");
+    // REVISAR SEGMENTATION FAULT ACA
+    //list_remove(proceso->pcb->recursos_asignados, nombre_recurso);
 
     log_info(logger, "[KERNEL]: PID: <%d> - SIGNAL: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
 
@@ -919,7 +921,9 @@ void liberar_recursos(Proceso *proceso)
             log_info(logger, "[KERNEL] SUMAMOS RECURSO %s - %d ", recurso->nombre, recurso->instancias);
         }
 
-        list_destroy_and_destroy_elements(proceso->pcb->recursos_asignados, free);
+        // REVISAR DOBLE FREE
+        list_destroy(proceso->pcb->recursos_asignados);
+        //list_destroy_and_destroy_elements(proceso->pcb->recursos_asignados, free);
     }
 }
 
