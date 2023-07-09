@@ -6,6 +6,8 @@ Config *config_superbloque;
 Hilo hilo_fileSystem;
 SUPERBLOQUE superbloque;
 t_bitarray *bitmap ;
+FILE* archivo_bloques;
+char* bitarray;
 int socket_file_system;
 int socket_memoria;
 int socket_kernel;
@@ -61,8 +63,7 @@ void rellenar_configuracion_superbloque(Config* config_sb)
 int levantar_bitmap(char *path)
 {
     FILE *file;
-    char* bitarray;
-    size_t size = superbloque.BLOCK_COUNT/8;
+    size_t size = superbloque.BLOCK_COUNT/8; // porque el create se hace en bytes
 
     file = fopen(path, "rb+");
     if (file == NULL) {
@@ -72,13 +73,13 @@ int levantar_bitmap(char *path)
            log_error(logger,"Error al crear el archivo BITMAP");
             return FAILURE;
         }
-
+         bitarray = malloc(size);
          bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
-         fwrite(&bitmap, sizeof(t_bitarray), 1, file);
-          log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
+         fwrite(bitmap, sizeof(t_bitarray), 1, file);
+         log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
     }
 
-    fread(&bitmap, sizeof(t_bitarray), 1, file);
+    fread(&bitmap, sizeof(t_bitarray), 1, file); 
     fclose(file);
 
     log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap levantado correctamente");
@@ -87,7 +88,6 @@ int levantar_bitmap(char *path)
 
 int iniciar_archivo_de_bloques(char* path_ab)
 {
-  FILE* archivo_bloques;
   int tamanio_ab = superbloque.BLOCK_COUNT * superbloque.BLOCK_SIZE;
  
   archivo_bloques = fopen(path_ab,"r+");

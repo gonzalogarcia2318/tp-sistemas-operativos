@@ -79,27 +79,19 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
     pcb->program_counter = 0;
 
     pcb->socket_consola = socket_consola;
-    
 
     Proceso *proceso = malloc(sizeof(Proceso));
-    SEGMENTO * segmento0 = malloc (sizeof(SEGMENTO));
 
     pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
-
-    segmento0->base = 0;
-    segmento0->id =0;
-    segmento0->limite=100;
-
-    //memset(&proceso->pcb->registros_cpu,0,(112)); //Blanquea todos los registros con 0
 
     proceso->estado = NEW;
     proceso->pcb = pcb;
     proceso->pcb->estimacion_cpu_proxima_rafaga = atoi(KernelConfig.ESTIMACION_INICIAL);
     proceso->pcb->estimacion_cpu_anterior = 0;
-    //proceso->pcb->registros_cpu = malloc(112);
+
+    proceso->pcb->archivos_abiertos = list_create();
     
     proceso->pcb->tabla_segmentos = list_create();
-    list_add(proceso->pcb->tabla_segmentos, segmento0);
 
     proceso->pcb->recursos_asignados = list_create();
 
@@ -122,6 +114,8 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
     {
         sem_post(&semaforo_planificador);
     }
+
+    
 }
 
 void confirmar_recepcion_a_consola(int socket_consola){
