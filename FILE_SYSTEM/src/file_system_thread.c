@@ -137,11 +137,13 @@ void recibir_instruccion_kernel()
 
  // crea un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
 int crear_archivo(char* nombre){
- 
+   //mejorar
+  Config * config = config_create("config/file_system.config");
+  char* pathCompleto = config_get_string_value(config, "PATH_FCB");
 
 // Crea el directorio
-  mkdir(FileSystemConfig.PATH_FCB,0777);
-  char* pathCompleto = FileSystemConfig.PATH_FCB;
+  mkdir(pathCompleto,0777);
+
   string_append(&pathCompleto,nombre);
   string_append(&pathCompleto,".config");
 
@@ -224,22 +226,60 @@ void ejecutar_f_truncate(char* nombre,int a_truncar){
     //actualizar el tamaño del archivo en FCB
     snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", tamanio + a_truncar);
     config_set_value(fcb,"TAMANIO_ARCHIVO", tamanio_archivo_str);
-    config_save(fcb);
+
   }
-  else
+  else  //reducir tamanio
   {
-    //reducir tamanio
-    //marcar como libres ls bloques en el bitmap
-    //descartar los bloques , actualizando los valores de los punteros(descartando desde el final del archivo hacia el principio)
+    int a_reducir = tamanio - a_truncar;
+    int cant_ptrs = (tamanio/superbloque.BLOCK_SIZE) -1; //se restan  por el ptr directo
+    int bloques_restantes = ceil((double)(a_reducir) / superbloque.BLOCK_SIZE);
+
+    FILE *bm = fopen("config/bitmap.dat", "rb+"); //quitar hardcod
+    fread(bitmap, sizeof(bitmap->size), 1, bm);
+
+    if(bloques_restantes>1)
+      {
+        archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"rb+");
+        int copybr= bloques_restantes;
+        for(int i = 1;i<=bloques_restantes;i++){
+              uint32_t valor_puntero;
+              uint32_t pos_puntero = puntero_indirecto + (sizeof(uint32_t) * copybr);
+
+              fseek(archivo_bloques,pos_puntero,SEEK_SET);
+              fread(&valor_puntero, sizeof(uint32_t), 1, archivo_bloques);
+              //marcar como libres en el bitmap
+              bitarray_clean_bit(bitmap, valor_puntero/superbloque.BLOCK_SIZE);
+              copybr--;
+            //se dejan los valores en el archivo de bloques, pero al marcarse libres, otro proceso pisara los valores
+            } 
+        fclose(archivo_bloques);
+      }
+    else{
+      archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"rb+");
+        for(int j = 1;j<=cant_ptrs;j++){
+              uint32_t valor_puntero;
+              uint32_t pos_puntero = puntero_indirecto + (sizeof(uint32_t) * cant_ptrs);
+
+              fseek(archivo_bloques,pos_puntero,SEEK_SET);
+              fread(&valor_puntero, sizeof(uint32_t), 1, archivo_bloques);
+              //marcar como libres en el bitmap
+              bitarray_clean_bit(bitmap, valor_puntero/superbloque.BLOCK_SIZE);
+            //se dejan los valores en el archivo de bloques, pero al marcarse libres, otro proceso pisara los valores
+            } 
+        fclose(archivo_bloques);
+    }
+    fclose(bm);
     //actualizar el tamaño del archivo en FCB
+    snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", a_truncar);
+    config_set_value(fcb,"TAMANIO_ARCHIVO", tamanio_archivo_str);
   }
-  
+  config_save(fcb);
 }
 
 int buscar_bloque_libre(){
   int ptr = 0;
   off_t index;
-  char* path = "config/bitmap.dat";
+  char* path = "config/bitmap.dat"; //quitar hardcod
   FILE *file = fopen(path, "rb+");
 
   fread(bitmap, sizeof(bitmap->size), 1, file);

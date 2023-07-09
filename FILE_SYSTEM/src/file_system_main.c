@@ -23,10 +23,16 @@ int main()
                 return EXIT_FAILURE;
 
             //PRUEBAS
-            if(crear_archivo("Prueba") == FAILURE)
-                return EXIT_FAILURE;
-            ejecutar_f_truncate("Prueba", 256);  
-            // int existeDos = existe_archivo("Prueba");    
+            //  if(crear_archivo("Prueba") == FAILURE)
+            //     return EXIT_FAILURE;
+            // if(crear_archivo("Test") == FAILURE)
+            //     return EXIT_FAILURE;
+
+            // ejecutar_f_truncate("Prueba", 256);  
+            // ejecutar_f_truncate("Prueba", 128);
+            // ejecutar_f_truncate("Test", 128);  
+            // ejecutar_f_truncate("Test", 64);  
+        
 
             conectar_con_kernel();
         }
