@@ -50,8 +50,10 @@ typedef enum
     FINALIZO_TRUNCADO,
     FINALIZO_LECTURA,
     FINALIZO_ESCRITURA,
-    EXISTE_ARCHIVO
-
+    EXISTE_ARCHIVO,
+    READ,
+    WRITE
+    
 } CODIGO_OPERACION;
 
 typedef enum

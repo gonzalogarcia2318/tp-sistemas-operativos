@@ -21,7 +21,7 @@ int main()
     pthread_join(hilo_cpu, NULL);
     pthread_join(hilo_kernel, NULL);
     
-    terminar_ejecucion();
+    terminar_ejecucion_memoria();
 
     return EXIT_SUCCESS;
 }
