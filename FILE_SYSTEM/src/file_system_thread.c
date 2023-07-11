@@ -221,8 +221,9 @@ void ejecutar_f_truncate(char* nombre,int a_truncar){
 
         for(int bloques_restantes = bloques_necesarios-1;bloques_restantes>0;bloques_restantes--){
           fseek(archivo_bloques,puntero_indirecto,SEEK_SET);
+          
           uint32_t bloque_sgt = buscar_bloque_libre();
-
+          aplicar_retardo_acceso_bloque();
           log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
                           nombre,
                           puntero_indirecto/superbloque.BLOCK_SIZE,
@@ -273,6 +274,11 @@ void ejecutar_f_truncate(char* nombre,int a_truncar){
 
               fseek(archivo_bloques,pos_puntero,SEEK_SET);
               fread(&valor_puntero, sizeof(uint32_t), 1, archivo_bloques);
+              aplicar_retardo_acceso_bloque();
+              log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+                          nombre,
+                          puntero_indirecto/superbloque.BLOCK_SIZE,
+                          valor_puntero/superbloque.BLOCK_SIZE);
               //marcar como libres en el bitmap
               bitarray_clean_bit(bitmap, valor_puntero/superbloque.BLOCK_SIZE);
             //se dejan los valores en el archivo de bloques, pero al marcarse libres, otro proceso pisara los valores
@@ -319,6 +325,12 @@ int ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
 
   fseek(archivo_bloques,puntero_archivo,SEEK_SET);
   fread(&valor_leido,sizeof(tamanio),1,archivo_bloques);
+
+  aplicar_retardo_acceso_bloque();
+  log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+                          nombre_archivo,
+                          puntero_archivo/superbloque.BLOCK_SIZE, //hay que hacer el mapeo con el numero de bloque de archivo
+                          puntero_archivo/superbloque.BLOCK_SIZE); 
 
   log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s",
                           valor_leido);

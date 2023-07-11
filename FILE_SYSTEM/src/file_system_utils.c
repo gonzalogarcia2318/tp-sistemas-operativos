@@ -164,3 +164,9 @@ void terminar_ejecucion(){
     log_destroy(logger);
     config_destroy(config);
 }
+
+void aplicar_retardo_acceso_bloque()
+{
+    int segundos = config_get_int_value(config, "RETARDO_ACCESO_BLOQUE")/1000;
+    sleep(segundos);
+}
