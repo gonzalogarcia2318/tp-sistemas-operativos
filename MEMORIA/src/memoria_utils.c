@@ -170,25 +170,31 @@ void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos)
     eliminar_paquete(paquete);
 }
 
-void enviar_tablas_de_segmentos_a_kernel()
+void enviar_tablas_de_segmentos_a_kernel() //CHECKEAR
 {
-    PAQUETE* paquete = crear_paquete(CONSOLIDAR); //VERIFICAR SI CORRESPONDE
-
+    PAQUETE* paquete = crear_paquete(CONSOLIDAR);
+    BUFFER* buff_aux = malloc(sizeof(BUFFER));
+    
     int size = list_size(procesos_globales);
     PROCESO_MEMORIA* proc_aux;
     t_list* tabla_segs_aux;
+    int offset = 0;
     
     for (int i = 0; i < size; i++)
     {
         proc_aux = list_get(procesos_globales,i);
         tabla_segs_aux = proc_aux->tabla_de_segmentos;
-        //paquete->buffer += serializar_segmentos(tabla_segs_aux);
-        //TODO
+
+        buff_aux = serializar_segmentos(tabla_segs_aux);
+
+        paquete->buffer->size += buff_aux->size;
+        memcpy(paquete->buffer->stream + offset, buff_aux->stream, buff_aux->size);
+        offset += buff_aux->size;
     }
-    
     
   enviar_paquete_a_cliente(paquete, socket_kernel);
   eliminar_paquete(paquete);
+  free(buff_aux);
 }
 
 

@@ -36,7 +36,8 @@ void escuchar_kernel(int socket_kernel)
     case CONSOLIDAR:
       log_info(logger,"Recibi de Kernel: CONSOLIDAR");
       compactar();
-      // ENVIAR TABLAS DE PÁGINA A KERNEL.
+      enviar_tablas_de_segmentos_a_kernel(); //CHECKEAR
+      log_info(logger,"ENVÍE TABLAS DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE COMPACTACIÓN");
       break;
     
     case DESCONEXION:
