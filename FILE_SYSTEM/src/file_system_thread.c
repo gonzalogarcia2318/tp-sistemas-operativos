@@ -322,7 +322,7 @@ int buscar_bloque_libre(){
   return ptr; 
 }
 
-int ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
+int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, int direccion_fisica){
   //abrir archivo de bloques
   archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"rb+");
   char* valor_leido;
@@ -338,13 +338,12 @@ int ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
 
   log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s",
                           valor_leido);
-  //enviar a memoria(direccion_fisica, valor_leido)
 
- //int mensaje = esperar_mensaje_memoria()
+  fclose(archivo_bloques);
 
- fclose(archivo_bloques);
+  int estado = enviar_a_memoria(direccion_fisica, valor_leido);
 
- //return mensaje;
+ return estado;
 }
 
 int ejecutar_f_write(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
@@ -361,4 +360,28 @@ int ejecutar_f_write(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
 
   fclose(archivo_bloques);
  //return ok;
+}
+
+int enviar_a_memoria(int32_t direccion, char *valor){
+    PAQUETE *paquete = crear_paquete(INSTRUCCION);
+    int32_t cod = WRITE;
+    agregar_a_paquete(paquete, &cod, sizeof(int32_t));
+    agregar_a_paquete(paquete, &direccion, sizeof(int32_t));
+    agregar_a_paquete(paquete, valor, strlen(valor));
+    enviar_paquete_a_servidor(paquete, socket_memoria);
+    eliminar_paquete(paquete);
+
+    BUFFER *buffer;
+
+    switch (obtener_codigo_operacion(socket_memoria))
+    {  
+        case W_OK:
+            log_info(logger, "[FILE_SYSTEM]: MEMORIA ESCRIBIO CORRECTAMENTE");
+            return SUCCESS;
+            break;
+        default: 
+            log_error(logger, "[FILE_SYSTEM]: NO SE PUDO ESCRIBIR EN MEMORIA");
+            return FAILURE;
+        break;
+    }
 }
