@@ -37,10 +37,17 @@ bool manejar_paquete_kernel(int socket_kernel)
 void recibir_instruccion_kernel()
 {
 
-  t_list* lista =  obtener_paquete_estructura_dinamica(socket_kernel);
+  BUFFER* buffer = recibir_buffer(socket_kernel);
+  int32_t cod_instruccion;
+  char *nombre_archivo;
 
-  CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION*)list_get(lista,0);
-  char* nombre_archivo = (char*)list_get(lista,1); //Verificar posicion de la instruccion
+  memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+        buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+
+  // memcpy(nombre_archivo, buffer->stream, n_long); // FALTA ASIGNARLE EL NOMBRE!!! FALLA 
+  //   buffer->stream + n_long; 
+
+
   int32_t direccion_fisica = 0;
   int32_t tamanio = 0;
   int32_t puntero_archivo = 0;
@@ -74,22 +81,15 @@ void recibir_instruccion_kernel()
       enviar_mensaje_a_cliente("F_CLOSE: OK", socket_kernel);
       break;
         
-    case F_SEEK:
-      int32_t posicion = *(int32_t*)list_get(lista,2); 
-      log_warning(logger,"ACTUALIZAR PUNTERO DE ARCHIVO: <NOMBRE_ARCHIVO: %s - POSICION: %d>",
-                            nombre_archivo,
-                            posicion
-                  );
-
-      //ejecutar_f_seek(nombre_archivo,posicion); TODO
-
-      enviar_mensaje_a_cliente("F_SEEK: OK", socket_kernel);
-      break;
-        
     case F_READ:
-      direccion_fisica = *(int32_t*) list_get(lista, 4); 
-      tamanio = *(int32_t*)list_get(lista,3); 
-      puntero_archivo = *(int32_t*) list_get(lista, 2); 
+      
+      memcpy(&puntero_archivo, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+      memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+      memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+       
       log_warning(logger,"LEER ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
                           nombre_archivo,
                           puntero_archivo,
@@ -107,9 +107,13 @@ void recibir_instruccion_kernel()
       break;
         
     case F_WRITE:
-      direccion_fisica = *(int32_t*) list_get(lista, 4); 
-      tamanio = *(int32_t*)list_get(lista,3); 
-      puntero_archivo =  *(int32_t*) list_get(lista, 2); 
+      memcpy(&puntero_archivo, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+      memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+      memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+
       log_warning(logger,"ESCRIBIR ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
                           nombre_archivo,
                           puntero_archivo,
@@ -122,7 +126,9 @@ void recibir_instruccion_kernel()
       break;
         
     case F_TRUNCATE:
-      tamanio = *(int32_t*)list_get(lista,1);
+      memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2);
+
       log_warning(logger, "TRUNCAR ARCHIVO: <NOMBRE_ARCHIVO: %s> - Tamaño: <TAMAÑO: %d>",
                           nombre_archivo,
                           tamanio);
@@ -136,8 +142,6 @@ void recibir_instruccion_kernel()
       log_error(logger,"FILE SYSTEM: ERROR: COD_INSTRUCCION DESCONOCIDO");
       break;
   }
-
-  list_destroy(lista);
 }
 
  // crea un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
@@ -184,7 +188,7 @@ int existe_archivo(char* nombre){
   } 
 }
 
-void ejecutar_f_truncate(char* nombre,int a_truncar){
+void ejecutar_f_truncate(char *nombre,int a_truncar){
   //mejorar
   Config * config = config_create("config/file_system.config");
   char* pathCompleto = config_get_string_value(config, "PATH_FCB");
