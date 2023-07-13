@@ -29,7 +29,7 @@ extern int socket_kernel;
 extern SUPERBLOQUE superbloque;
 
 int iniciar_logger_file_system();
-int iniciar_config_file_system();
+int iniciar_config_file_system(char*);
 int iniciar_servidor_file_system();
 
 int iniciar_config_superbloque();

@@ -1,11 +1,13 @@
 #include "file_system_utils.h"
 
-int main()
+int main(int argc, char** argv)
 {
     if(iniciar_logger_file_system() == FAILURE)
         return EXIT_FAILURE;
 
-    if(iniciar_config_file_system() == FAILURE)
+    char* config_path = argv[1];
+
+    if(iniciar_config_file_system(config_path) == FAILURE)
         return EXIT_FAILURE;
 
     if(iniciar_servidor_file_system() == SUCCESS)
@@ -23,12 +25,6 @@ int main()
             if(iniciar_archivo_de_bloques(FileSystemConfig.PATH_BLOQUES) == FAILURE)
                 return EXIT_FAILURE;
 
-            //PRUEBAS
-             if(crear_archivo("Prueba") == FAILURE)
-                return EXIT_FAILURE;
-            // if(crear_archivo("Test") == FAILURE)
-            //     return EXIT_FAILURE;
-            ejecutar_f_truncate("Prueba",256);
             conectar_con_kernel();
           
         }

@@ -24,9 +24,9 @@ int iniciar_logger_file_system()
     return SUCCESS;
 }
 
-int iniciar_config_file_system()
+int iniciar_config_file_system(char* path)
 {
-    config = config_create(ARCHIVO_CONFIG);
+    config = config_create(path);
     if(config == NULL)
     {
       log_error(logger,"[FILE_SYSTEM]: ERROR AL INICIAR CONFIG INICIAL");

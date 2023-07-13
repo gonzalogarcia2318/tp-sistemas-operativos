@@ -58,6 +58,8 @@ void imprimir_lista(t_list* lista);
 
 void imprimir_segmentos(Proceso* proceso);
 
+void imprimir_tabla_archivos_global(t_list* tabla_archivos_globales);
+
 void liberar_recursos(Proceso *proceso);
 
 void devolver_proceso_a_cpu(Proceso* proceso);
@@ -282,7 +284,7 @@ void manejar_paquete_cpu()
                 
                 // Encapsular en llamada a file system con semaforo -- file_system_disponible
                 
-                //manejar_f_close(proceso,instruccion->nombreArchivo);
+                manejar_f_close(proceso,instruccion->nombreArchivo);
                 
                 break;
 
@@ -634,8 +636,10 @@ void manejar_hilo_io()
 // FUNCIONES PARA MANEJAR FILE SYSTEM
 
 ARCHIVO_GLOBAL* buscar_archivo_en_tabla_global(char* nombre_archivo){
+    log_info(logger, "[KERNEL]: Buscar archivo en tabla global: %s", nombre_archivo);
     bool comparar_archivo_por_nombre(ARCHIVO_GLOBAL* archivo_global)
     {
+        log_info(logger, "[-]: comparar %s - %s", nombre_archivo, archivo_global->nombre_archivo);
         return strcmp(nombre_archivo, archivo_global->nombre_archivo) == 0;
     }
 
@@ -645,6 +649,8 @@ ARCHIVO_GLOBAL* buscar_archivo_en_tabla_global(char* nombre_archivo){
 }
 
 void agregar_entrada_archivo_abierto_tabla_por_proceso(Proceso* proceso, char* nombre_archivo){
+    log_info(logger, "[KERNEL]: Agregar archivo a tabla por proceso <%d>: %s", proceso->pcb->PID, nombre_archivo);
+
     ARCHIVO_PROCESO* archivo_proceso = malloc(sizeof(ARCHIVO_PROCESO));
     archivo_proceso->nombre_archivo = nombre_archivo;
     archivo_proceso->puntero_ubicacion = 0;
@@ -653,6 +659,7 @@ void agregar_entrada_archivo_abierto_tabla_por_proceso(Proceso* proceso, char* n
 }
 
 void sacar_entrada_archivo_abierto_tabla_por_proceso(Proceso* proceso, char* nombre_archivo){
+    log_info(logger, "[KERNEL]: Sacar archivo de tabla por proceso <%d>: %s", proceso->pcb->PID, nombre_archivo);
     bool comparar_archivo_por_nombre(ARCHIVO_PROCESO* archivo_proceso)
     {
         return strcmp(nombre_archivo, archivo_proceso->nombre_archivo) == 0;
@@ -665,6 +672,7 @@ void sacar_entrada_archivo_abierto_tabla_por_proceso(Proceso* proceso, char* nom
 }
 
 void agregar_entrada_archivo_abierto_tabla_global(Proceso* proceso, char* nombre_archivo){
+    log_info(logger, "[KERNEL]: Agregar archivo a tabla global: %s", nombre_archivo);
     ARCHIVO_GLOBAL* entrada_archivo = malloc(sizeof(ARCHIVO_GLOBAL));
     entrada_archivo->nombre_archivo = nombre_archivo;
     entrada_archivo->PID_en_uso = proceso->pcb->PID;
@@ -674,6 +682,7 @@ void agregar_entrada_archivo_abierto_tabla_global(Proceso* proceso, char* nombre
 }
 
 void sacar_entrada_archivo_abierto_tabla_global(char* nombre_archivo){
+    log_info(logger, "[KERNEL]: Sacar archivo de tabla global: %s", nombre_archivo);
     bool comparar_archivo_por_nombre(ARCHIVO_GLOBAL* archivo_global)
     {
         return strcmp(nombre_archivo, archivo_global->nombre_archivo) == 0;
@@ -692,7 +701,7 @@ int existe_archivo_en_file_system(char* nombre_archivo){
     PAQUETE *paquete = crear_paquete(INSTRUCCION);
     int32_t existe_archivo = EXISTE_ARCHIVO;
     agregar_a_paquete(paquete, &existe_archivo, sizeof(int32_t));
-    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo));
+    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo)+1);
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
 
@@ -708,7 +717,7 @@ int existe_archivo_en_file_system(char* nombre_archivo){
             buffer = recibir_buffer(socket_file_system);
 
             int respuesta_file_system;
-            memcpy(&respuesta_file_system, buffer->stream, sizeof(int));
+            memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
 
             return respuesta_file_system;
         default: 
@@ -724,7 +733,7 @@ int avisar_file_system_crear_archivo(char * nombre_archivo){
     PAQUETE * paquete = crear_paquete(INSTRUCCION);
     int32_t crear_archivo = CREAR_ARCHIVO;
     agregar_a_paquete(paquete, &crear_archivo, sizeof(int32_t));
-    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo));
+    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo)+1);
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
 
@@ -753,9 +762,12 @@ int avisar_file_system_crear_archivo(char * nombre_archivo){
 
 void manejar_f_open(Proceso * proceso, char * nombre_archivo){
 
+    imprimir_tabla_archivos_global(archivos_abiertos_global);
+
     ARCHIVO_GLOBAL* entrada_tabla_global = buscar_archivo_en_tabla_global(nombre_archivo);
-    
+
     if(entrada_tabla_global != NULL){
+        log_info(logger, "[KERNEL]: Existe el archivo en la tabla global");
 
         agregar_entrada_archivo_abierto_tabla_por_proceso(proceso, nombre_archivo);  
         
@@ -764,14 +776,17 @@ void manejar_f_open(Proceso * proceso, char * nombre_archivo){
         queue_push(entrada_tabla_global->cola_block, proceso->pcb->PID);
 
     }else{
+        log_info(logger, "[KERNEL]: NO Existe el archivo en la tabla global");
 
         int existe_archivo;
 
         sem_wait(&file_system_disponible);
         existe_archivo = existe_archivo_en_file_system(nombre_archivo);
+        log_info(logger, "[KERNEL]: existe_archivo_en_file_system %d", existe_archivo);
         sem_post(&file_system_disponible);
 
-        if(!existe_archivo){
+        if(existe_archivo == -1){
+            log_info(logger, "[KERNEL]: avisar a file system para crear archivo");
             
             sem_wait(&file_system_disponible);
             avisar_file_system_crear_archivo(nombre_archivo);
@@ -779,10 +794,13 @@ void manejar_f_open(Proceso * proceso, char * nombre_archivo){
 
         }
 
+        
+
         agregar_entrada_archivo_abierto_tabla_global(proceso, nombre_archivo);
 
         agregar_entrada_archivo_abierto_tabla_por_proceso(proceso, nombre_archivo);
 
+        log_info(logger, "[KERNEL]: Devolver proceso a CPU");
         devolver_proceso_a_cpu(proceso);
     }
         
@@ -796,7 +814,8 @@ void manejar_f_close(Proceso * proceso, char* nombre_archivo){
 
     ARCHIVO_GLOBAL* entrada_tabla_global = buscar_archivo_en_tabla_global(nombre_archivo);
 
-    if(queue_is_empty(entrada_tabla_global->cola_block)){
+    if(!queue_is_empty(entrada_tabla_global->cola_block)){
+        log_info(logger, "[KERNEL]: Cola_bloc de archivo no esta vacia -> desbloquear el siguiente proceso");
         
         PID_a_ejecutar = queue_pop(entrada_tabla_global->cola_block);
 
@@ -805,6 +824,7 @@ void manejar_f_close(Proceso * proceso, char* nombre_archivo){
 
     } else {
         sacar_entrada_archivo_abierto_tabla_global(nombre_archivo);
+        devolver_proceso_a_cpu(proceso);
     }
 
 }
@@ -946,9 +966,9 @@ void finalizar_proceso(Proceso* proceso, char* motivo){
     // avisar a consola que finalizo
     avisar_a_consola_fin_proceso(proceso);
     //
-    liberar_recursos(proceso);
+    //liberar_recursos(proceso);
     //
-    liberar_proceso(proceso);
+    //liberar_proceso(proceso);
 }
 
 void manejar_io(Proceso *proceso, int32_t PID, int tiempo)
@@ -1243,6 +1263,16 @@ void imprimir_segmentos(Proceso* proceso){
     for(int i = 0; i < list_size(proceso->pcb->tabla_segmentos); i++){
         SEGMENTO* segmento = (SEGMENTO*) list_get(proceso->pcb->tabla_segmentos, i);
         log_info(logger, "-> PID %d - ID %d - Base %d - Limite %d", segmento->pid, segmento->id, segmento->base, segmento->limite);
+    }
+    log_info(logger, "-----------------");
+}
+
+void imprimir_tabla_archivos_global(t_list* tabla_archivos_globales){
+    log_info(logger, "-----------------");
+    log_info(logger, "TABLA DE ARCHIVOS GLOBALES");
+    for(int i = 0; i < list_size(tabla_archivos_globales); i++){
+        ARCHIVO_GLOBAL* archivo  = (ARCHIVO_GLOBAL*) list_get(tabla_archivos_globales, i);
+        log_info(logger, "-> Archivo: %s - PID en uso %d - Cola block %d", archivo->nombre_archivo, archivo->PID_en_uso, queue_size(archivo->cola_block));
     }
     log_info(logger, "-----------------");
 }

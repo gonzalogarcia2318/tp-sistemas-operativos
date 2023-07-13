@@ -38,4 +38,4 @@ clean:
 	rm -f $(ODIR)/*.o *~ core $(INCDIR)/*~ $(PROCESS_NAME) $(SHARED_ODIR)/*.o ../shared/libcommons.so
 
 run: $(PROCESS_NAME)
-	./$(PROCESS_NAME)
+	./$(PROCESS_NAME) config/file_system_base.config

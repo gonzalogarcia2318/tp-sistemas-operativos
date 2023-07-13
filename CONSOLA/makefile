@@ -68,5 +68,8 @@ rune2: all
 runs1: all
 	./$(PROCESS_NAME) config/consola.config ./create_segment.txt
 
+runfs: all
+	./$(PROCESS_NAME) config/consola.config ./fileSystem.txt
+
 run-args: all
 	./${PROCESS_NAME} $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))

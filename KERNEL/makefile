@@ -45,3 +45,9 @@ rund: all
 
 rune: all
 	./$(PROCESS_NAME) config/kernel_error.config
+
+runm: all
+	./$(PROCESS_NAME) config/kernel_memoria.config
+
+runfs: all
+	./$(PROCESS_NAME) config/kernel_fs.config

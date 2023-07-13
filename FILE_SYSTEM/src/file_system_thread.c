@@ -49,10 +49,13 @@ void recibir_instruccion_kernel()
     memcpy(&tamanio_nombre, buffer->stream, sizeof(int32_t));
     buffer->stream += (sizeof(int32_t)); 
 
+    log_info(logger, "tamaño nombre: %d", tamanio_nombre);
+
+
     nombre_archivo = malloc(tamanio_nombre);
   
     memcpy(nombre_archivo, buffer->stream, tamanio_nombre);
-    buffer->stream + tamanio_nombre; 
+    buffer->stream += tamanio_nombre; 
 
 
   int32_t direccion_fisica = 0;
@@ -69,7 +72,7 @@ void recibir_instruccion_kernel()
         enviar_respuesta_kernel(SUCCESS);
       }
       break;
-    case F_OPEN:
+    case EXISTE_ARCHIVO:
       log_warning(logger,"ABRIR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
       if(existe_archivo(nombre_archivo) == SUCCESS){
         
@@ -152,8 +155,14 @@ void recibir_instruccion_kernel()
  // crea un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
 int crear_archivo(char* nombre){
    //mejorar
-  Config * config = config_create("config/file_system.config");
-  char* pathCompleto = config_get_string_value(config, "PATH_FCB");
+  // Config * config = config_create("config/file_system.config");
+  // char* pathCompleto = config_get_string_value(config, "PATH_FCB");
+  log_info(logger, "CREAR ARCHIVO - %s", nombre);
+
+  char *pathFcb = FileSystemConfig.PATH_FCB;
+
+  char *pathCompleto = string_duplicate(pathFcb);
+
 
 // Crea el directorio
   mkdir(pathCompleto,0777);
@@ -163,7 +172,7 @@ int crear_archivo(char* nombre){
 
   t_config fcb_config;
   fcb_config.path = pathCompleto;
-
+  
   t_dictionary * diccionario = dictionary_create();
   dictionary_put(diccionario,"NOMBRE_ARCHIVO", nombre);
   dictionary_put(diccionario,"TAMANIO_ARCHIVO", "0");
@@ -171,24 +180,43 @@ int crear_archivo(char* nombre){
   dictionary_put(diccionario,"PUNTERO_INDIRECTO", "0");
   fcb_config.properties = diccionario;
 
+  log_info(logger, "Crear archivo %s - en path: %s", nombre, pathCompleto);
 
-  return config_save_in_file(&fcb_config, pathCompleto);
+  int res = config_save_in_file(&fcb_config, pathCompleto);
+
+  free(pathCompleto);
+
+  return res;
 
 }
 
 int existe_archivo(char* nombre){
   //mejorar
-  Config * config = config_create("config/file_system.config");
-  char* pathCompleto = config_get_string_value(config, "PATH_FCB");
+  // Config * config = config_create("config/file_system.config");
+  // char* pathCompleto = config_get_string_value(config, "PATH_FCB");
+  log_info(logger, "EXISTE ARCHIVO - %s", nombre);
+  char *pathFcb = FileSystemConfig.PATH_FCB;
+  //char *pathFcb = "config/fcb/";
+  log_info(logger, "pathFcb: %s", pathFcb);
+  
+  char *pathCompleto = string_duplicate(pathFcb);
+
   string_append(&pathCompleto,nombre);
   string_append(&pathCompleto,".config");
+
+  log_info(logger, "pathCompleto: %s", pathCompleto);
+  
   t_config *fcb=  config_create(pathCompleto);
 
+  free(pathCompleto);
+  
   if(fcb == NULL){
+    log_info(logger, "FCB == NULL => No existe archivo");
     return FAILURE;
   }
   else
   {
+    log_info(logger, "FCB != NULL =>  existe archivo");
     return SUCCESS;
   } 
 }
