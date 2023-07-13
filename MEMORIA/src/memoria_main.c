@@ -1,10 +1,13 @@
 #include "memoria_utils.h"
 
-int main()
+int main(int argc, char** argv)
 {
     iniciar_logger_memoria();
 
-    iniciar_config_memoria();
+    char* config_path = argv[1];
+
+    if(iniciar_config_memoria(config_path) == FAILURE)
+        return EXIT_FAILURE;
 
     if(iniciar_servidor_memoria() == SUCCESS)
     {

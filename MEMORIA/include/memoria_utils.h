@@ -36,7 +36,7 @@ typedef struct
 } PROCESO_MEMORIA;
 
 void iniciar_logger_memoria();
-void iniciar_config_memoria();
+int iniciar_config_memoria(char*);
 int iniciar_servidor_memoria();
 void conectar_con_kernel();
 void conectar_con_file_system();

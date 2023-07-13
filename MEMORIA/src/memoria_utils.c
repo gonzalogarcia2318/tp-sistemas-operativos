@@ -22,9 +22,14 @@ void iniciar_logger_memoria()
     log_info(logger, "[MEMORIA]: Logger creado correctamente");
 }
 
-void iniciar_config_memoria()
+int iniciar_config_memoria(char* path)
 {
-    config = config_create(ARCHIVO_CONFIG);
+    config = config_create(path);
+    if(config == NULL)
+    {
+        log_error(logger,"[MEMORIA]: ERROR AL INICIAR CONFIG INICIAL");
+        return FAILURE;
+    }
     rellenar_configuracion_memoria(config);
     log_info(logger,"[MEMORIA]: Archivo Config creado y rellenado correctamente");
 }
@@ -253,12 +258,14 @@ void eliminar_proceso_de_globales(int32_t pid)
 
     for(int i = 0; i < size; i++)
     {
+    
         proc_mem_aux = list_get(procesos_globales, i);
-
+  
         if(proc_mem_aux->pid == pid)
         {
             list_remove(procesos_globales,i);
             free(proc_mem_aux);
+            return;
         }  
     }
 }
