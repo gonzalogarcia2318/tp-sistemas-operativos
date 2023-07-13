@@ -70,21 +70,21 @@ void escuchar_file_system(int socket_fs)
       return;
     
     case READ:
-      log_warning(logger,"[MEMORIA]: INSTRUCCION recibida de FILE SYSTEM");
-      //RECIBO DF
-      //TAMAÑO (en bytes)
-      //leo...
-      //Devolver contenido a FS
+      log_warning(logger,"[MEMORIA]: READ recibido de FILE SYSTEM");
+
+      char* leido = manejar_read_file_system();
+
+      enviar_mensaje_a_cliente(leido, socket_fs);
       break;
 
     case WRITE:
-      log_warning(logger,"[MEMORIA]: INSTRUCCION recibida de FILE SYSTEM");
-      //RECIBO DF
-      //TAMAÑO (en bytes)
-      //CONTENIDO char*
-      //Escribo... 
-      //DEVUELVO OK A FS.
+      log_warning(logger,"[MEMORIA]: WRITE recibido de FILE SYSTEM");
+
+      manejar_write_file_system();
+
+      enviar_mensaje_a_cliente("WRITE: OK",socket_fs);
       break;
+    
     default:
       log_warning(logger, "[MEMORIA]: Operacion desconocida.");
       break;
@@ -204,7 +204,7 @@ void recibir_instruccion_kernel()
   
   switch (cod_instruccion)
   {
-    case CREATE_SEGMENT: //TODO
+    case CREATE_SEGMENT: 
       
       int32_t tamanio_segmento;
       memcpy(&tamanio_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
@@ -244,7 +244,7 @@ void recibir_instruccion_kernel()
       }
     break;
 
-    case DELETE_SEGMENT: //TODO
+    case DELETE_SEGMENT:
   
       log_info(logger,"INSTRUCCIÓN KERNEL: DELETE_SEGMENT - PID:<%d> - ID_SEG:<%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
                 pid,

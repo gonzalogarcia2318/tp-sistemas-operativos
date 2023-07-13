@@ -839,6 +839,41 @@ void aplicar_retardo_compactacion()
     log_info(logger,"Retraso de <%d> segundos por compactacion",segundos);
     sleep(segundos);
 }
+//////////////////////////////COMUNICACIÓN CON FILE SYSTEM///////////////////////////////
+
+char* manejar_read_file_system()
+{
+    BUFFER* buffer = recibir_buffer(socket_file_system);
+    int32_t direccion_fisica;
+    int32_t tamanio;
+    char* leido;
+    
+    memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+    memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+    
+    strcpy(leido,leer_de_memoria(direccion_fisica, tamanio));
+
+    return leido;
+}
+
+void manejar_write_file_system()
+{
+    BUFFER* buffer = recibir_buffer(socket_file_system);
+    int32_t direccion_fisica;
+    int32_t tamanio;
+    char* valor_a_escribir = malloc(sizeof(char) * (tamanio + 1));
+    
+    memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+    memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+    memcpy(&valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio + 1));
+            buffer->stream += (tamanio + 1); 
+    
+    escribir_en_memoria(valor_a_escribir, direccion_fisica, tamanio);
+}
 
 //////////////////////////////////TERMINAR DE EJECUTAR///////////////////////////////////
 
