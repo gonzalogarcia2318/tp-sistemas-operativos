@@ -31,6 +31,8 @@ typedef struct
     t_queue *cola_block;
 } Recurso;
 
+
+
 void esperar_consola(int socket_kernel);
 void manejar_paquete_consola(int socket_consola);
 void manejar_proceso_consola();

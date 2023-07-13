@@ -632,44 +632,143 @@ void manejar_hilo_io()
 }
 
 
+// FUNCIONES PARA MANEJAR FILE SYSTEM
+
+typedef struct{
+int32_t descriptor_archivo;        // Int o FILE*
+char * nombre_archivo;
+int32_t PID_en_uso;
+t_queue cola_block;
+}ARCHIVO_GLOBAL;
+
+typedef struct{
+
+int32_t descriptor_archivo;         // Int o FILE*
+char * nombre_archivo;
+int32_t puntero_ubicacion;          //Ver Si long o int 
+
+}ARCHIVO_PROCESO;
+
+
+ARCHIVO_GLOBAL* buscar_archivo_en_tabla_global(char* nombre_archivo){
+    bool comparar_archivo_por_nombre(ARCHIVO_GLOBAL* archivo_global)
+    {
+        return strcmp(nombre_archivo, archivo_global->nombre_archivo) == 0;
+    }
+
+    ARCHIVO_GLOBAL *archivo = list_find(archivos_abiertos_global, (void *)comparar_archivo_por_nombre);
+
+    return archivo;
+}
+
+void agregar_entrada_tabla_por_proceso(Proceso* proceso, char* nombre_archivo){
+    ARCHIVO_PROCESO archivo_proceso = malloc(sizeof(ARCHIVO_PROCESO));
+    archivo_proceso->nombre_archivo = nombre_archivo;
+    archivo_proceso->puntero_ubicacion = 0;
+
+    list_add(proceso->pcb->archivos_abiertos, archivo_proceso);
+}
+
+void agregar_entrada_tabla_global(Proceso* proceso, char* nombre_archivo, int32_t descriptor_archivo){
+    ARCHIVO_GLOBAL entrada_archivo = malloc(sizeof(ARCHIVO_GLOBAL));
+    entrada_archivo->nombre_archivo = nombre_archivo;
+    entrada_archivo->PID_en_uso = proceso->pcb->PID;
+    entrada_archivo->cola_block = queue_create();
+    entrada_archivo->descriptor_archivo = 0; // TODO: CUAL ES EL DESCRIPTOR
+
+    list_add(archivos_abiertos_global, entrada_archivo);
+}
+
+
+int existe_archivo_en_file_system(char* nombre_archivo){
+
+    PAQUETE *paquete = crear_paquete(INSTRUCCION);
+    int32_t existe_archivo = EXISTE_ARCHIVO;
+    agregar_a_paquete(paquete, &existe_archivo, sizeof(int32_t));
+    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo));
+    enviar_paquete_a_servidor(paquete, socket_file_system);
+    eliminar_paquete(paquete);
+
+    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <EXISTE_ARCHIVO?> - %s", nombre_archivo);
+
+    BUFFER *buffer;
+
+    switch (obtener_codigo_operacion(socket_file_system))
+    {  
+        case RESPUESTA_FILE_SYSTEM:
+            log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
+
+            buffer = recibir_buffer(socket_file_system);
+
+            int respuesta_file_system;
+            memcpy(&respuesta_file_system, buffer->stream, sizeof(int));
+
+            return respuesta_file_system;
+        default: 
+            log_error(logger, "[KERNEL] ERROR DE FILE_SYSTEM EN EXISTE_ARCHIVO");
+        break;
+    }
+
+}
+
+
+int avisar_file_system_crear_archivo(char * nombre_archivo){
+
+    PAQUETE * paquete = crear_paquete(INSTRUCCION);
+    int32_t crear_archivo = CREAR_ARCHIVO;
+    agregar_a_paquete(paquete, &crear_archivo, sizeof(int32_t));
+    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo));
+    enviar_paquete_a_servidor(paquete, socket_file_system);
+    eliminar_paquete(paquete);
+    BUFFER *buffer;
+
+    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <CREAR_ARCHIVO?> - %s", nombre_archivo);
+
+    BUFFER *buffer;
+
+    switch (obtener_codigo_operacion(socket_file_system))
+    {  
+        case RESPUESTA_FILE_SYSTEM:
+            log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
+
+            buffer = recibir_buffer(socket_file_system);
+
+            int respuesta_file_system;
+            memcpy(&respuesta_file_system, buffer->stream, sizeof(int));
+
+            return respuesta_file_system;
+        default: 
+            log_error(logger, "[KERNEL] ERROR DE FILE_SYSTEM EN CREAR_ARCHIVO");
+        break;
+    }
+}
+
+
 void manejar_f_open(Proceso * proceso , char * nombre_archivo){
 
+    ARCHIVO_GLOBAL entrada_tabla_global = buscar_archivo_en_tabla_global(nombre_archivo);
     
-    /*if(existe_en_tabla_global(nombre_archivo)){
-
-        agregar_entrada_tabla_por_proceso();  
+    if(entrada_tabla_global != NULL){
+        agregar_entrada_tabla_por_proceso(proceso, nombre_archivo);  
         
+        cambiar_estado(proceso, BLOCK);
 
-        if(archivo_esta_en_uso()){
-            
-            proceso = BLOCK;
-            agregar_a_cola_bloqueado_archivo();
-
-        }else{
-
-           archivo.PID_en_uso = proceso.PID;     
-
-        }
-
+        queue_push(entrada_tabla_global, proceso->pcb->PID);
 
     }else{
 
         int existe_archivo;
 
         sem_wait(&file_system_disponible);
-        existe_archivo = llamar_a_fileSystem(nombre_archivo);
+        existe_archivo = existe_archivo_en_file_system(nombre_archivo);
         sem_post(&file_system_disponible);
 
         if(!existe_archivo){
             
-            int respuesta;
-
             sem_wait(&file_system_disponible);
-            if(avisar_fileSystem_crear_archivo()){
+            avisar_file_system_crear_archivo()
                 //SE CREO ATR!
-            }else{
-                //FALLO
-            }
+            
             sem_post(&file_system_disponible);
 
         }
@@ -680,38 +779,11 @@ void manejar_f_open(Proceso * proceso , char * nombre_archivo){
 
         devolver_ejecucion_cpu();
 
-    }*/
+    }
 
         
 }
 
-int llamar_a_fileSystem(char * nombre_archivo){
-
-    PAQUETE * paquete = crear_paquete(EXISTE_ARCHIVO);
-    agregar_a_paquete(paquete,nombre_archivo,strlen(nombre_archivo));
-    enviar_paquete_a_servidor(paquete,socket_file_system);
-
-    BUFFER * buffer = recibir_buffer(socket_file_system);
-
-    int existe_archivo;
-    memcpy(&existe_archivo, buffer->stream, sizeof(int));
-
-    return existe_archivo;
-}
-
-int avisar_fileSystem_crear_archivo(char * nombre_archivo){
-
-    PAQUETE * paquete = crear_paquete(CREAR_ARCHIVO);
-    agregar_a_paquete(paquete,nombre_archivo,strlen(nombre_archivo));
-    enviar_paquete_a_servidor(paquete,socket_file_system);
-
-    BUFFER * buffer = recibir_buffer(socket_file_system);
-
-    int creacion;
-    //memcpy(&existe_archivo, buffer->stream, sizeof(int));
-
-    return creacion;
-}
 
 
 void manejar_wait(Proceso *proceso, char *nombre_recurso)
