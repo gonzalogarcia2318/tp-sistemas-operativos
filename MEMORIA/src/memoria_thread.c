@@ -36,7 +36,8 @@ void escuchar_kernel(int socket_kernel)
     case CONSOLIDAR:
       log_info(logger,"Recibi de Kernel: CONSOLIDAR");
       compactar();
-      // ENVIAR TABLAS DE PÁGINA A KERNEL.
+      enviar_tablas_de_segmentos_a_kernel(); //CHECKEAR
+      log_info(logger,"ENVÍE TABLAS DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE COMPACTACIÓN");
       break;
     
     case DESCONEXION:
@@ -69,21 +70,26 @@ void escuchar_file_system(int socket_fs)
       return;
     
     case READ:
-      log_warning(logger,"[MEMORIA]: INSTRUCCION recibida de FILE SYSTEM");
-      //RECIBO DF
-      //TAMAÑO (en bytes)
-      //leo...
-      //Devolver contenido a FS
+      log_warning(logger,"[MEMORIA]: READ recibido de FILE SYSTEM");
+
+      char* leido = manejar_read_file_system();
+
+      PAQUETE* paquete_read = crear_paquete(READ);
+      agregar_a_paquete(paquete_read, leido, strlen(leido)*sizeof(char));
+      enviar_paquete_a_cliente(paquete_read, socket_fs);
+      eliminar_paquete(paquete_read);
       break;
 
     case WRITE:
-      log_warning(logger,"[MEMORIA]: INSTRUCCION recibida de FILE SYSTEM");
-      //RECIBO DF
-      //TAMAÑO (en bytes)
-      //CONTENIDO char*
-      //Escribo... 
-      //DEVUELVO OK A FS.
+      log_warning(logger,"[MEMORIA]: WRITE recibido de FILE SYSTEM");
+
+      manejar_write_file_system();
+
+      PAQUETE* paquete_write = crear_paquete(WRITE);
+      enviar_paquete_a_cliente(paquete_write,socket_fs);
+      eliminar_paquete(paquete_write);
       break;
+    
     default:
       log_warning(logger, "[MEMORIA]: Operacion desconocida.");
       break;
@@ -203,7 +209,7 @@ void recibir_instruccion_kernel()
   
   switch (cod_instruccion)
   {
-    case CREATE_SEGMENT: //TODO
+    case CREATE_SEGMENT: 
       
       int32_t tamanio_segmento;
       memcpy(&tamanio_segmento, buffer->stream + sizeof(int32_t), sizeof(int32_t));
@@ -243,7 +249,7 @@ void recibir_instruccion_kernel()
       }
     break;
 
-    case DELETE_SEGMENT: //TODO
+    case DELETE_SEGMENT:
   
       log_info(logger,"INSTRUCCIÓN KERNEL: DELETE_SEGMENT - PID:<%d> - ID_SEG:<%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
                 pid,

@@ -170,25 +170,31 @@ void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos)
     eliminar_paquete(paquete);
 }
 
-void enviar_tablas_de_segmentos_a_kernel()
+void enviar_tablas_de_segmentos_a_kernel() //CHECKEAR
 {
-    PAQUETE* paquete = crear_paquete(CONSOLIDAR); //VERIFICAR SI CORRESPONDE
-
+    PAQUETE* paquete = crear_paquete(CONSOLIDAR);
+    BUFFER* buff_aux = malloc(sizeof(BUFFER));
+    
     int size = list_size(procesos_globales);
     PROCESO_MEMORIA* proc_aux;
     t_list* tabla_segs_aux;
+    int offset = 0;
     
     for (int i = 0; i < size; i++)
     {
         proc_aux = list_get(procesos_globales,i);
         tabla_segs_aux = proc_aux->tabla_de_segmentos;
-        //paquete->buffer += serializar_segmentos(tabla_segs_aux);
-        //TODO
+
+        buff_aux = serializar_segmentos(tabla_segs_aux);
+
+        paquete->buffer->size += buff_aux->size;
+        memcpy(paquete->buffer->stream + offset, buff_aux->stream, buff_aux->size);
+        offset += buff_aux->size;
     }
-    
     
   enviar_paquete_a_cliente(paquete, socket_kernel);
   eliminar_paquete(paquete);
+  free(buff_aux);
 }
 
 
@@ -832,6 +838,41 @@ void aplicar_retardo_compactacion()
     int segundos = MemoriaConfig.RETARDO_COMPACTACION/1000;
     log_info(logger,"Retraso de <%d> segundos por compactacion",segundos);
     sleep(segundos);
+}
+//////////////////////////////COMUNICACIÓN CON FILE SYSTEM///////////////////////////////
+
+char* manejar_read_file_system()
+{
+    BUFFER* buffer = recibir_buffer(socket_file_system);
+    int32_t direccion_fisica;
+    int32_t tamanio;
+    char* leido;
+    
+    memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+    memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+    
+    strcpy(leido,leer_de_memoria(direccion_fisica, tamanio));
+
+    return leido;
+}
+
+void manejar_write_file_system()
+{
+    BUFFER* buffer = recibir_buffer(socket_file_system);
+    int32_t direccion_fisica;
+    int32_t tamanio;
+    char* valor_a_escribir = malloc(sizeof(char) * (tamanio + 1));
+    
+    memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+    memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+    memcpy(&valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio + 1));
+            buffer->stream += (tamanio + 1); 
+    
+    escribir_en_memoria(valor_a_escribir, direccion_fisica, tamanio);
 }
 
 //////////////////////////////////TERMINAR DE EJECUTAR///////////////////////////////////

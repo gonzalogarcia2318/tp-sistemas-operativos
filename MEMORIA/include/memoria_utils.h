@@ -53,6 +53,7 @@ t_list* manejar_crear_proceso();
     t_list* crear_tabla_de_segmentos();
     void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos);
     void enviar_tabla_de_segmentos_a_kernel_BORRAR(t_list* tabla_de_segmentos, int pid); // BORRAR - SOLO PARA PROBAR
+    void enviar_tablas_de_segmentos_a_kernel();
 void manejar_finalizar_proceso();
     PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid);
     void eliminar_proceso_de_globales(int32_t pid);
@@ -83,6 +84,9 @@ void compactar();
     void redimensionar_huecos_compactar(int32_t base, int32_t limite);
     void imprimir_tabla_segmentos_globales();
     void aplicar_retardo_compactacion();
+
+char* manejar_read_file_system();
+void manejar_write_file_system();
 
 void terminar_ejecucion_memoria();
 
