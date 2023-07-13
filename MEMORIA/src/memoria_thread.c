@@ -74,7 +74,10 @@ void escuchar_file_system(int socket_fs)
 
       char* leido = manejar_read_file_system();
 
-      enviar_mensaje_a_cliente(leido, socket_fs);
+      PAQUETE* paquete_read = crear_paquete(READ);
+      agregar_a_paquete(paquete_read, leido, strlen(leido)*sizeof(char));
+      enviar_paquete_a_cliente(paquete_read, socket_fs);
+      eliminar_paquete(paquete_read);
       break;
 
     case WRITE:
@@ -82,7 +85,9 @@ void escuchar_file_system(int socket_fs)
 
       manejar_write_file_system();
 
-      enviar_mensaje_a_cliente("WRITE: OK",socket_fs);
+      PAQUETE* paquete_write = crear_paquete(WRITE);
+      enviar_paquete_a_cliente(paquete_write,socket_fs);
+      eliminar_paquete(paquete_write);
       break;
     
     default:

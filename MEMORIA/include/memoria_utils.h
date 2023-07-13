@@ -86,7 +86,7 @@ void compactar();
     void aplicar_retardo_compactacion();
 
 char* manejar_read_file_system();
-void manejar_write_file_sistem();
+void manejar_write_file_system();
 
 void terminar_ejecucion_memoria();
 
