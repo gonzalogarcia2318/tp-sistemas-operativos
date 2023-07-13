@@ -64,6 +64,11 @@ void liberar_recursos(Proceso *proceso);
 
 void devolver_proceso_a_cpu(Proceso* proceso);
 
+ARCHIVO_PROCESO * buscar_archivo_en_tabla_proceso(Proceso * proceso , char* nombre_archivo);
+ARCHIVO_GLOBAL * buscar_archivo_en_tabla_global(char* nombre_archivo);
+
+int32_t PID_en_file_system;
+
 
 int main(int argc, char **argv)
 {
@@ -293,9 +298,7 @@ void manejar_paquete_cpu()
                 log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->posicion);
                 
                 
-                //manejar_f_seek(proceso,instruccion->nombreArchivo, instruccion->posicion);
-                
-               
+                manejar_f_seek(proceso,instruccion->nombreArchivo, instruccion->posicion, proceso);
                
                 break;
 
@@ -307,14 +310,8 @@ void manejar_paquete_cpu()
                 buffer->stream += (sizeof(int32_t) * 2);
 
                 log_info(logger, "Parametros: %s - %d - %d", instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
-                // HACER
-                //
 
-                //manejar_f_read(proceso,instruccion->nombreArchivo, instruccion->direccionFisica);
-
-
-                 //Al finalizar Proceso F_READ
-                sem_post(&esperar_respuesta_fileSystem);
+                manejar_f_read(proceso, instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
                 break;
 
             case F_WRITE:
@@ -325,28 +322,19 @@ void manejar_paquete_cpu()
                 buffer->stream += (sizeof(int32_t) * 2);
 
                 log_info(logger, "Parametros: %s - %d - %d", instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
-                // HACER
-                //
 
-                //manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->direccionFisica,instruccion->cantBytes );
+                manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->direccionFisica,instruccion->cantBytes );
 
-
-                //Al finalizar Proceso F_WRITE
-                sem_post(&esperar_respuesta_fileSystem);
                 break;
 
             case F_TRUNCATE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_TRUNCATE");
                 log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->tamanioArchivo);
                 // HACER
+                              
+                manejar_f_truncate(proceso, proceso,instruccion->nombreArchivo, instruccion->tamanioArchivo );
+           
                 
-                
-                //manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->tamanioArchivo );
-
-                
-                
-                //Al finalizar Proceso F_TRUNCATE
-                sem_post(&esperar_respuesta_fileSystem);
                 break;
 
             case CREATE_SEGMENT:
@@ -518,6 +506,14 @@ void imprimir_cola(t_queue cola)
     free(lista_pids);
 }
 
+void pasar_proceso_a_ready(int32_t PID){
+    Proceso* proceso = obtener_proceso_por_pid(PID);            
+    proceso->pcb->program_counter++;
+    cambiar_estado(proceso, READY);
+    proceso->pcb->cronometro_ready = temporal_create();
+    queue_push(cola_ready, proceso);
+    imprimir_cola(*cola_ready);
+}
 
 void manejar_hilo_fileSystem(){
 
@@ -532,12 +528,25 @@ void manejar_hilo_fileSystem(){
         {
             
         case FINALIZO_TRUNCADO:
+            // el unico proceso que puede estar es PID_en_file_system
+            log_warning(logger, "FINALIZO TRUNCADO DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+            // Pasar proceso a ready
+            pasar_proceso_a_ready(PID_en_file_system);
         break;
 
         case FINALIZO_LECTURA:
+            // el unico proceso que puede estar es PID_en_file_system
+            log_warning(logger, "FINALIZO LECTURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+            // Pasar proceso a ready
+            pasar_proceso_a_ready(PID_en_file_system);
         break;
 
         case FINALIZO_ESCRITURA:
+            // el unico proceso que puede estar es PID_en_file_system
+            log_warning(logger, "FINALIZO ESCRITURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+            // Pasar proceso a ready
+            pasar_proceso_a_ready(PID_en_file_system);
+
         break;
 
         default:
@@ -553,7 +562,6 @@ void manejar_hilo_fileSystem(){
 
 
 }
-
 
 
 void manejar_hilo_ejecutar()
@@ -635,15 +643,111 @@ void manejar_hilo_io()
 
 // FUNCIONES PARA MANEJAR FILE SYSTEM
 
-ARCHIVO_GLOBAL* buscar_archivo_en_tabla_global(char* nombre_archivo){
+void manejar_f_seek(char * nombre_archivo, int32_t posicion,Proceso * proceso){
+
+    ARCHIVO_PROCESO * archivo = buscar_archivo_en_tabla_proceso(proceso,nombre_archivo);
+
+    archivo->puntero_ubicacion = posicion;
+
+    devolver_proceso_a_cpu(proceso);
+
+    return;
+}
+
+
+
+void manejar_f_truncate(Proceso * proceso, char * nombre_archivo , int32_t tamanioArchivo){
+
+    PAQUETE * paquete = crear_paquete(INSTRUCCION);
+    int32_t f_truncate = F_TRUNCATE;
+    agregar_a_paquete(paquete, &f_truncate, sizeof(int32_t));
+    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo)+1);
+    agregar_a_paquete(paquete, &tamanioArchivo, sizeof(int32_t));
+    enviar_paquete_a_servidor(paquete, socket_file_system);
+    eliminar_paquete(paquete);
+
+    cambiar_estado(proceso,BLOCK);
+
+    PID_en_file_system = proceso->pcb->PID;
+    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_TRUNCATE> - %s - tamanio: %d ", nombre_archivo, tamanioArchivo);
+
+    //Al finalizar Proceso F_TRUNCATE
+    sem_post(&esperar_respuesta_fileSystem);
+
+}
+
+void manejar_f_read(Proceso* proceso, char* nombre_archivo, int direccion_fisica, int cant_bytes){
+
+    ARCHIVO_PROCESO* archivo = buscar_archivo_en_tabla_proceso(proceso,nombre_archivo);
+
+    // Solicitar lectura a file system
+    PAQUETE * paquete = crear_paquete(INSTRUCCION);
+    int32_t f_read = F_READ;
+    agregar_a_paquete(paquete, &f_read, sizeof(int32_t));
+    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo)+1);
+    agregar_a_paquete(paquete, &archivo->puntero_ubicacion, sizeof(int32_t));
+    agregar_a_paquete(paquete, &cant_bytes, sizeof(int32_t));
+    agregar_a_paquete(paquete, &direccion_fisica, sizeof(int32_t));
+    enviar_paquete_a_servidor(paquete, socket_file_system);
+    eliminar_paquete(paquete);
+
+    PID_en_file_system = proceso->pcb->PID;
+    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_READ> - %s - puntero: %d - bytes: %d - dir fisica: %d", nombre_archivo, archivo->puntero_ubicacion, cant_bytes, direccion_fisica);
+
+    cambiar_estado(proceso, BLOCK);
+
+    sem_post(&esperar_respuesta_fileSystem);
+}
+
+void manejar_f_write(Proceso* proceso, char* nombre_archivo, int direccion_fisica, int cant_bytes){
+
+    ARCHIVO_PROCESO * archivo = buscar_archivo_en_tabla_proceso(proceso,nombre_archivo);
+
+    // Solicitar escritura a file system
+    PAQUETE * paquete = crear_paquete(INSTRUCCION);
+    int32_t f_write = F_WRITE;
+    agregar_a_paquete(paquete, &f_write, sizeof(int32_t));
+    agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo)+1);
+    agregar_a_paquete(paquete, &archivo->puntero_ubicacion, sizeof(int32_t));
+    agregar_a_paquete(paquete, &cant_bytes, sizeof(int32_t));
+    agregar_a_paquete(paquete, &direccion_fisica, sizeof(int32_t));
+    enviar_paquete_a_servidor(paquete, socket_file_system);
+    eliminar_paquete(paquete);
+
+    PID_en_file_system = proceso->pcb->PID;
+    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_WRITE> - %s - puntero: %d - bytes: %d - dir fisica: %d", nombre_archivo, archivo->puntero_ubicacion, cant_bytes, direccion_fisica);
+
+    cambiar_estado(proceso, BLOCK);
+
+    sem_post(&esperar_respuesta_fileSystem);
+}
+
+ARCHIVO_GLOBAL * buscar_archivo_en_tabla_global(char* nombre_archivo){
+
     log_info(logger, "[KERNEL]: Buscar archivo en tabla global: %s", nombre_archivo);
+
     bool comparar_archivo_por_nombre(ARCHIVO_GLOBAL* archivo_global)
     {
         log_info(logger, "[-]: comparar %s - %s", nombre_archivo, archivo_global->nombre_archivo);
         return strcmp(nombre_archivo, archivo_global->nombre_archivo) == 0;
     }
 
-    ARCHIVO_GLOBAL *archivo = list_find(archivos_abiertos_global, (void *)comparar_archivo_por_nombre);
+    ARCHIVO_GLOBAL * archivo = list_find(archivos_abiertos_global, (void *)comparar_archivo_por_nombre);
+
+    return archivo;
+}
+
+ARCHIVO_PROCESO * buscar_archivo_en_tabla_proceso(Proceso * proceso , char* nombre_archivo){
+
+    log_info(logger, "[KERNEL]: Buscar archivo en tabla por proceso: %s", nombre_archivo);
+
+    bool comparar_archivo_por_nombre(ARCHIVO_PROCESO * archivo_proceso)
+    {
+        log_info(logger, "[-]: comparar %s - %s", nombre_archivo, archivo_proceso->nombre_archivo);
+        return strcmp(nombre_archivo, archivo_proceso->nombre_archivo) == 0;
+    }
+
+    ARCHIVO_PROCESO * archivo = list_find(proceso->pcb->archivos_abiertos, (void *)comparar_archivo_por_nombre);
 
     return archivo;
 }

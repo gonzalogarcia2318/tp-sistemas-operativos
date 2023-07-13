@@ -46,7 +46,7 @@ void recibir_instruccion_kernel()
     memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int32_t));
     buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
 
-    memcpy(&tamanio_nombre, buffer->stream, sizeof(int32_t));
+    memcpy(&tamanio_nombre, buffer->stream, sizeof(int32_t) );
     buffer->stream += (sizeof(int32_t)); 
 
     log_info(logger, "tamaño nombre: %d", tamanio_nombre);

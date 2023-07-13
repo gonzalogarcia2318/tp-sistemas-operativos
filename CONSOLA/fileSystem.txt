@@ -1,0 +1,12 @@
+F_OPEN hola
+F_OPEN chau
+F_TRUNCATE hola 256
+F_SEEK hola 128
+F_READ hola 16 16
+F_OPEN Prueba
+F_CLOSE hola
+F_OPEN hola
+F_CLOSE Prueba
+F_CLOSE chau
+F_CLOSE hola
+EXIT
