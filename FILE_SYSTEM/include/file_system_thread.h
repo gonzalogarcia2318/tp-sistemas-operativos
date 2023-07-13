@@ -20,4 +20,10 @@ void recibir_instruccion_kernel();
 int crear_archivo(char* );
 int existe_archivo(char*);
 void ejecutar_f_truncate();
+void enviar_respuesta_kernel(int);
+char* obtener_info_de_memoria(int32_t , uint32_t);
+int enviar_a_memoria(int32_t, char *);
+int ejecutar_f_write(char *,uint32_t, uint32_t, int32_t);
+int ejecutar_f_read(char *,uint32_t ,int, int);
+int buscar_bloque_libre();
 #endif

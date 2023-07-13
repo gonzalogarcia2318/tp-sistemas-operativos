@@ -40,12 +40,19 @@ void recibir_instruccion_kernel()
   BUFFER* buffer = recibir_buffer(socket_kernel);
   int32_t cod_instruccion;
   char *nombre_archivo;
+  uint32_t tamanio_nombre;
 
-  memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int32_t));
-        buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+  
+    memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+    buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
 
-  // memcpy(nombre_archivo, buffer->stream, n_long); // FALTA ASIGNARLE EL NOMBRE!!! FALLA 
-  //   buffer->stream + n_long; 
+    memcpy(&tamanio_nombre, buffer->stream, sizeof(int32_t));
+    buffer->stream += (sizeof(int32_t)); 
+
+    nombre_archivo = malloc(tamanio_nombre);
+  
+    memcpy(nombre_archivo, buffer->stream, tamanio_nombre);
+    buffer->stream + tamanio_nombre; 
 
 
   int32_t direccion_fisica = 0;
@@ -59,28 +66,21 @@ void recibir_instruccion_kernel()
       if(crear_archivo(nombre_archivo)!=-1){
         log_warning(logger,"FCB CREADO DE: %s>", nombre_archivo);
 
-        enviar_mensaje_a_cliente("CREACION_OK", socket_kernel);
+        enviar_respuesta_kernel(SUCCESS);
       }
       break;
     case F_OPEN:
       log_warning(logger,"ABRIR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
       if(existe_archivo(nombre_archivo) == SUCCESS){
-        enviar_mensaje_a_cliente("OK", socket_kernel);
+        
+        enviar_respuesta_kernel(SUCCESS);
       }
       else
       {
-        enviar_mensaje_a_cliente("No Existe Archivo", socket_kernel);
+        enviar_respuesta_kernel(FAILURE);
       }
       break;
-        
-    case F_CLOSE:
-      log_warning(logger,"CERRAR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
-
-      //ejecutar_f_close(nombre_archivo); TODO
-
-      enviar_mensaje_a_cliente("F_CLOSE: OK", socket_kernel);
-      break;
-        
+             
     case F_READ:
       
       memcpy(&puntero_archivo, buffer->stream + sizeof(int32_t), sizeof(int32_t));
@@ -97,11 +97,11 @@ void recibir_instruccion_kernel()
                           tamanio);
                           
       if(ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio,direccion_fisica) == SUCCESS){
-          enviar_mensaje_a_cliente("F_READ: OK", socket_kernel);
+          enviar_respuesta_kernel(SUCCESS);
       }
       else
       {
-        enviar_mensaje_a_cliente("F_READ: ERROR", socket_kernel);
+        enviar_respuesta_kernel(FAILURE);
       }
       
       break;
@@ -120,9 +120,13 @@ void recibir_instruccion_kernel()
                           direccion_fisica,
                           tamanio);
 
-      //ejecutar_f_write(nombre_archivo,puntero_archivo,direccion_fisica,tamanio); TODO
-
-      enviar_mensaje_a_cliente("F_WRITE: OK", socket_kernel);
+      if(ejecutar_f_write(nombre_archivo,puntero_archivo,direccion_fisica,tamanio) == SUCCESS){ //TODO
+          enviar_respuesta_kernel(SUCCESS);
+      }
+      else
+      {
+        enviar_respuesta_kernel(FAILURE);
+      }
       break;
         
     case F_TRUNCATE:
@@ -135,11 +139,12 @@ void recibir_instruccion_kernel()
 
       ejecutar_f_truncate(nombre_archivo,tamanio); 
 
-      enviar_mensaje_a_cliente("F_TRUNCATE: OK", socket_kernel);
+      enviar_respuesta_kernel(SUCCESS);
       break;
 
     default:
       log_error(logger,"FILE SYSTEM: ERROR: COD_INSTRUCCION DESCONOCIDO");
+      enviar_respuesta_kernel(FAILURE);
       break;
   }
 }
@@ -308,7 +313,7 @@ int buscar_bloque_libre(){
 
   for(index= 0;index<bitmap->size;index++){
     bool estado = bitarray_test_bit(bitmap, index);
-    log_warning(logger, "ACCESO A BITMAP: <NUMERO BLOQUE: %d> - Estado: <ESTADO>: %d>",
+    log_warning(logger, "ACCESO A BITMAP: <NUMERO BLOQUE: %ld> - Estado: <ESTADO>: %d>",
                           index,
                           estado);
     if(!estado){
@@ -346,28 +351,31 @@ int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, i
  return estado;
 }
 
-int ejecutar_f_write(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
+int ejecutar_f_write(char *nombre_archivo,uint32_t puntero_archivo, uint32_t tamanio, int32_t direccion_fisica){
 
   archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"wb+");
-  char *datos;
-  //datos= obtener info de memoria(direccion_fisica)
+
+  char *datos= obtener_info_de_memoria(direccion_fisica, tamanio);
 
   fseek(archivo_bloques,puntero_archivo,SEEK_SET);
   fwrite(&datos,sizeof(tamanio),1,archivo_bloques);
 
+  aplicar_retardo_acceso_bloque(); 
+  
   log_warning(logger, "VALOR ESCRITO: Archivo: <DATOS>: %s",
-                          datos);
+                          datos);                     
 
   fclose(archivo_bloques);
- //return ok;
+  return SUCCESS;
 }
 
 int enviar_a_memoria(int32_t direccion, char *valor){
-    PAQUETE *paquete = crear_paquete(INSTRUCCION);
-    int32_t cod = WRITE;
-    agregar_a_paquete(paquete, &cod, sizeof(int32_t));
+    PAQUETE *paquete = crear_paquete(WRITE);
+     
+     int tamanio =strlen(valor);
     agregar_a_paquete(paquete, &direccion, sizeof(int32_t));
-    agregar_a_paquete(paquete, valor, strlen(valor));
+    agregar_a_paquete(paquete, &tamanio,sizeof(int32_t));
+    agregar_a_paquete(paquete, valor, tamanio*sizeof(char));
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
 
@@ -375,13 +383,50 @@ int enviar_a_memoria(int32_t direccion, char *valor){
 
     switch (obtener_codigo_operacion(socket_memoria))
     {  
-        case W_OK:
+        case WRITE:
             log_info(logger, "[FILE_SYSTEM]: MEMORIA ESCRIBIO CORRECTAMENTE");
             return SUCCESS;
             break;
         default: 
             log_error(logger, "[FILE_SYSTEM]: NO SE PUDO ESCRIBIR EN MEMORIA");
             return FAILURE;
+        break;
+    }
+}
+
+void enviar_respuesta_kernel(int ok){
+    
+    PAQUETE *paquete_kernel = crear_paquete(RESPUESTA_FILE_SYSTEM);
+    agregar_a_paquete(paquete_kernel, &ok, sizeof(int32_t));      
+    enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
+    eliminar_paquete(paquete_kernel);
+}
+
+char* obtener_info_de_memoria(int32_t dir_fisica , uint32_t tamanio){
+    PAQUETE *paquete = crear_paquete(READ);
+    char *dato = malloc(tamanio);
+    
+    agregar_a_paquete(paquete, &dir_fisica, sizeof(int32_t));
+    agregar_a_paquete(paquete, &tamanio,sizeof(uint32_t));
+    enviar_paquete_a_servidor(paquete, socket_memoria);
+    eliminar_paquete(paquete);
+
+     
+
+    switch (obtener_codigo_operacion(socket_memoria))
+    {  
+        case READ:
+            log_info(logger, "[FILE_SYSTEM]: MEMORIA LEYO CORRECTAMENTE");
+            BUFFER* buffer = recibir_buffer(socket_kernel);
+            
+            memcpy(dato, buffer->stream, tamanio + 1);
+            buffer->stream += tamanio + 1;
+
+            return dato;
+            break;
+        default: 
+            log_error(logger, "[FILE_SYSTEM]: MEMORIA FALLO AL LEER");
+            return;
         break;
     }
 }

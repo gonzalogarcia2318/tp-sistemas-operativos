@@ -12,9 +12,6 @@
 #define SUCCESS 0
 #define FAILURE -1
 
-#define SUCCESS 0
-#define FAILURE -1
-
 typedef struct
 {
     int32_t BLOCK_SIZE;

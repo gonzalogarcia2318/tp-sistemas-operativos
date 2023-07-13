@@ -133,11 +133,10 @@ typedef struct
 
 
 typedef struct{
-
-int32_t descriptor_archivo;        // Int o FILE*
+    
 char * nombre_archivo;
 int32_t PID_en_uso;
-t_queue cola_block;
+t_queue* cola_block;
 
 }ARCHIVO_GLOBAL;
 

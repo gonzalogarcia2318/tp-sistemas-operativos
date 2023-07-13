@@ -272,9 +272,8 @@ void manejar_paquete_cpu()
             case F_OPEN:
                 log_info(logger, "[KERNEL] Llego Instruccion F_OPEN - Proceso PID:<%d> - Archivo: <%s>", proceso->pcb->PID, instruccion->nombreArchivo);
 
-                // Encapsular en llamada a file system con semaforo -- file_system_disponible
-
-                //manejar_f_open(proceso,instruccion->nombreArchivo);
+                // Encapsular en llamada a file system con semaforo -- file_system_disponible -- YA NO HACE FALTA NO?
+                manejar_f_open(proceso, instruccion->nombreArchivo);
 
                 break;
 
@@ -634,22 +633,6 @@ void manejar_hilo_io()
 
 // FUNCIONES PARA MANEJAR FILE SYSTEM
 
-typedef struct{
-int32_t descriptor_archivo;        // Int o FILE*
-char * nombre_archivo;
-int32_t PID_en_uso;
-t_queue cola_block;
-}ARCHIVO_GLOBAL;
-
-typedef struct{
-
-int32_t descriptor_archivo;         // Int o FILE*
-char * nombre_archivo;
-int32_t puntero_ubicacion;          //Ver Si long o int 
-
-}ARCHIVO_PROCESO;
-
-
 ARCHIVO_GLOBAL* buscar_archivo_en_tabla_global(char* nombre_archivo){
     bool comparar_archivo_por_nombre(ARCHIVO_GLOBAL* archivo_global)
     {
@@ -661,22 +644,46 @@ ARCHIVO_GLOBAL* buscar_archivo_en_tabla_global(char* nombre_archivo){
     return archivo;
 }
 
-void agregar_entrada_tabla_por_proceso(Proceso* proceso, char* nombre_archivo){
-    ARCHIVO_PROCESO archivo_proceso = malloc(sizeof(ARCHIVO_PROCESO));
+void agregar_entrada_archivo_abierto_tabla_por_proceso(Proceso* proceso, char* nombre_archivo){
+    ARCHIVO_PROCESO* archivo_proceso = malloc(sizeof(ARCHIVO_PROCESO));
     archivo_proceso->nombre_archivo = nombre_archivo;
     archivo_proceso->puntero_ubicacion = 0;
 
     list_add(proceso->pcb->archivos_abiertos, archivo_proceso);
 }
 
-void agregar_entrada_tabla_global(Proceso* proceso, char* nombre_archivo, int32_t descriptor_archivo){
-    ARCHIVO_GLOBAL entrada_archivo = malloc(sizeof(ARCHIVO_GLOBAL));
+void sacar_entrada_archivo_abierto_tabla_por_proceso(Proceso* proceso, char* nombre_archivo){
+    bool comparar_archivo_por_nombre(ARCHIVO_PROCESO* archivo_proceso)
+    {
+        return strcmp(nombre_archivo, archivo_proceso->nombre_archivo) == 0;
+    }
+
+    ARCHIVO_PROCESO* archivo_proceso = list_find(proceso->pcb->archivos_abiertos, (void *)comparar_archivo_por_nombre);
+    list_remove_element(proceso->pcb->archivos_abiertos, archivo_proceso);
+
+    free(archivo_proceso);
+}
+
+void agregar_entrada_archivo_abierto_tabla_global(Proceso* proceso, char* nombre_archivo){
+    ARCHIVO_GLOBAL* entrada_archivo = malloc(sizeof(ARCHIVO_GLOBAL));
     entrada_archivo->nombre_archivo = nombre_archivo;
     entrada_archivo->PID_en_uso = proceso->pcb->PID;
     entrada_archivo->cola_block = queue_create();
-    entrada_archivo->descriptor_archivo = 0; // TODO: CUAL ES EL DESCRIPTOR
 
     list_add(archivos_abiertos_global, entrada_archivo);
+}
+
+void sacar_entrada_archivo_abierto_tabla_global(char* nombre_archivo){
+    bool comparar_archivo_por_nombre(ARCHIVO_GLOBAL* archivo_global)
+    {
+        return strcmp(nombre_archivo, archivo_global->nombre_archivo) == 0;
+    }
+
+    ARCHIVO_GLOBAL* archivo_global = list_find(archivos_abiertos_global, (void *)comparar_archivo_por_nombre);
+    list_remove_element(archivos_abiertos_global, archivo_global);
+
+    queue_destroy(archivo_global->cola_block);
+    free(archivo_global);
 }
 
 
@@ -720,7 +727,6 @@ int avisar_file_system_crear_archivo(char * nombre_archivo){
     agregar_a_paquete(paquete, nombre_archivo, strlen(nombre_archivo));
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
-    BUFFER *buffer;
 
     log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <CREAR_ARCHIVO?> - %s", nombre_archivo);
 
@@ -734,7 +740,8 @@ int avisar_file_system_crear_archivo(char * nombre_archivo){
             buffer = recibir_buffer(socket_file_system);
 
             int respuesta_file_system;
-            memcpy(&respuesta_file_system, buffer->stream, sizeof(int));
+            memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t)*2);
 
             return respuesta_file_system;
         default: 
@@ -744,16 +751,17 @@ int avisar_file_system_crear_archivo(char * nombre_archivo){
 }
 
 
-void manejar_f_open(Proceso * proceso , char * nombre_archivo){
+void manejar_f_open(Proceso * proceso, char * nombre_archivo){
 
-    ARCHIVO_GLOBAL entrada_tabla_global = buscar_archivo_en_tabla_global(nombre_archivo);
+    ARCHIVO_GLOBAL* entrada_tabla_global = buscar_archivo_en_tabla_global(nombre_archivo);
     
     if(entrada_tabla_global != NULL){
-        agregar_entrada_tabla_por_proceso(proceso, nombre_archivo);  
+
+        agregar_entrada_archivo_abierto_tabla_por_proceso(proceso, nombre_archivo);  
         
         cambiar_estado(proceso, BLOCK);
 
-        queue_push(entrada_tabla_global, proceso->pcb->PID);
+        queue_push(entrada_tabla_global->cola_block, proceso->pcb->PID);
 
     }else{
 
@@ -766,22 +774,39 @@ void manejar_f_open(Proceso * proceso , char * nombre_archivo){
         if(!existe_archivo){
             
             sem_wait(&file_system_disponible);
-            avisar_file_system_crear_archivo()
-                //SE CREO ATR!
-            
+            avisar_file_system_crear_archivo(nombre_archivo);
             sem_post(&file_system_disponible);
 
         }
 
-        agregar_entrada_tabla_global();
-        agregar_entrada_tabla_por_proceso();
+        agregar_entrada_archivo_abierto_tabla_global(proceso, nombre_archivo);
 
+        agregar_entrada_archivo_abierto_tabla_por_proceso(proceso, nombre_archivo);
 
-        devolver_ejecucion_cpu();
+        devolver_proceso_a_cpu(proceso);
+    }
+        
+}
 
+void manejar_f_close(Proceso * proceso, char* nombre_archivo){
+
+    int32_t PID_a_ejecutar;
+
+    sacar_entrada_archivo_abierto_tabla_por_proceso(proceso, nombre_archivo);
+
+    ARCHIVO_GLOBAL* entrada_tabla_global = buscar_archivo_en_tabla_global(nombre_archivo);
+
+    if(queue_is_empty(entrada_tabla_global->cola_block)){
+        
+        PID_a_ejecutar = queue_pop(entrada_tabla_global->cola_block);
+
+        Proceso *  proceso_para_ready = obtener_proceso_por_pid(PID_a_ejecutar);
+        cambiar_estado(proceso_para_ready, READY);
+
+    } else {
+        sacar_entrada_archivo_abierto_tabla_global(nombre_archivo);
     }
 
-        
 }
 
 
