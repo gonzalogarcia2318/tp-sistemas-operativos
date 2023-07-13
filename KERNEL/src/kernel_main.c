@@ -64,6 +64,8 @@ void liberar_recursos(Proceso *proceso);
 
 void devolver_proceso_a_cpu(Proceso* proceso);
 
+void manejar_f_truncate(Proceso * proceso, char * nombre_archivo , int32_t tamanioArchivo);
+
 ARCHIVO_PROCESO * buscar_archivo_en_tabla_proceso(Proceso * proceso , char* nombre_archivo);
 ARCHIVO_GLOBAL * buscar_archivo_en_tabla_global(char* nombre_archivo);
 
@@ -330,10 +332,8 @@ void manejar_paquete_cpu()
             case F_TRUNCATE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_TRUNCATE");
                 log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->tamanioArchivo);
-                // HACER
-                              
-                manejar_f_truncate(proceso, proceso,instruccion->nombreArchivo, instruccion->tamanioArchivo );
-           
+                
+                manejar_f_truncate(proceso, instruccion->nombreArchivo, instruccion->tamanioArchivo);
                 
                 break;
 
@@ -373,7 +373,6 @@ void manejar_paquete_cpu()
             int pid_seg_fault;
             memcpy(&pid_seg_fault, buffer_seg_fault->stream + sizeof(int32_t), sizeof(int32_t));
             buffer_seg_fault->stream += (sizeof(int32_t) * 2);
-
 
             Proceso *proceso_a_finalizar = obtener_proceso_por_pid(pid_seg_fault);
 
@@ -673,7 +672,6 @@ void manejar_f_truncate(Proceso * proceso, char * nombre_archivo , int32_t taman
 
     //Al finalizar Proceso F_TRUNCATE
     sem_post(&esperar_respuesta_fileSystem);
-
 }
 
 void manejar_f_read(Proceso* proceso, char* nombre_archivo, int direccion_fisica, int cant_bytes){

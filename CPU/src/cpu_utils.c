@@ -199,6 +199,7 @@ void avisar_seg_fault_kernel(PCB *pcb, Instruccion *instruccion)
               num_segmento,
               desplazamiento,
               instruccion->cantBytes);
+    agregar_a_paquete(paquete,&pcb->PID,sizeof(int32_t));
     enviar_paquete_a_cliente(paquete, socket_kernel);
     eliminar_paquete(paquete);
 }
@@ -262,7 +263,7 @@ int ejecutar_instruccion(Instruccion *Instruccion, PCB *pcb) // EXECUTE //CADA I
         ejecutar_f_write(paquete, Instruccion, pcb); // DIR LOGICA?
         return 0;
     }
-    else if (!strcmp(nombre_instru, "F_TRUNCATE "))
+    else if (!strcmp(nombre_instru, "F_TRUNCATE"))
     {
         ejecutar_f_truncate(paquete, Instruccion, pcb);
         return 0;
