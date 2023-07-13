@@ -43,6 +43,7 @@ int iniciar_archivo_de_bloques(char*);
 int conectar_con_memoria();
 void conectar_con_kernel();
 void terminar_ejecucion();
+void aplicar_retardo_acceso_bloque();
 
 
 #endif

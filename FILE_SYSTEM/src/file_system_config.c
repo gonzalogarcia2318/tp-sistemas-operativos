@@ -12,5 +12,5 @@ void rellenar_configuracion_file_system(Config *config)
 	FileSystemConfig.PATH_BITMAP = config_get_string_value(config, "PATH_BITMAP");
 	FileSystemConfig.PATH_BLOQUES = config_get_string_value(config, "PATH_BLOQUES");
 	FileSystemConfig.PATH_FCB = config_get_string_value(config, "PATH_FCB");
-	FileSystemConfig.RETARDO_ACCESO_BLOQUE = config_get_string_value(config, "RETARDO_ACCESO_BLOQUE");
+	FileSystemConfig.RETARDO_ACCESO_BLOQUE = config_get_int_value(config, "RETARDO_ACCESO_BLOQUE");
 }

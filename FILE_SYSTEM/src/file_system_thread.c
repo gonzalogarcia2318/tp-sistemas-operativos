@@ -37,10 +37,17 @@ bool manejar_paquete_kernel(int socket_kernel)
 void recibir_instruccion_kernel()
 {
 
-  t_list* lista =  obtener_paquete_estructura_dinamica(socket_kernel);
+  BUFFER* buffer = recibir_buffer(socket_kernel);
+  int32_t cod_instruccion;
+  char *nombre_archivo;
 
-  CODIGO_INSTRUCCION cod_instruccion = *(CODIGO_INSTRUCCION*)list_get(lista,0);
-  char* nombre_archivo = (char*)list_get(lista,1); //Verificar posicion de la instruccion
+  memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+        buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+
+  // memcpy(nombre_archivo, buffer->stream, n_long); // FALTA ASIGNARLE EL NOMBRE!!! FALLA 
+  //   buffer->stream + n_long; 
+
+
   int32_t direccion_fisica = 0;
   int32_t tamanio = 0;
   int32_t puntero_archivo = 0;
@@ -74,22 +81,15 @@ void recibir_instruccion_kernel()
       enviar_mensaje_a_cliente("F_CLOSE: OK", socket_kernel);
       break;
         
-    case F_SEEK:
-      int32_t posicion = *(int32_t*)list_get(lista,2); 
-      log_warning(logger,"ACTUALIZAR PUNTERO DE ARCHIVO: <NOMBRE_ARCHIVO: %s - POSICION: %d>",
-                            nombre_archivo,
-                            posicion
-                  );
-
-      //ejecutar_f_seek(nombre_archivo,posicion); TODO
-
-      enviar_mensaje_a_cliente("F_SEEK: OK", socket_kernel);
-      break;
-        
     case F_READ:
-      direccion_fisica = *(int32_t*) list_get(lista, 4); 
-      tamanio = *(int32_t*)list_get(lista,3); 
-      puntero_archivo = *(int32_t*) list_get(lista, 2); 
+      
+      memcpy(&puntero_archivo, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+      memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+      memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+       
       log_warning(logger,"LEER ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
                           nombre_archivo,
                           puntero_archivo,
@@ -107,9 +107,13 @@ void recibir_instruccion_kernel()
       break;
         
     case F_WRITE:
-      direccion_fisica = *(int32_t*) list_get(lista, 4); 
-      tamanio = *(int32_t*)list_get(lista,3); 
-      puntero_archivo =  *(int32_t*) list_get(lista, 2); 
+      memcpy(&puntero_archivo, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+      memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+      memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
+
       log_warning(logger,"ESCRIBIR ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
                           nombre_archivo,
                           puntero_archivo,
@@ -122,7 +126,9 @@ void recibir_instruccion_kernel()
       break;
         
     case F_TRUNCATE:
-      tamanio = *(int32_t*)list_get(lista,1);
+      memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2);
+
       log_warning(logger, "TRUNCAR ARCHIVO: <NOMBRE_ARCHIVO: %s> - Tamaño: <TAMAÑO: %d>",
                           nombre_archivo,
                           tamanio);
@@ -136,8 +142,6 @@ void recibir_instruccion_kernel()
       log_error(logger,"FILE SYSTEM: ERROR: COD_INSTRUCCION DESCONOCIDO");
       break;
   }
-
-  list_destroy(lista);
 }
 
  // crea un archivo FCB correspondiente al nuevo archivo, con tamaño 0 y sin bloques asociados.
@@ -184,7 +188,7 @@ int existe_archivo(char* nombre){
   } 
 }
 
-void ejecutar_f_truncate(char* nombre,int a_truncar){
+void ejecutar_f_truncate(char *nombre,int a_truncar){
   //mejorar
   Config * config = config_create("config/file_system.config");
   char* pathCompleto = config_get_string_value(config, "PATH_FCB");
@@ -221,8 +225,9 @@ void ejecutar_f_truncate(char* nombre,int a_truncar){
 
         for(int bloques_restantes = bloques_necesarios-1;bloques_restantes>0;bloques_restantes--){
           fseek(archivo_bloques,puntero_indirecto,SEEK_SET);
+          
           uint32_t bloque_sgt = buscar_bloque_libre();
-
+          aplicar_retardo_acceso_bloque();
           log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
                           nombre,
                           puntero_indirecto/superbloque.BLOCK_SIZE,
@@ -273,6 +278,11 @@ void ejecutar_f_truncate(char* nombre,int a_truncar){
 
               fseek(archivo_bloques,pos_puntero,SEEK_SET);
               fread(&valor_puntero, sizeof(uint32_t), 1, archivo_bloques);
+              aplicar_retardo_acceso_bloque();
+              log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+                          nombre,
+                          puntero_indirecto/superbloque.BLOCK_SIZE,
+                          valor_puntero/superbloque.BLOCK_SIZE);
               //marcar como libres en el bitmap
               bitarray_clean_bit(bitmap, valor_puntero/superbloque.BLOCK_SIZE);
             //se dejan los valores en el archivo de bloques, pero al marcarse libres, otro proceso pisara los valores
@@ -312,7 +322,7 @@ int buscar_bloque_libre(){
   return ptr; 
 }
 
-int ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
+int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, int direccion_fisica){
   //abrir archivo de bloques
   archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"rb+");
   char* valor_leido;
@@ -320,15 +330,20 @@ int ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
   fseek(archivo_bloques,puntero_archivo,SEEK_SET);
   fread(&valor_leido,sizeof(tamanio),1,archivo_bloques);
 
+  aplicar_retardo_acceso_bloque();
+  log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+                          nombre_archivo,
+                          puntero_archivo/superbloque.BLOCK_SIZE, //hay que hacer el mapeo con el numero de bloque de archivo
+                          puntero_archivo/superbloque.BLOCK_SIZE); 
+
   log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s",
                           valor_leido);
-  //enviar a memoria(direccion_fisica, valor_leido)
 
- //int mensaje = esperar_mensaje_memoria()
+  fclose(archivo_bloques);
 
- fclose(archivo_bloques);
+  int estado = enviar_a_memoria(direccion_fisica, valor_leido);
 
- //return mensaje;
+ return estado;
 }
 
 int ejecutar_f_write(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
@@ -345,4 +360,28 @@ int ejecutar_f_write(nombre_archivo,puntero_archivo,tamanio, direccion_fisica){
 
   fclose(archivo_bloques);
  //return ok;
+}
+
+int enviar_a_memoria(int32_t direccion, char *valor){
+    PAQUETE *paquete = crear_paquete(INSTRUCCION);
+    int32_t cod = WRITE;
+    agregar_a_paquete(paquete, &cod, sizeof(int32_t));
+    agregar_a_paquete(paquete, &direccion, sizeof(int32_t));
+    agregar_a_paquete(paquete, valor, strlen(valor));
+    enviar_paquete_a_servidor(paquete, socket_memoria);
+    eliminar_paquete(paquete);
+
+    BUFFER *buffer;
+
+    switch (obtener_codigo_operacion(socket_memoria))
+    {  
+        case W_OK:
+            log_info(logger, "[FILE_SYSTEM]: MEMORIA ESCRIBIO CORRECTAMENTE");
+            return SUCCESS;
+            break;
+        default: 
+            log_error(logger, "[FILE_SYSTEM]: NO SE PUDO ESCRIBIR EN MEMORIA");
+            return FAILURE;
+        break;
+    }
 }
