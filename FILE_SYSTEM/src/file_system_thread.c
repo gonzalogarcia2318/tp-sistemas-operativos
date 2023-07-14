@@ -69,18 +69,18 @@ void recibir_instruccion_kernel()
       if(crear_archivo(nombre_archivo)!=-1){
         log_warning(logger,"FCB CREADO DE: %s>", nombre_archivo);
 
-        enviar_respuesta_kernel(SUCCESS);
+        enviar_respuesta_kernel(SUCCESS, RESPUESTA_FILE_SYSTEM);
       }
       break;
     case EXISTE_ARCHIVO:
       log_warning(logger,"ABRIR ARCHIVO: <NOMBRE_ARCHIVO: %s>", nombre_archivo);
       if(existe_archivo(nombre_archivo) == SUCCESS){
         
-        enviar_respuesta_kernel(SUCCESS);
+        enviar_respuesta_kernel(SUCCESS, RESPUESTA_FILE_SYSTEM);
       }
       else
       {
-        enviar_respuesta_kernel(FAILURE);
+        enviar_respuesta_kernel(FAILURE, RESPUESTA_FILE_SYSTEM);
       }
       break;
              
@@ -100,11 +100,11 @@ void recibir_instruccion_kernel()
                           tamanio);
                           
       if(ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio,direccion_fisica) == SUCCESS){
-          enviar_respuesta_kernel(SUCCESS);
+          enviar_respuesta_kernel(SUCCESS, FINALIZO_LECTURA);
       }
       else
       {
-        enviar_respuesta_kernel(FAILURE);
+        enviar_respuesta_kernel(FAILURE, FINALIZO_LECTURA);
       }
       
       break;
@@ -124,11 +124,11 @@ void recibir_instruccion_kernel()
                           tamanio);
 
       if(ejecutar_f_write(nombre_archivo,puntero_archivo,direccion_fisica,tamanio) == SUCCESS){ //TODO
-          enviar_respuesta_kernel(SUCCESS);
+          enviar_respuesta_kernel(SUCCESS, FINALIZO_ESCRITURA);
       }
       else
       {
-        enviar_respuesta_kernel(FAILURE);
+        enviar_respuesta_kernel(FAILURE, FINALIZO_ESCRITURA);
       }
       break;
         
@@ -142,12 +142,12 @@ void recibir_instruccion_kernel()
 
       ejecutar_f_truncate(nombre_archivo,tamanio); 
 
-      enviar_respuesta_kernel(SUCCESS);
+      enviar_respuesta_kernel(SUCCESS, FINALIZO_TRUNCADO);
       break;
 
     default:
       log_error(logger,"FILE SYSTEM: ERROR: COD_INSTRUCCION DESCONOCIDO");
-      enviar_respuesta_kernel(FAILURE);
+      enviar_respuesta_kernel(FAILURE, RESPUESTA_FILE_SYSTEM);
       break;
   }
 }
@@ -222,9 +222,10 @@ int existe_archivo(char* nombre){
 }
 
 void ejecutar_f_truncate(char *nombre,int a_truncar){
-  //mejorar
-  Config * config = config_create("config/file_system.config");
-  char* pathCompleto = config_get_string_value(config, "PATH_FCB");
+  
+  char *pathFcb = FileSystemConfig.PATH_FCB;
+  char *pathCompleto = string_duplicate(pathFcb);
+
   string_append(&pathCompleto,nombre);
   string_append(&pathCompleto,".config");
   // string_append(&path,nombre);
@@ -233,12 +234,10 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
    int tamanio = config_get_int_value(fcb, "TAMANIO_ARCHIVO");
    uint32_t puntero_directo = config_get_int_value(fcb, "PUNTERO_DIRECTO");
    uint32_t puntero_indirecto = config_get_int_value(fcb, "PUNTERO_INDIRECTO");
-  //maximoValor puntero
-  int maxPuntero = 99; // calcularlo
   // buffers
-  char puntero_directo_str[maxPuntero];  
-  char puntero_indirecto_str[maxPuntero]; 
-  char tamanio_archivo_str[maxPuntero];   
+  char puntero_directo_str[MAX_CARACTERES_PUNTERO];  
+  char puntero_indirecto_str[MAX_CARACTERES_PUNTERO]; 
+  char tamanio_archivo_str[MAX_CARACTERES_PUNTERO];   
    
   if(a_truncar>= tamanio){
     //calcular bloques necesarios
@@ -282,8 +281,9 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
     int a_reducir = tamanio - a_truncar;
     int cant_ptrs = (tamanio/superbloque.BLOCK_SIZE) -1; //se restan  por el ptr directo
     int bloques_restantes = ceil((double)(a_reducir) / superbloque.BLOCK_SIZE);
-
-    FILE *bm = fopen("config/bitmap.dat", "rb+"); //quitar hardcod
+    char *pathBitmap = FileSystemConfig.PATH_BITMAP;
+    char *path = string_duplicate(pathBitmap);
+    FILE *bm = fopen(path, "rb+");
     fread(bitmap, sizeof(bitmap->size), 1, bm);
 
     if(bloques_restantes>1)
@@ -323,17 +323,20 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
         fclose(archivo_bloques);
     }
     fclose(bm);
+    free(path);
     //actualizar el tamaño del archivo en FCB
     snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", a_truncar);
     config_set_value(fcb,"TAMANIO_ARCHIVO", tamanio_archivo_str);
   }
+  free(pathCompleto);
   config_save(fcb);
 }
 
 int buscar_bloque_libre(){
   int ptr = 0;
   off_t index;
-  char* path = "config/bitmap.dat"; //quitar hardcod
+  char *pathBitmap = FileSystemConfig.PATH_BITMAP;
+  char *path = string_duplicate(pathBitmap);
   FILE *file = fopen(path, "rb+");
 
   fread(bitmap, sizeof(bitmap->size), 1, file);
@@ -352,6 +355,7 @@ int buscar_bloque_libre(){
 
   bitarray_set_bit(bitmap, index);
   fclose(file);
+  free(path);
   return ptr; 
 }
 
@@ -422,9 +426,9 @@ int enviar_a_memoria(int32_t direccion, char *valor){
     }
 }
 
-void enviar_respuesta_kernel(int ok){
+void enviar_respuesta_kernel(int ok, CODIGO_OPERACION cod){
     
-    PAQUETE *paquete_kernel = crear_paquete(RESPUESTA_FILE_SYSTEM);
+    PAQUETE *paquete_kernel = crear_paquete(cod);
     agregar_a_paquete(paquete_kernel, &ok, sizeof(int32_t));      
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
     eliminar_paquete(paquete_kernel);
