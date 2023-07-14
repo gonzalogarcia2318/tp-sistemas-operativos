@@ -27,6 +27,8 @@ extern int socket_file_system;
 extern int socket_memoria;
 extern int socket_kernel;
 extern SUPERBLOQUE superbloque;
+extern t_bitarray *bitmap ;
+
 
 int iniciar_logger_file_system();
 int iniciar_config_file_system(char*);

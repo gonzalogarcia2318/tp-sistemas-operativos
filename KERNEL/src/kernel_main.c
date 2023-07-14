@@ -1273,6 +1273,7 @@ void actualizar_segmentos_para_todos_los_procesos(BUFFER* buffer){
 	int size_segmento_acumulado = 0;
 	do {
 		SEGMENTO* segmento = deserializar_segmento(buffer, size_segmento_acumulado);
+        // Hacer asi o cuando se cambia de PID indicaria un grupo de segmentos para ese proceso?
         Proceso* proceso = obtener_proceso_por_pid(segmento->pid);
         list_add(proceso->pcb->tabla_segmentos, segmento);
 

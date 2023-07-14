@@ -93,7 +93,7 @@ void recibir_instruccion_kernel()
       memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
        
-      log_warning(logger,"LEER ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
+      log_warning(logger,"LEER ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d> - <TAMAÑO: %d>",
                           nombre_archivo,
                           puntero_archivo,
                           direccion_fisica,
@@ -337,9 +337,16 @@ int buscar_bloque_libre(){
   off_t index;
   char *pathBitmap = FileSystemConfig.PATH_BITMAP;
   char *path = string_duplicate(pathBitmap);
-  FILE *file = fopen(path, "rb+");
+  // FILE *file = fopen(path, "rb+");
 
-  fread(bitmap, sizeof(bitmap->size), 1, file);
+  log_info(logger, "FOPEN");
+  size_t size = superbloque.BLOCK_COUNT/8; // porque el create se hace en bytes
+  log_info(logger, "size %d", size);
+  
+  // fread(bitmap, size, 1, file);
+  // fread(&bitmap, sizeof(t_bitarray), 1, file); 
+
+  log_info(logger, "bitmap size %d", bitmap->size);
 
 
   for(index= 0;index<bitmap->size;index++){
@@ -354,7 +361,7 @@ int buscar_bloque_libre(){
   ptr = index * superbloque.BLOCK_SIZE;
 
   bitarray_set_bit(bitmap, index);
-  fclose(file);
+  //fclose(file);
   free(path);
   return ptr; 
 }
@@ -365,7 +372,8 @@ int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, i
   char* valor_leido;
 
   fseek(archivo_bloques,puntero_archivo,SEEK_SET);
-  fread(&valor_leido,sizeof(tamanio),1,archivo_bloques);
+  fread(valor_leido,tamanio,1,archivo_bloques);
+  log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s", valor_leido);
 
   aplicar_retardo_acceso_bloque();
   log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
@@ -373,8 +381,9 @@ int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, i
                           puntero_archivo/superbloque.BLOCK_SIZE, //hay que hacer el mapeo con el numero de bloque de archivo
                           puntero_archivo/superbloque.BLOCK_SIZE); 
 
-  log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s",
-                          valor_leido);
+  log_info(logger, "111");
+  log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s", valor_leido);
+
 
   fclose(archivo_bloques);
 

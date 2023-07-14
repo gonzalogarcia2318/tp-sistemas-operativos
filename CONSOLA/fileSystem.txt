@@ -1,12 +1,11 @@
-F_OPEN hola
-F_OPEN chau
-F_TRUNCATE hola 256
-F_SEEK hola 128
-F_READ hola 16 16
-F_OPEN Prueba
-F_CLOSE hola
-F_OPEN hola
-F_CLOSE Prueba
-F_CLOSE chau
-F_CLOSE hola
+F_OPEN Consoles
+F_TRUNCATE Consoles 256
+F_SEEK Consoles 128
+F_WRITE Consoles 32 80
+F_CLOSE Consoles
+F_OPEN Videogames
+F_TRUNCATE Videogames 64
+F_SEEK Videogames 0
+F_WRITE Videogames 0 16
+F_CLOSE Videogames
 EXIT
