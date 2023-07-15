@@ -76,6 +76,7 @@ runm1: all
 
 runm2: all
 	./$(PROCESS_NAME) config/consola.config ./MEMORIA_2.txt
+	
 runm3: all
 	./$(PROCESS_NAME) config/consola.config ./MEMORIA_3.txt
 

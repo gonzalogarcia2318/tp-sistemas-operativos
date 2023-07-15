@@ -312,13 +312,7 @@ void escribir_en_memoria(char* contenido, int32_t direccion_fisica, int32_t byte
 {
     void* posicion = espacio_usuario + direccion_fisica;
 
-    log_info(logger,"Posicion: %s",posicion);
-    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d>",
-                     contenido,
-                     direccion_fisica
-            );
-    
-    memcpy(posicion,contenido,(bytes_registro+1)*sizeof(char));
+    memcpy(posicion,contenido,strlen(contenido)+1);
 
     log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d>",
                      contenido,
@@ -756,7 +750,7 @@ void compactar()
     SEGMENTO* segmento_test;
     int32_t nueva_base;
 
-    imprimir_tabla_segmentos_globales();
+    //imprimir_tabla_segmentos_globales();
 
     for (int i = 1; i < size; i++)
     {
@@ -770,22 +764,12 @@ void compactar()
         if(seg_aux_anterior->base + seg_aux_anterior->limite != seg_aux_actual->base) //SI HAY HUECO ENTRE ELLOS
         {
             nueva_base = seg_aux_anterior->base + seg_aux_anterior->limite;
-            
-            segmento_test = (SEGMENTO*)list_get(tabla_de_segmentos_globales,i);
 
             leer_y_escribir_memoria(nueva_base, seg_aux_actual);
 
-            segmento_test = (SEGMENTO*)list_get(tabla_de_segmentos_globales,i);
-
             redimensionar_huecos_compactar(seg_aux_actual->base, seg_aux_actual->limite);
 
-            segmento_test = (SEGMENTO*)list_get(tabla_de_segmentos_globales,i);
-
-            log_info(logger,"Antes de asignar seg_aux_actual base seg_aux_actual->base= %d --- nueva_base= %d", seg_aux_actual->base, nueva_base);
             seg_aux_actual->base = nueva_base;
-            segmento_test = (SEGMENTO*)list_get(tabla_de_segmentos_globales,i);
-            log_info(logger,"Desp de asignar seg_aux_actual base seg_aux_actual->base= %d --- nueva_base= %d", seg_aux_actual->base, nueva_base);
-        
         }
     }
     
@@ -801,8 +785,7 @@ void leer_y_escribir_memoria(int32_t base_nueva, SEGMENTO* segmento)
     strcpy(leido, leer_de_memoria(segmento->base,segmento->limite));
     
     escribir_en_memoria(leido, base_nueva, segmento->limite);
-    SEGMENTO* segmento_test = list_get(tabla_de_segmentos_globales,1);
-    log_info(logger,"4");
+
 }
 
 void redimensionar_huecos_compactar(int32_t base_segmento, int32_t limite_segmento)
@@ -841,7 +824,6 @@ void redimensionar_huecos_compactar(int32_t base_segmento, int32_t limite_segmen
 
         if(tiene_hueco_delante && tiene_hueco_detras) break;
     }
-    log_info(logger,"Antes de A & D");
     if(tiene_hueco_delante && tiene_hueco_detras) //COMPACTAR HUECOS
     {
         hueco_detras->limite += hueco_delante->limite;
@@ -853,12 +835,10 @@ void redimensionar_huecos_compactar(int32_t base_segmento, int32_t limite_segmen
     }
     else if(tiene_hueco_delante)//SE ENCARGA EL SEGMENTO SIGUIENTE
     {
-        log_info(logger,"Entré a A");
         return;
     }
     else if(tiene_hueco_detras)//LE DEJA EL LUGAR
     {
-        log_info(logger,"Entré a D");
         if(hueco_detras->limite == limite_segmento) //OCUPO TOTALMENTE EL HUECO => LO ELIMINO
         {
             eliminar_hueco(hueco_detras->base);
@@ -866,9 +846,7 @@ void redimensionar_huecos_compactar(int32_t base_segmento, int32_t limite_segmen
         }
         else
         {
-            log_info(logger,"Entré a D - No ocupa tte");
             hueco_detras->base += limite_segmento;
-            log_info(logger,"Escribí hueco detras");
         }
 
         return;
