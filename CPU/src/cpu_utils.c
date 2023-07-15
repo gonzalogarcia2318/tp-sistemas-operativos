@@ -166,12 +166,14 @@ int obtener_desplazamiento_segmento(int32_t direccion_logica)
 
 bool comprobar_segmentation_fault(int32_t dir_logica, Instruccion *Inst, t_list *tabla_segmentos) // Tengo que usar Free() ?
 {
+    log_info(logger, "Comprobar SEG_FAULT para instruccion: %s", Inst->nombreInstruccion);
+
     int32_t tam_a_usar;
     if (!strcmp(Inst->nombreInstruccion, "MOV_IN"))
-        tam_a_usar = strlen(Inst->registro);
+        tam_a_usar = obtener_tamanio_registro(Inst->registro);
 
     if (!strcmp(Inst->nombreInstruccion, "MOV_OUT"))
-        tam_a_usar = strlen(Inst->registro);
+        tam_a_usar = obtener_tamanio_registro(Inst->registro);
 
     if (!strcmp(Inst->nombreInstruccion, "F_READ"))
         tam_a_usar = Inst->cantBytes;
@@ -185,6 +187,13 @@ bool comprobar_segmentation_fault(int32_t dir_logica, Instruccion *Inst, t_list 
 
     SEGMENTO *segmento = (SEGMENTO *)list_get(tabla_segmentos, num_segmento);
     int maximo = segmento->limite;
+
+    log_info(logger, "Comprobando: num_segmento %d - desplazamiento_segmento %d - tam_a_usar: %d ---- maximo %d",
+                     num_segmento, 
+                     desplazamiento_segmento,
+                     tam_a_usar,
+                     maximo
+            );
 
     return desplazamiento_segmento + tam_a_usar > maximo;
 }
@@ -495,7 +504,7 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
     agregar_a_paquete(paquete,&pcb->PID,sizeof(int32_t));
     agregar_a_paquete(paquete, &instruccion->direccionFisica, sizeof(int32_t));
     agregar_a_paquete(paquete,&tamanio_registro,sizeof(int32_t));
-    agregar_a_paquete(paquete, &valor_registro, sizeof(char) * (tamanio_registro + 1));
+    agregar_a_paquete(paquete, valor_registro, strlen(valor_registro)+1);
     enviar_paquete_a_servidor(paquete, socket_memoria);
 
     char *mensaje = obtener_mensaje_del_servidor(socket_memoria);

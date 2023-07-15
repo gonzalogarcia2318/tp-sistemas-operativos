@@ -36,6 +36,7 @@ void escuchar_kernel(int socket_kernel)
     case CONSOLIDAR:
       log_info(logger,"Recibi de Kernel: CONSOLIDAR");
       compactar();
+      log_info(logger,"TERMINA EL COMPACTAR");
       enviar_tablas_de_segmentos_a_kernel(); //CHECKEAR
       log_info(logger,"ENVÍE TABLAS DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE COMPACTACIÓN");
       break;
@@ -71,11 +72,13 @@ void escuchar_file_system(int socket_fs)
     
     case READ:
       log_warning(logger,"[MEMORIA]: READ recibido de FILE SYSTEM");
+      
+      char* leido;
 
-      char* leido = manejar_read_file_system();
+      strcpy(leido , manejar_read_file_system());
 
       PAQUETE* paquete_read = crear_paquete(READ);
-      agregar_a_paquete(paquete_read, leido, strlen(leido)*sizeof(char));
+      agregar_a_paquete(paquete_read, leido, strlen(leido)*sizeof(char)+1);
       enviar_paquete_a_cliente(paquete_read, socket_fs);
       eliminar_paquete(paquete_read);
       break;
@@ -154,7 +157,7 @@ void recibir_instruccion_cpu()
     case MOV_IN:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
 
-      char* contenido;
+      char* contenido = malloc(tamanio_registro);
 
       strcpy(contenido,leer_de_memoria(direccion_fisica,tamanio_registro));
       
@@ -170,7 +173,7 @@ void recibir_instruccion_cpu()
 
     case MOV_OUT:
       char* valor_a_escribir = malloc(sizeof(char) * (tamanio_registro + 1));
-      memcpy(&valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio_registro + 1));
+      memcpy(valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio_registro + 1));
             buffer->stream += (tamanio_registro + 1); 
 
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_OUT");
@@ -228,18 +231,22 @@ void recibir_instruccion_kernel()
         PAQUETE * paquete_ok = crear_paquete(CREAR_SEGMENTO);
         agregar_a_paquete(paquete_ok, &base, sizeof(int32_t)); //ENVIAR_DIRE_BASE
         enviar_paquete_a_cliente(paquete_ok, socket_kernel);
+        eliminar_paquete(paquete_ok);
         break;
       }
       else if (base == -2) //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
       {
         PAQUETE * paquete_consolidar = crear_paquete(CONSOLIDAR);
+        agregar_a_paquete(paquete_consolidar,&pid,sizeof(int32_t));
         enviar_paquete_a_cliente(paquete_consolidar, socket_kernel);
+        eliminar_paquete(paquete_consolidar);
         break;
       }
       else if (base == -3) //FALTA ESPACIO "Out of Memory"
       {
         PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
         enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
+        eliminar_paquete(paquete_fallo);
         break;
       }
       else // base = 0 (ERROR EN ALGUNA FUNCIÓN ANTERIOR, VERIFICAR LOGS)
@@ -274,12 +281,7 @@ void recibir_instruccion_kernel()
                           segmento->limite
                   );
 
-      enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos); 
-      
-      // <<< BORRAR -> SOLO PARA PROBAR KERNEL
-      list_remove(tabla_test, id_segmento-1); 
-      enviar_tabla_de_segmentos_a_kernel_BORRAR(tabla_test, pid);
-      // >>>
+      enviar_tabla_de_segmentos_a_kernel_por_delete_segment(tabla_de_segmentos);
 
       break;
 

@@ -1051,10 +1051,17 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
     {
         log_info(logger, "[KERNEL] desbloquear %s ", nombre_recurso);
         Proceso *proceso_bloqueado = (Proceso *)queue_pop(recurso->cola_block);
+        log_info(logger, "[KERNEL] recurso %s del proceso %d ", nombre_recurso, proceso_bloqueado->pcb->PID);
         // estado es EXEC? hay que sacarlo de block
-        proceso_bloqueado->estado = EXEC;
+        //proceso_bloqueado->estado = EXEC;
         //
-        list_add(proceso->pcb->recursos_asignados, nombre_recurso);
+        list_add(proceso_bloqueado->pcb->recursos_asignados, nombre_recurso);
+
+        proceso_bloqueado->pcb->program_counter++;
+        cambiar_estado(proceso_bloqueado, READY);
+        proceso_bloqueado->pcb->cronometro_ready = temporal_create();
+        queue_push(cola_ready, proceso_bloqueado);
+        imprimir_cola(*cola_ready);
     }
 
     proceso->pcb->program_counter++;
@@ -1306,7 +1313,7 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
     segmento->pid = proceso->pcb->PID;
     segmento->id = id_segmento;
     segmento->base = 0;
-    segmento->limite = 0;
+    segmento->limite = tamanio_segmento;
     //segmento->validez = 0;
 
     list_add(proceso->pcb->tabla_segmentos, segmento);
@@ -1347,7 +1354,13 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
         case CONSOLIDAR:
             log_info(logger, "[KERNEL]: CONSOLIDAR para crear segmento de memoria !! ");
 
-            //buffer = recibir_buffer(socket_memoria);
+            buffer = recibir_buffer(socket_memoria);
+            int32_t un_pid;
+            memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t)*2);
+
+            log_info(logger, "llego un_pid %d", un_pid);
+
 
             sem_wait(&operaciones_en_file_system);
             // Si pasa este semaforo => no se estan realizando fread/fwrite en file system
@@ -1358,7 +1371,9 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
             log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <CONSOLIDAR>");
             
             BUFFER *buffer_consolidar;
-            switch (obtener_codigo_operacion(socket_memoria))
+            CODIGO_OPERACION cod_op = obtener_codigo_operacion(socket_memoria);
+            log_info(logger, "cod_op %d", cod_op);
+            switch (cod_op)
             {  
                 case CONSOLIDAR:
                     log_info(logger, "[KERNEL]: SE TERMINO DE CONSOLIDAR LA MEMORIA");
@@ -1374,6 +1389,9 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
                     log_info(logger, "VUELVO A ENVIAR PAQUETE: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
 
                     break;
+                case MENSAJE:
+                    char* mensaje = obtener_mensaje_del_cliente(socket_memoria);
+                    log_info(logger, "Mensaje recibido de MEMORIA: %s", mensaje);
                 default: 
                     log_error(logger, "[KERNEL] ERROR DE MEMORIA AL CONSOLIDAR");
                 break;

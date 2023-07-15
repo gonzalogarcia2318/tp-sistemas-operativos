@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/MEMORIA",
-            "args": [],
+            "args": ["config/memoria_memoria.config"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

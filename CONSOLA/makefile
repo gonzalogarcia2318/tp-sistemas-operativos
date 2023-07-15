@@ -71,5 +71,15 @@ runs1: all
 runfs: all
 	./$(PROCESS_NAME) config/consola.config ./fileSystem.txt
 
+runm1: all
+	./$(PROCESS_NAME) config/consola.config ./MEMORIA_1.txt
+
+runm2: all
+	./$(PROCESS_NAME) config/consola.config ./MEMORIA_2.txt
+runm3: all
+	./$(PROCESS_NAME) config/consola.config ./MEMORIA_3.txt
+
+
+
 run-args: all
 	./${PROCESS_NAME} $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
