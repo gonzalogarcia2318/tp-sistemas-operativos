@@ -105,7 +105,7 @@ void crear_segmento_compartido()
 
 void crear_espacio_usuario()
 {
-    espacio_usuario = malloc(sizeof(MemoriaConfig.TAM_MEMORIA));
+    espacio_usuario = malloc(MemoriaConfig.TAM_MEMORIA);
     log_info(logger,"ESTRUCTURAS ADMINISTRATIVAS: Se creó el ESPACIO DE USUARIO con éxito");
 
 }
@@ -185,6 +185,16 @@ void enviar_tabla_de_segmentos_a_kernel_por_delete_segment(t_list* tabla_de_segm
     eliminar_paquete(paquete);
 }
 
+void enviar_tabla_de_segmentos_a_kernel_despues_de_consolidar(t_list* tabla_de_segmentos)
+{
+    PAQUETE* paquete = crear_paquete(CONSOLIDAR);
+    paquete->buffer = serializar_segmentos(tabla_de_segmentos);
+    log_info(logger, "Envié tabla de segmentos a KERNEL por FIN DE CONSOLIDACION");
+    enviar_paquete_a_cliente(paquete, socket_kernel);
+    eliminar_paquete(paquete);
+}
+
+/*
 void enviar_tablas_de_segmentos_a_kernel() //CHECKEAR
 {
     PAQUETE* paquete = crear_paquete(CONSOLIDAR);
@@ -194,15 +204,27 @@ void enviar_tablas_de_segmentos_a_kernel() //CHECKEAR
     PROCESO_MEMORIA* proc_aux;
     t_list* tabla_segs_aux;
     int offset = 0;
-    
+
     for (int i = 0; i < size; i++)
     {
         proc_aux = list_get(procesos_globales,i);
         tabla_segs_aux = proc_aux->tabla_de_segmentos;
 
         buff_aux = serializar_segmentos(tabla_segs_aux);
+        log_info(logger, "Serializar segmento: i = %d", i);
 
-        paquete->buffer->size += buff_aux->size;
+        if(i==0){
+            paquete->buffer->stream = malloc(buff_aux->size);
+            paquete->buffer->size = buff_aux->size;
+        } else {
+            log_info(logger, "antes de realloc");
+            paquete->buffer->stream = realloc(paquete->buffer->stream, buff_aux->size);
+            log_info(logger, "despues de realloc");
+            paquete->buffer->size += buff_aux->size;
+        }
+
+        log_info(logger, "despues de malloc y realloc: buffer->size = %d", paquete->buffer->size);
+        
         memcpy(paquete->buffer->stream + offset, buff_aux->stream, buff_aux->size);
         offset += buff_aux->size;
     }
@@ -211,6 +233,7 @@ void enviar_tablas_de_segmentos_a_kernel() //CHECKEAR
   eliminar_paquete(paquete);
   free(buff_aux);
 }
+*/
 
 
 void enviar_tabla_de_segmentos_a_kernel_BORRAR(t_list* tabla_de_segmentos, int pid)
@@ -314,9 +337,10 @@ void escribir_en_memoria(char* contenido, int32_t direccion_fisica, int32_t byte
 
     memcpy(posicion,contenido,strlen(contenido)+1);
 
-    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d>",
+    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d> - strlen+1: %d",
                      contenido,
-                     direccion_fisica
+                     direccion_fisica,
+                     strlen(contenido)+1
             );
     aplicar_retardo_espacio_usuario();
 }
@@ -750,15 +774,11 @@ void compactar()
     SEGMENTO* segmento_test;
     int32_t nueva_base;
 
-    //imprimir_tabla_segmentos_globales();
+    imprimir_tabla_segmentos_globales();
 
     for (int i = 1; i < size; i++)
     {
-        log_info(logger,"Iteracion TOTAL %d - ACTUAL i %d ", size, i);
-
-        log_info(logger,"Antes de seg_aux_anterior");
         seg_aux_anterior = (SEGMENTO*)list_get(tabla_de_segmentos_globales,i-1);
-        log_info(logger,"Antes de seg_aux_actual");
         seg_aux_actual = (SEGMENTO*)list_get(tabla_de_segmentos_globales,i);
 
         if(seg_aux_anterior->base + seg_aux_anterior->limite != seg_aux_actual->base) //SI HAY HUECO ENTRE ELLOS
@@ -799,16 +819,9 @@ void redimensionar_huecos_compactar(int32_t base_segmento, int32_t limite_segmen
     SEGMENTO* hueco_delante = NULL;
     SEGMENTO* hueco_aux;
 
-    log_info(logger, "Redimensionar ----- BASE : %d",base_segmento);
-    log_info(logger, "Redimensionar ----- LIMITE : %d",limite_segmento);
-
-
     for (int i = 0; i < size; i++)
     {
         hueco_aux = (SEGMENTO*) list_get(huecos_libres,i);
-        
-        log_info(logger, "Redimensionar ----- HUECO BASE : %d",hueco_aux->base);
-        log_info(logger, "Redimensionar ----- HUECO LIMITE : %d",hueco_aux->limite);
 
         if((hueco_aux->base + hueco_aux->limite) == base_segmento) //TIENE HUECO DETRAS
         {
@@ -873,6 +886,7 @@ void imprimir_tabla_segmentos_globales()
                         seg_aux->base,
                         seg_aux->limite
                 );
+        //leer_de_memoria(seg_aux->base,seg_aux->limite);
     }
 }
 

@@ -35,9 +35,15 @@ void escuchar_kernel(int socket_kernel)
 
     case CONSOLIDAR:
       log_info(logger,"Recibi de Kernel: CONSOLIDAR");
+      BUFFER* buffer = recibir_buffer(socket_kernel);
+      int32_t un_pid;
+      memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+      buffer->stream += (sizeof(int32_t)*2);
+      log_info(logger,"un_pid %d", un_pid);
+
       compactar();
       log_info(logger,"TERMINA EL COMPACTAR");
-      enviar_tablas_de_segmentos_a_kernel(); //CHECKEAR
+      enviar_tabla_de_segmentos_a_kernel_despues_de_consolidar(tabla_de_segmentos_globales); //CHECKEAR
       log_info(logger,"ENVÍE TABLAS DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE COMPACTACIÓN");
       break;
     

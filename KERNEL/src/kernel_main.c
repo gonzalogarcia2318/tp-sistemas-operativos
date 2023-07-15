@@ -58,6 +58,7 @@ void liberar_instruccion(Instruccion *instruccion);
 void imprimir_lista(t_list* lista);
 
 void imprimir_segmentos(Proceso* proceso);
+void imprimir_segmentos_de_todos_los_procesos();
 
 void imprimir_tabla_archivos_global(t_list* tabla_archivos_globales);
 
@@ -1299,9 +1300,12 @@ void actualizar_segmentos_para_todos_los_procesos(BUFFER* buffer){
 	int size_segmento_acumulado = 0;
 	do {
 		SEGMENTO* segmento = deserializar_segmento(buffer, size_segmento_acumulado);
+        log_info(logger, "Segmento deserializado PID: %d - SEG: %d - BASE: %d - LIMITE: %d", segmento->pid, segmento->id, segmento->base, segmento->limite);
         // Hacer asi o cuando se cambia de PID indicaria un grupo de segmentos para ese proceso?
-        Proceso* proceso = obtener_proceso_por_pid(segmento->pid);
-        list_add(proceso->pcb->tabla_segmentos, segmento);
+        if(segmento->pid != -1){
+            Proceso* proceso = obtener_proceso_por_pid(segmento->pid);
+            list_add(proceso->pcb->tabla_segmentos, segmento);
+        }
 
 		size_segmento_acumulado += calcular_tamanio_segmento(segmento);
 	} while(size_segmento_acumulado < buffer->size);
@@ -1325,6 +1329,7 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
     agregar_a_paquete(paquete, &segmento->id, sizeof(int32_t));
     agregar_a_paquete(paquete, &tamanio_segmento, sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
+    eliminar_paquete(paquete);
     
 
     log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
@@ -1348,8 +1353,6 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
             //proceso->pcb->program_counter++;
             //enviar_pcb_a_cpu(proceso->pcb);
             //proceso->pcb->cronometro_exec = temporal_create();
-
-            eliminar_paquete(paquete);
             break; 
         case CONSOLIDAR:
             log_info(logger, "[KERNEL]: CONSOLIDAR para crear segmento de memoria !! ");
@@ -1365,15 +1368,15 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
             sem_wait(&operaciones_en_file_system);
             // Si pasa este semaforo => no se estan realizando fread/fwrite en file system
             PAQUETE *paquete_consolidar = crear_paquete(CONSOLIDAR);
+            agregar_a_paquete(paquete_consolidar, &un_pid, sizeof(int32_t));
             enviar_paquete_a_servidor(paquete_consolidar, socket_memoria);
             eliminar_paquete(paquete_consolidar);
 
             log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <CONSOLIDAR>");
             
             BUFFER *buffer_consolidar;
-            CODIGO_OPERACION cod_op = obtener_codigo_operacion(socket_memoria);
-            log_info(logger, "cod_op %d", cod_op);
-            switch (cod_op)
+
+            switch (obtener_codigo_operacion(socket_memoria))
             {  
                 case CONSOLIDAR:
                     log_info(logger, "[KERNEL]: SE TERMINO DE CONSOLIDAR LA MEMORIA");
@@ -1381,12 +1384,14 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
                     buffer_consolidar = recibir_buffer(socket_memoria);
 
                     eliminar_segmentos_de_procesos();
+                    log_info(logger, "Eliminar segmentos de procesos");
 
                     actualizar_segmentos_para_todos_los_procesos(buffer_consolidar);
 
-                    // Se repite la solicitud de crear segmento
-                    enviar_paquete_a_servidor(paquete, socket_memoria);
+                    imprimir_segmentos_de_todos_los_procesos();
+
                     log_info(logger, "VUELVO A ENVIAR PAQUETE: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
+                    manejar_create_segment(proceso, id_segmento, tamanio_segmento);
 
                     break;
                 case MENSAJE:
@@ -1480,6 +1485,15 @@ void imprimir_segmentos(Proceso* proceso){
         log_info(logger, "-> PID %d - ID %d - Base %d - Limite %d", segmento->pid, segmento->id, segmento->base, segmento->limite);
     }
     log_info(logger, "-----------------");
+}
+
+void imprimir_segmentos_de_todos_los_procesos(){
+    log_info(logger, "---------------------------------");
+    for(int i = 0; i < list_size(procesos); i++){
+        Proceso* proceso = list_get(procesos, i);
+        imprimir_segmentos(proceso);
+    }
+    log_info(logger, "---------------------------------");
 }
 
 void imprimir_tabla_archivos_global(t_list* tabla_archivos_globales){
