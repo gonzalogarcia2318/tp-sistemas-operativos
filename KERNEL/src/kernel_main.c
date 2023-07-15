@@ -543,6 +543,8 @@ void manejar_hilo_fileSystem(){
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
             PID_en_file_system = NULL;
+            // post al semaforo para que siga ejecutando (si no hay otro proceso antes)
+            sem_post(&semaforo_ejecutando);
         break;
 
         case FINALIZO_LECTURA:
@@ -551,6 +553,10 @@ void manejar_hilo_fileSystem(){
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
             PID_en_file_system = NULL;
+
+            // post al semaforo para que siga ejecutando (si no hay otro proceso antes)
+            sem_post(&semaforo_ejecutando);
+
             sem_post(&operaciones_en_file_system);
         break;
 
@@ -560,6 +566,10 @@ void manejar_hilo_fileSystem(){
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
             PID_en_file_system = NULL;
+            
+            // post al semaforo para que siga ejecutando (si no hay otro proceso antes)
+            sem_post(&semaforo_ejecutando);
+
             sem_post(&operaciones_en_file_system);
         break;
 
@@ -588,6 +598,7 @@ void manejar_hilo_ejecutar()
     while (true)
     {
 
+        log_info(logger, "se traba en semaforo_ejecutando");
         sem_wait(&semaforo_ejecutando); // Ejecuta uno a la vez
 
         log_info(logger, "En ready: %d", queue_size(cola_ready));
@@ -745,7 +756,7 @@ void manejar_f_write(Proceso* proceso, char* nombre_archivo, int direccion_fisic
 
 ARCHIVO_GLOBAL * buscar_archivo_en_tabla_global(char* nombre_archivo){
 
-    log_info(logger, "[KERNEL]: Buscar archivo en tabla global: %s", nombre_archivo);
+    //log_info(logger, "[KERNEL]: Buscar archivo en tabla global: %s", nombre_archivo);
 
     bool comparar_archivo_por_nombre(ARCHIVO_GLOBAL* archivo_global)
     {
@@ -755,20 +766,28 @@ ARCHIVO_GLOBAL * buscar_archivo_en_tabla_global(char* nombre_archivo){
 
     ARCHIVO_GLOBAL * archivo = list_find(archivos_abiertos_global, (void *)comparar_archivo_por_nombre);
 
+    if(archivo != NULL){
+        log_info(logger, "[KERNEL]: Se encontro el archivo en la tabla global - %s", nombre_archivo);
+    }
+
     return archivo;
 }
 
 ARCHIVO_PROCESO * buscar_archivo_en_tabla_proceso(Proceso * proceso , char* nombre_archivo){
 
-    log_info(logger, "[KERNEL]: Buscar archivo en tabla por proceso: %s", nombre_archivo);
+    //log_info(logger, "[KERNEL]: Buscar archivo en tabla por proceso: %s", nombre_archivo);
 
     bool comparar_archivo_por_nombre(ARCHIVO_PROCESO * archivo_proceso)
     {
-        log_info(logger, "[-]: comparar %s - %s", nombre_archivo, archivo_proceso->nombre_archivo);
         return strcmp(nombre_archivo, archivo_proceso->nombre_archivo) == 0;
     }
 
     ARCHIVO_PROCESO * archivo = list_find(proceso->pcb->archivos_abiertos, (void *)comparar_archivo_por_nombre);
+
+    if(archivo != NULL){
+        log_info(logger, "[KERNEL]: Se encontro el archivo en la tabla de procesos - %s", nombre_archivo);
+    }
+    
 
     return archivo;
 }
