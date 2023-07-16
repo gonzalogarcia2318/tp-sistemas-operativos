@@ -53,7 +53,8 @@ t_list* manejar_crear_proceso();
     t_list* crear_tabla_de_segmentos();
     void enviar_tabla_de_segmentos_a_kernel(t_list* tabla_de_segmentos);
     void enviar_tabla_de_segmentos_a_kernel_por_delete_segment(t_list* tabla_de_segmentos);
-    void enviar_tablas_de_segmentos_a_kernel();
+    void enviar_tabla_de_segmentos_a_kernel_despues_de_consolidar(t_list* tabla_de_segmentos_globales);
+   
 void manejar_finalizar_proceso();
     PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid);
     void eliminar_proceso_de_globales(int32_t pid);

@@ -312,7 +312,7 @@ void eliminar_proceso_de_globales(int32_t pid)
 char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro)
 {
     void* posicion = espacio_usuario + direccion_fisica;
-    int tamanio = bytes_registro * sizeof(char);
+    int tamanio = (bytes_registro+1) * sizeof(char);
 
     char* contenido = malloc(tamanio);
     
@@ -337,7 +337,7 @@ void escribir_en_memoria(char* contenido, int32_t direccion_fisica, int32_t byte
 
     memcpy(posicion,contenido,strlen(contenido)+1);
 
-    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d> - strlen+1: %d",
+    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d> - strlen+1: %ld",
                      contenido,
                      direccion_fisica,
                      strlen(contenido)+1
