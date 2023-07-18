@@ -144,11 +144,30 @@ bool requiere_traduccion(Instruccion *instruccion)
 }
 int32_t realizar_traduccion(int32_t dir_logica, t_list *tabla_segmentos)
 {
+    imprimir_tabla_segmentos(tabla_segmentos);
+
     int num_segmento = obtener_num_segmento(dir_logica);
 
     int desplazamiento_segmento = obtener_desplazamiento_segmento(dir_logica);
 
-    SEGMENTO *segmento = (SEGMENTO *)list_get(tabla_segmentos, num_segmento);
+    // SE FIJA POR EL ID DE SEGMENTO -> NO POR EL INDICE
+    //SEGMENTO *segmento = (SEGMENTO *)list_get(tabla_segmentos, num_segmento);
+
+    //bool comparar_id_segmentos(SEGMENTO* segmento)
+    //{
+    //    return segmento->id == num_segmento;
+    //}
+    //SEGMENTO *segmento = list_find(tabla_segmentos, (void *)comparar_id_segmentos);
+
+    SEGMENTO *segmento_aux;
+    SEGMENTO *segmento;
+    for(int i = 0; i < list_size(tabla_segmentos); i++){
+        segmento_aux = list_get(tabla_segmentos, i);
+        if(segmento_aux->id == num_segmento){
+            segmento = segmento_aux;
+            break;
+        }
+    }
 
     int32_t direccion_fisica = (segmento->base) + desplazamiento_segmento;
 
@@ -742,4 +761,13 @@ void ejecutar_exit(PAQUETE *paquete, PCB *pcb) //OK
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
     eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
+}
+
+void imprimir_tabla_segmentos(t_list* tabla_segmentos){
+    log_info(logger, "-------------------------------");
+    for(int i = 0; i < list_size(tabla_segmentos); i++){
+        SEGMENTO* segmento = (SEGMENTO*) list_get(tabla_segmentos, i);
+        log_info(logger, "-> PID %d - ID %d - Base %d - Limite %d", segmento->pid, segmento->id, segmento->base, segmento->limite);
+    }
+    log_info(logger, "-------------------------------");
 }
