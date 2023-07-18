@@ -196,6 +196,8 @@ int main(int argc, char **argv)
 
             sem_post(&semaforo_planificador);
 
+            sem_post(&semaforo_ejecutando);
+
             sleep(1);
         }
         pthread_mutex_unlock(&mx_procesos);
