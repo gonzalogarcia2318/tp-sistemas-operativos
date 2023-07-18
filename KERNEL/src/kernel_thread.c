@@ -130,7 +130,8 @@ void enviar_pcb_a_cpu(PCB *pcb)
     
     paquete_pcb->buffer = serializar_pcb(pcb);
 
-    log_info(logger, "[KERNEL]: Enviando PCB <%d> a CPU", pcb->PID);
+    Instruccion* instruccion_enviar = list_get(pcb->instrucciones, pcb->program_counter);
+    log_error(logger, "[KERNEL]: Enviando PCB <%d> a CPU - Instruccion: %s", pcb->PID, instruccion_enviar->nombreInstruccion);
 
     enviar_paquete_a_servidor(paquete_pcb, socket_cpu);
 

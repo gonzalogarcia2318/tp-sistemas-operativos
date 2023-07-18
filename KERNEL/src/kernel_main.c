@@ -997,6 +997,9 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
         return;
     }
 
+    log_info(logger, "-------------------------------------------------------------WAIT: %s", nombre_recurso);
+    log_info(logger, "instancias ANTES DE RESTAR 1 = %d", recurso->instancias);
+
     if (recurso->instancias > 0)
     {
         recurso->instancias -= 1;
@@ -1041,6 +1044,8 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
         return;
     }
 
+    log_info(logger, "-------------------------------------------------------------SIGNAL: %s", nombre_recurso);
+    log_info(logger, "instancias ANTES DE SUMAR 1 = %d", recurso->instancias);
     recurso->instancias += 1;
     log_info(logger, "signal");
     // REVISAR SEGMENTATION FAULT ACA
@@ -1050,6 +1055,7 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
 
     if (!queue_is_empty(recurso->cola_block))
     {
+        recurso->instancias -= 1;
         log_info(logger, "[KERNEL] desbloquear %s ", nombre_recurso);
         Proceso *proceso_bloqueado = (Proceso *)queue_pop(recurso->cola_block);
         log_info(logger, "[KERNEL] recurso %s del proceso %d ", nombre_recurso, proceso_bloqueado->pcb->PID);

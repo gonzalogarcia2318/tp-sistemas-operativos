@@ -252,24 +252,19 @@ void manejar_finalizar_proceso()
             buffer->stream += (sizeof(int32_t) * 2);
     log_info(logger,"RECIBI ELIMINAR_PROCESO: PID:<%d>", pid);
 
-    PROCESO_MEMORIA* proceso = obtener_proceso_de_globales(pid);
+    t_list* tabla_segmentos_proceso = obtener_tabla_de_segmentos(pid);
 
-    int size = list_size(proceso->tabla_de_segmentos);
+    int size = list_size(tabla_segmentos_proceso);
     SEGMENTO* seg_aux;
-
-    log_info(logger, "Deberia eliminar %d segmentos del proceso PID: <%d>", size, pid);
-    for (int i = 1; i < size; i++) //NO ELIMINO EL SEGMENTO COMPARTIDO
+    
+    for (int i = size; i > 1; i--) //NO ELIMINO EL SEGMENTO COMPARTIDO
     {
-        seg_aux = list_get(proceso->tabla_de_segmentos, i);
-        manejar_eliminar_segmento(seg_aux); // REDIMENSIONA HUECOS. ELIMINA EL SEGMENTO DE TABLA LOCAL Y GLOBAL. SIN FREE
-        log_info(logger, "Termino manejar_eliminar_segmento: PID:<%d>", pid);
+        seg_aux = list_get(tabla_segmentos_proceso, i-1);
+        manejar_eliminar_segmento(seg_aux); // REDIMENSIONA HUECOS. ELIMsiNA EL SEGMENTO DE TABLA LOCAL Y GLOBAL. SIN FREE
         free(seg_aux);
     }
-    log_info(logger, "list_destroy");
-    list_destroy(proceso->tabla_de_segmentos);
-    log_info(logger, "eliminar proceso de globales");
+    list_destroy(tabla_segmentos_proceso);
     eliminar_proceso_de_globales(pid); //FREE INCLUIDO
-
     log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);
 }
 
@@ -887,6 +882,24 @@ void imprimir_tabla_segmentos_globales()
                         seg_aux->limite
                 );
         //leer_de_memoria(seg_aux->base,seg_aux->limite);
+    }
+}
+
+void imprimir_tabla_segmentos_proceso(t_list* tabla_segmentos)
+{
+    int size = list_size(tabla_segmentos);
+    SEGMENTO* seg_aux;
+
+    for (int i = 0; i < size; i++)
+    {
+        seg_aux = list_get(tabla_segmentos,i);
+
+        log_info(logger, "PID:<%d>, SEGMENTO:<%d>, BASE:<%d>, TAMAÑO:<%d>",
+                        seg_aux->pid,
+                        seg_aux->id,
+                        seg_aux->base,
+                        seg_aux->limite
+                );
     }
 }
 
