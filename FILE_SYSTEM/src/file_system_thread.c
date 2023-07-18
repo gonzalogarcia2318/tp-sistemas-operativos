@@ -239,14 +239,17 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
   char puntero_indirecto_str[MAX_CARACTERES_PUNTERO]; 
   char tamanio_archivo_str[MAX_CARACTERES_PUNTERO];   
    
-  if(a_truncar>= tamanio){
+  if(a_truncar> tamanio){
     //calcular bloques necesarios
     int bloques_necesarios = ceil((double)(a_truncar - tamanio) / superbloque.BLOCK_SIZE); 
-    int bloques_minimos = (bloques_necesarios >=2) ? 2 : 1;
+    // int bloques_minimos = (bloques_necesarios >=2) ? 2 : 1;
   
     //buscar bloques libres
     puntero_directo = buscar_bloque_libre();
     // Convertir uint32_t a string
+    log_warning(logger, "puntero directo: %d",puntero_directo);
+    size_t longitud = strlen(puntero_directo_str);
+    log_warning(logger, "tamanio  buffer: %%zu\n",longitud);
     snprintf(puntero_directo_str, sizeof(puntero_directo_str), "%u", puntero_directo);
     config_set_value(fcb,"PUNTERO_DIRECTO", puntero_directo_str); 
 
@@ -276,7 +279,7 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
     config_set_value(fcb,"TAMANIO_ARCHIVO", tamanio_archivo_str);
 
   }
-  else  //reducir tamanio
+  else if(a_truncar<tamanio) //reducir tamanio
   {
     int a_reducir = tamanio - a_truncar;
     int cant_ptrs = (tamanio/superbloque.BLOCK_SIZE) -1; //se restan  por el ptr directo
@@ -284,7 +287,7 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
     char *pathBitmap = FileSystemConfig.PATH_BITMAP;
     char *path = string_duplicate(pathBitmap);
     FILE *bm = fopen(path, "rb+");
-    fread(bitmap, sizeof(bitmap->size), 1, bm);
+    // fread(bitmap, sizeof(bitmap->size), 1, bm);
 
     if(bloques_restantes>1)
       {
@@ -322,6 +325,7 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
             } 
         fclose(archivo_bloques);
     }
+    fwrite(bitmap->bitarray, bitmap->size,1,bm);
     fclose(bm);
     free(path);
     //actualizar el tamaño del archivo en FCB
@@ -337,16 +341,15 @@ int buscar_bloque_libre(){
   off_t index;
   char *pathBitmap = FileSystemConfig.PATH_BITMAP;
   char *path = string_duplicate(pathBitmap);
-  // FILE *file = fopen(path, "rb+");
-
+  FILE *file = fopen(path, "rb+");
+ size_t size = superbloque.BLOCK_COUNT/8; // porque el create se hace en bytes -> Arreglar
   log_info(logger, "FOPEN");
-  size_t size = superbloque.BLOCK_COUNT/8; // porque el create se hace en bytes
   log_info(logger, "size %d", size);
   
   // fread(bitmap, size, 1, file);
   // fread(&bitmap, sizeof(t_bitarray), 1, file); 
 
-  log_info(logger, "bitmap size %d", bitmap->size);
+ log_info(logger, "bitmap size %d", bitmap->size);
 
 
   for(index= 0;index<bitmap->size;index++){
@@ -361,7 +364,8 @@ int buscar_bloque_libre(){
   ptr = index * superbloque.BLOCK_SIZE;
 
   bitarray_set_bit(bitmap, index);
-  //fclose(file);
+  fwrite(bitmap->bitarray,size,1,file);
+  fclose(file);
   free(path);
   return ptr; 
 }

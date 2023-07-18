@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "protocolo.h"
-#define MAX_CARACTERES_PUNTERO 100
+#define MAX_CARACTERES_PUNTERO 10
 
 typedef struct
 {

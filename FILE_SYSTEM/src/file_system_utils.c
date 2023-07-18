@@ -70,18 +70,25 @@ int levantar_bitmap(char *path)
         // Si el archivo no existe, se crea
         file = fopen(path, "wb+");
         if (file == NULL) {
-           log_error(logger,"Error al crear el archivo BITMAP");
-            return FAILURE;
+              log_info(logger,"[FILE_SYSTEM]: ERROR AL CREAR BITMAP");
+              return FAILURE;
         }
-         bitarray = malloc(size);
-         bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
-         fwrite(bitmap, sizeof(t_bitarray), 1, file);
+          int fd = fileno(file); 
+          ftruncate(fd,size);
+          log_error(logger,"BITMAP TRUNCADO DE: %d,",size);
+          bitarray = malloc(size);
+          bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
+        //  fwrite(bitmap, size, 1, file);
          log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
     }
-
-    fread(&bitmap, sizeof(t_bitarray), 1, file); 
-    fclose(file);
-
+    else
+    {
+        bitarray = malloc(size);
+        bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);   
+        fread(bitmap->bitarray, size ,1, file); 
+        fclose(file);
+    }
+    
     log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap levantado correctamente");
     return SUCCESS;
 }
