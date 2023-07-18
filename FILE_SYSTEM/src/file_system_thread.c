@@ -245,21 +245,25 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
     // int bloques_minimos = (bloques_necesarios >=2) ? 2 : 1;
   
     //buscar bloques libres
-    puntero_directo = buscar_bloque_libre();
-    // Convertir uint32_t a string
-    log_warning(logger, "puntero directo: %d",puntero_directo);
-    size_t longitud = strlen(puntero_directo_str);
-    log_warning(logger, "tamanio  buffer: %%zu\n",longitud);
-    snprintf(puntero_directo_str, sizeof(puntero_directo_str), "%u", puntero_directo);
-    config_set_value(fcb,"PUNTERO_DIRECTO", puntero_directo_str); 
-
-      if(bloques_necesarios > 1){
-        puntero_indirecto = buscar_bloque_libre();
+    if(tamanio==0){
+        puntero_directo = buscar_bloque_libre();
+        // Convertir uint32_t a string
+        log_warning(logger, "puntero directo: %d",puntero_directo);
+        size_t longitud = strlen(puntero_directo_str);
+        log_warning(logger, "tamanio  buffer: %%zu\n",longitud);
+        snprintf(puntero_directo_str, sizeof(puntero_directo_str), "%u", puntero_directo);
+        config_set_value(fcb,"PUNTERO_DIRECTO", puntero_directo_str);
+        bloques_necesarios--;
+    }
+      if(bloques_necesarios >= 1){
+        if(puntero_indirecto==0)
+          puntero_indirecto = buscar_bloque_libre();
 
         archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"wb+");
 
-        for(int bloques_restantes = bloques_necesarios-1;bloques_restantes>0;bloques_restantes--){
-          fseek(archivo_bloques,puntero_indirecto,SEEK_SET);
+        for(int bloques_restantes = bloques_necesarios-1;bloques_restantes>=0;bloques_restantes--){
+          int pos_dentro_bloque= (bloques_necesarios - bloques_restantes-1)*4; // es 4 Porque eso ocupa un Uint32t
+          fseek(archivo_bloques,puntero_indirecto+pos_dentro_bloque,SEEK_SET);
           
           uint32_t bloque_sgt = buscar_bloque_libre();
           aplicar_retardo_acceso_bloque();
@@ -275,7 +279,7 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
         config_set_value(fcb,"PUNTERO_INDIRECTO", puntero_indirecto_str);
       }
     //actualizar el tamaño del archivo en FCB
-    snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", tamanio + a_truncar);
+    snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", a_truncar);
     config_set_value(fcb,"TAMANIO_ARCHIVO", tamanio_archivo_str);
 
   }
@@ -304,7 +308,6 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
               copybr--;
             //se dejan los valores en el archivo de bloques, pero al marcarse libres, otro proceso pisara los valores
             } 
-        fclose(archivo_bloques);
       }
     else{
       archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"rb+");
@@ -323,10 +326,10 @@ void ejecutar_f_truncate(char *nombre,int a_truncar){
               bitarray_clean_bit(bitmap, valor_puntero/superbloque.BLOCK_SIZE);
             //se dejan los valores en el archivo de bloques, pero al marcarse libres, otro proceso pisara los valores
             } 
-        fclose(archivo_bloques);
     }
     fwrite(bitmap->bitarray, bitmap->size,1,bm);
     fclose(bm);
+    fclose(archivo_bloques); //cerrar para el reducir
     free(path);
     //actualizar el tamaño del archivo en FCB
     snprintf(tamanio_archivo_str, sizeof(tamanio_archivo_str), "%u", a_truncar);
@@ -342,15 +345,6 @@ int buscar_bloque_libre(){
   char *pathBitmap = FileSystemConfig.PATH_BITMAP;
   char *path = string_duplicate(pathBitmap);
   FILE *file = fopen(path, "rb+");
- size_t size = superbloque.BLOCK_COUNT/8; // porque el create se hace en bytes -> Arreglar
-  log_info(logger, "FOPEN");
-  log_info(logger, "size %d", size);
-  
-  // fread(bitmap, size, 1, file);
-  // fread(&bitmap, sizeof(t_bitarray), 1, file); 
-
- log_info(logger, "bitmap size %d", bitmap->size);
-
 
   for(index= 0;index<bitmap->size;index++){
     bool estado = bitarray_test_bit(bitmap, index);
@@ -364,7 +358,7 @@ int buscar_bloque_libre(){
   ptr = index * superbloque.BLOCK_SIZE;
 
   bitarray_set_bit(bitmap, index);
-  fwrite(bitmap->bitarray,size,1,file);
+  fwrite(bitmap->bitarray,bitmap->size,1,file);
   fclose(file);
   free(path);
   return ptr; 

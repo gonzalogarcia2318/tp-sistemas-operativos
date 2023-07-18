@@ -107,7 +107,7 @@ int iniciar_archivo_de_bloques(char* path_ab)
         return FAILURE;
       }
 
-    int fd = fileno(archivo_bloques); // Obtiene el descriptor de archivo correspondiente al puntero FILE*
+    int fd = fileno(archivo_bloques);
 
       if(ftruncate(fd,tamanio_ab) == -1)
       {
