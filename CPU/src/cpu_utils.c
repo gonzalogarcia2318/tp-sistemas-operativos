@@ -488,7 +488,25 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MOD
     agregar_a_paquete(paquete,&tamanio_registro,sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
 
-    char *valor = obtener_mensaje_del_servidor(socket_memoria);
+    BUFFER *buffer;
+    char* valor;
+    switch (obtener_codigo_operacion(socket_memoria))
+    {  
+       case MOV_IN:
+            log_info(logger, "[CPU]: RECIBI FIN DE MOV_IN ");
+            buffer = recibir_buffer(socket_memoria);
+
+            int tamanio;
+            memcpy(&tamanio, buffer->stream, sizeof(int32_t));
+            buffer->stream += sizeof(int32_t);
+            valor = malloc(tamanio);
+
+            memcpy(valor, buffer->stream, tamanio);
+            buffer->stream += tamanio;
+        break;
+    }
+
+    //char *valor = obtener_mensaje_del_servidor(socket_memoria);
 
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
 
@@ -509,12 +527,14 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
                 instruccion->registro);
 
     char *registro = string_duplicate(instruccion->registro);
-    char *valor_registro = string_duplicate(obtener_valor_registro(pcb->registros_cpu, registro));
 
+    char *valor_registro = string_duplicate(obtener_valor_registro(pcb->registros_cpu, registro));
+    log_info(logger, "REGISTRO BX %s", pcb->registros_cpu.valor_BX);
     int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);
-    log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d>", 
+    log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d> - VALOR REGISTRO: %s", 
             instruccion->registro,
-            tamanio_registro);
+            tamanio_registro,
+            valor_registro);
     if(tamanio_registro == 0) //NO LO ENCONTRÓ
         return;
 
@@ -526,9 +546,22 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
     agregar_a_paquete(paquete, valor_registro, strlen(valor_registro)+1);
     enviar_paquete_a_servidor(paquete, socket_memoria);
 
-    char *mensaje = obtener_mensaje_del_servidor(socket_memoria);
+    BUFFER *buffer;
+    switch (obtener_codigo_operacion(socket_memoria))
+    {  
+       case MOV_OUT:
+            log_info(logger, "[CPU]: RECIBI FIN DE MOV_OUT ");
 
-    log_info(logger, "CPU: Recibi un mensaje de MEMORIA como RTA a MOV_OUT: <%s>", mensaje);
+            buffer = recibir_buffer(socket_memoria);
+            int32_t un_pid;
+            memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t)*2);
+        break;
+    }
+
+    //char *mensaje = obtener_mensaje_del_servidor(socket_memoria);
+
+    //log_info(logger, "CPU: Recibi un mensaje de MEMORIA como RTA a MOV_OUT: <%s>", mensaje);
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
 
     log_warning(logger, "CPU: PID: <%d> - Acción: <ESCRIBIR> - Segmento: <%d> - Dirección Física: <%d> - Valor: <%s>",

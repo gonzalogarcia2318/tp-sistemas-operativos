@@ -172,9 +172,14 @@ void recibir_instruccion_cpu()
                           direccion_fisica,
                           tamanio_registro
                   );
-      enviar_mensaje_a_cliente(contenido,socket_cpu);
-      log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <%s> COMO MOTIVO DE FIN DE MOV_IN", contenido);
-      free(contenido);
+      //enviar_mensaje_a_cliente(contenido,socket_cpu);
+      //log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <%s> COMO MOTIVO DE FIN DE MOV_IN", contenido);
+      PAQUETE* paquete_mov_in = crear_paquete(MOV_IN);
+      agregar_a_paquete(paquete_mov_in, contenido, strlen(contenido)+1);
+      enviar_paquete_a_cliente(paquete_mov_in, socket_cpu);
+      log_info(logger, "[MEMORIA]: FIN MOV_IN - ENVIO: %s", contenido);
+      eliminar_paquete(paquete_mov_in);
+      //free(contenido);
       break;
 
     case MOV_OUT:
@@ -192,8 +197,14 @@ void recibir_instruccion_cpu()
                           direccion_fisica,
                           tamanio_registro
                   );
-      enviar_mensaje_a_cliente("[MEMORIA]: MOV_OUT:<OK>",socket_cpu);
-      log_info(logger,"MEMORIA: ENVIE EL MENSAJE <OK> A CPU COMO MOTIVO DE FIN DE MOV_OUT");
+      //enviar_mensaje_a_cliente("[MEMORIA]: MOV_OUT:<OK>",socket_cpu);
+      //log_info(logger,"MEMORIA: ENVIE EL MENSAJE <OK> A CPU COMO MOTIVO DE FIN DE MOV_OUT");
+      PAQUETE* paquete_mov_out = crear_paquete(MOV_OUT);
+      agregar_a_paquete(paquete_mov_out, &pid, sizeof(int32_t));
+      enviar_paquete_a_cliente(paquete_mov_out, socket_cpu);
+      log_info(logger,"MEMORIA: FIN DE MOV_OUT");
+      eliminar_paquete(paquete_mov_out);
+      
       break;
     
   default:
