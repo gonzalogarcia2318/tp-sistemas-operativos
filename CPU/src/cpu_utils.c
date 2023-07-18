@@ -398,60 +398,74 @@ void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
 }
 char *obtener_valor_registro(Registro_CPU registros_pcb, char *registro_buscado)
 {
-    char *valor = string_itoa(0); // solo lo inicializo, se tiene q pisar
+    char *valor = malloc(17); // solo lo inicializo, se tiene q pisar
     //quitar_salto_de_linea(registro_buscado);
 
-    if (!strcmp(registro_buscado, "AX"))
+       if (!strcmp(registro_buscado, "AX"))
     {
-        valor = string_duplicate(registros_pcb.valor_AX);
+        strncpy(valor, registros_pcb.valor_AX, 4);
+        valor[4] = '\0';
     }
     else if (!strcmp(registro_buscado, "BX"))
     {
-        valor = string_duplicate(registros_pcb.valor_BX);
+        strncpy(valor, registros_pcb.valor_BX, 4);
+        valor[4] = '\0';
     }
     else if (!strcmp(registro_buscado, "CX"))
     {
-        valor = string_duplicate(registros_pcb.valor_CX);
+        strncpy(valor, registros_pcb.valor_CX, 4);
+        valor[4] = '\0';
     }
     else if (!strcmp(registro_buscado, "DX"))
     {
-        valor = string_duplicate(registros_pcb.valor_DX);
+        strncpy(valor, registros_pcb.valor_DX, 4);
+        valor[4] = '\0';
     }
     else if (!strcmp(registro_buscado, "EAX"))
     {
-        valor = string_duplicate(registros_pcb.valor_EAX);
+        strncpy(valor, registros_pcb.valor_EAX, 8);
+        valor[8] = '\0';
     }
     else if (!strcmp(registro_buscado, "EBX"))
     {
-        valor = string_duplicate(registros_pcb.valor_EBX);
+        strncpy(valor, registros_pcb.valor_EBX, 8);
+        valor[8] = '\0';
     }
     else if (!strcmp(registro_buscado, "ECX"))
     {
-        valor = string_duplicate(registros_pcb.valor_ECX);
+        strncpy(valor, registros_pcb.valor_ECX, 8);
+        valor[8] = '\0';
     }
     else if (!strcmp(registro_buscado, "EDX"))
     {
-        valor = string_duplicate(registros_pcb.valor_AX);
+        strncpy(valor, registros_pcb.valor_EDX, 8);
+        valor[8] = '\0';
     }
     else if (!strcmp(registro_buscado, "RAX"))
     {
-        valor = string_duplicate(registros_pcb.valor_RAX);
+        strncpy(valor, registros_pcb.valor_RAX, 16);
+        valor[16] = '\0';
     }
     else if (!strcmp(registro_buscado, "RBX"))
     {
-        valor = string_duplicate(registros_pcb.valor_RBX);
+        strncpy(valor, registros_pcb.valor_RBX, 16);
+        valor[16] = '\0';
     }
     else if (!strcmp(registro_buscado, "RCX"))
     {
-        valor = string_duplicate(registros_pcb.valor_RCX);
+        strncpy(valor, registros_pcb.valor_RCX, 16);
+        valor[16] = '\0';
     }
     else if (!strcmp(registro_buscado, "RDX"))
     {
-        valor = string_duplicate(registros_pcb.valor_RDX);
+        strncpy(valor, registros_pcb.valor_RDX, 16);
+        valor[16] = '\0';
     }
     else
     {
         log_error(logger, "CPU: ERROR AL BUSCAR REGISTRO, NOMBRE DESCONOCIDO");
+        free(valor); // Liberar la memoria asignada
+        return NULL;
     }
     return valor;
 }

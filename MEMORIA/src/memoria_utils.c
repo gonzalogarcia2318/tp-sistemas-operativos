@@ -307,7 +307,7 @@ void eliminar_proceso_de_globales(int32_t pid)
 char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro)
 {
     void* posicion = espacio_usuario + direccion_fisica;
-    int tamanio = (bytes_registro) * sizeof(char);
+    int tamanio = (bytes_registro+1) * sizeof(char);
 
     char* contenido = malloc(tamanio);
     
