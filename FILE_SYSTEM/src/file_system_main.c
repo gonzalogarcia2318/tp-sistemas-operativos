@@ -25,6 +25,14 @@ int main(int argc, char** argv)
             if(iniciar_archivo_de_bloques(FileSystemConfig.PATH_BLOQUES) == FAILURE)
                 return EXIT_FAILURE;
 
+                // crear_archivo("Test");
+                // ejecutar_f_truncate("Test",256);
+                // ejecutar_f_truncate("Test",62);
+
+                // crear_archivo("Prueba");
+                // ejecutar_f_truncate("Prueba",64);
+                // ejecutar_f_truncate("Prueba",192);
+
             conectar_con_kernel();
           
         }

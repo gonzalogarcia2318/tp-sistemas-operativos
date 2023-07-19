@@ -70,18 +70,25 @@ int levantar_bitmap(char *path)
         // Si el archivo no existe, se crea
         file = fopen(path, "wb+");
         if (file == NULL) {
-           log_error(logger,"Error al crear el archivo BITMAP");
-            return FAILURE;
+              log_info(logger,"[FILE_SYSTEM]: ERROR AL CREAR BITMAP");
+              return FAILURE;
         }
-         bitarray = malloc(size);
-         bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
-         fwrite(bitmap, sizeof(t_bitarray), 1, file);
+          int fd = fileno(file); 
+          ftruncate(fd,size);
+          log_error(logger,"BITMAP TRUNCADO DE: %d,",size);
+          bitarray = malloc(size);
+          bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
+        //  fwrite(bitmap, size, 1, file);
          log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap CREADO correctamente"); 
     }
-
-    fread(&bitmap, sizeof(t_bitarray), 1, file); 
-    fclose(file);
-
+    else
+    {
+        bitarray = malloc(size);
+        bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);   
+        fread(bitmap->bitarray, size ,1, file); 
+        fclose(file);
+    }
+    
     log_info(logger,"[FILE_SYSTEM]: Archivo Bitmap levantado correctamente");
     return SUCCESS;
 }
@@ -100,7 +107,7 @@ int iniciar_archivo_de_bloques(char* path_ab)
         return FAILURE;
       }
 
-    int fd = fileno(archivo_bloques); // Obtiene el descriptor de archivo correspondiente al puntero FILE*
+    int fd = fileno(archivo_bloques);
 
       if(ftruncate(fd,tamanio_ab) == -1)
       {
