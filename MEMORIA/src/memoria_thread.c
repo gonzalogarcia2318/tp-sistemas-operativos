@@ -79,13 +79,13 @@ void escuchar_file_system(int socket_fs)
     case READ:
       log_warning(logger,"[MEMORIA]: READ recibido de FILE SYSTEM");
       
-      char* leido;
-
-      strcpy(leido , manejar_read_file_system());
+      char* leido =  manejar_read_file_system();
+      log_info(logger,"[MEMORIA]: READ DE FS: %s", leido);
 
       PAQUETE* paquete_read = crear_paquete(READ);
-      agregar_a_paquete(paquete_read, leido, strlen(leido)*sizeof(char)+1);
+      agregar_a_paquete(paquete_read, leido, strlen(leido)*sizeof(char));
       enviar_paquete_a_cliente(paquete_read, socket_fs);
+      log_info(logger,"[MEMORIA]: ENVIO PAQUETE A FS: %s", leido);
       eliminar_paquete(paquete_read);
       break;
 
@@ -151,6 +151,8 @@ void recibir_instruccion_cpu()
   memcpy(&tamanio_registro, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2);
 
+  log_info(logger, "//// MEMORIA  LLEGA DE CPU: TAMAÑO %d ////", tamanio_registro);
+
   log_info(logger,"INSTRUCCIÓN CPU: COD:<%d> - PID:<%d> - DF:<%d> - TR: <%d>", //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
             cod_instruccion,
             pid,
@@ -175,7 +177,7 @@ void recibir_instruccion_cpu()
       //enviar_mensaje_a_cliente(contenido,socket_cpu);
       //log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <%s> COMO MOTIVO DE FIN DE MOV_IN", contenido);
       PAQUETE* paquete_mov_in = crear_paquete(MOV_IN);
-      agregar_a_paquete(paquete_mov_in, contenido, strlen(contenido)+1);
+      agregar_a_paquete(paquete_mov_in, contenido, strlen(contenido));
       enviar_paquete_a_cliente(paquete_mov_in, socket_cpu);
       log_info(logger, "[MEMORIA]: FIN MOV_IN - ENVIO: %s", contenido);
       eliminar_paquete(paquete_mov_in);
@@ -183,9 +185,11 @@ void recibir_instruccion_cpu()
       break;
 
     case MOV_OUT:
-      char* valor_a_escribir = malloc(sizeof(char) * (tamanio_registro + 1));
-      memcpy(valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio_registro + 1));
-            buffer->stream += (tamanio_registro + 1); 
+      char* valor_a_escribir = malloc(sizeof(char) * (tamanio_registro));
+      memcpy(valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio_registro));
+            buffer->stream += (tamanio_registro); 
+
+      valor_a_escribir[tamanio_registro] = '\0';
 
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_OUT");
       log_info(logger, "VALOR A ESCRIBIR: <%s>", valor_a_escribir); //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
@@ -257,6 +261,7 @@ void recibir_instruccion_kernel()
         agregar_a_paquete(paquete_consolidar,&pid,sizeof(int32_t));
         enviar_paquete_a_cliente(paquete_consolidar, socket_kernel);
         eliminar_paquete(paquete_consolidar);
+        log_info(logger, "Enviar HAY QUE CONSOLIDAR A KERNEL");
         break;
       }
       else if (base == -3) //FALTA ESPACIO "Out of Memory"

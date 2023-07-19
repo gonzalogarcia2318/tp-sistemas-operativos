@@ -117,18 +117,18 @@ BUFFER* recibir_buffer(int socket);
 // TODO: MOVER A OTRO ARCHIVO
 typedef struct 
 {
-    char valor_AX[4];
-    char valor_BX[4];
-    char valor_CX[4];
-    char valor_DX[4];
-    char valor_EAX[8];
-    char valor_EBX[8];
-    char valor_ECX[8];
-    char valor_EDX[8];
-    char valor_RAX[16];
-    char valor_RBX[16];
-    char valor_RCX[16];
-    char valor_RDX[16];
+    char valor_AX[5];
+    char valor_BX[5];
+    char valor_CX[5];
+    char valor_DX[5];
+    char valor_EAX[9];
+    char valor_EBX[9];
+    char valor_ECX[9];
+    char valor_EDX[9];
+    char valor_RAX[17];
+    char valor_RBX[17];
+    char valor_RCX[17];
+    char valor_RDX[17];
 } Registro_CPU;
 
 

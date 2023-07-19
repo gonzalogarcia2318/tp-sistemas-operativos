@@ -75,7 +75,7 @@ int levantar_bitmap(char *path)
         }
           int fd = fileno(file); 
           ftruncate(fd,size);
-          log_error(logger,"BITMAP TRUNCADO DE: %d,",size);
+    
           bitarray = malloc(size);
           bitmap = bitarray_create_with_mode(bitarray, size, LSB_FIRST);
         //  fwrite(bitmap, size, 1, file);

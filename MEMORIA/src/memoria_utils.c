@@ -307,7 +307,7 @@ void eliminar_proceso_de_globales(int32_t pid)
 char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro)
 {
     void* posicion = espacio_usuario + direccion_fisica;
-    int tamanio = (bytes_registro+1) * sizeof(char);
+    int tamanio = (bytes_registro) * sizeof(char);
 
     char* contenido = malloc(tamanio);
     
@@ -315,6 +315,8 @@ char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro)
         log_error(logger,"ERROR AL RESERVAR MEMORIA PARA EL CONTENIDO DENTRO DE leer_de_memoria()");
     
     memcpy(contenido,posicion,tamanio);
+
+    contenido[tamanio] = '\0';
 
     log_info(logger,"LEÍ DE MEMORIA EL CONTENIDO:<%s>, DE LA DIRECCIÓN FÍSICA:<%d> y DE TAMANIO:<%d>",
                      contenido,
@@ -330,12 +332,12 @@ void escribir_en_memoria(char* contenido, int32_t direccion_fisica, int32_t byte
 {
     void* posicion = espacio_usuario + direccion_fisica;
 
-    memcpy(posicion,contenido,strlen(contenido)+1);
+    memcpy(posicion,contenido,bytes_registro);
 
-    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d> - strlen+1: %ld",
+    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d> - strlen: %ld",
                      contenido,
                      direccion_fisica,
-                     strlen(contenido)+1
+                     bytes_registro
             );
     aplicar_retardo_espacio_usuario();
 }
@@ -923,7 +925,11 @@ char* manejar_read_file_system()
     memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
     
+    leido = malloc(tamanio);
+
     strcpy(leido,leer_de_memoria(direccion_fisica, tamanio));
+
+    log_info(logger,"[MEMORIA]: manejar_read_file_system: %s", leido);
 
     return leido;
 }
@@ -933,14 +939,14 @@ void manejar_write_file_system()
     BUFFER* buffer = recibir_buffer(socket_file_system);
     int32_t direccion_fisica;
     int32_t tamanio;
-    char* valor_a_escribir = malloc(sizeof(char) * (tamanio + 1));
+    char* valor_a_escribir = malloc(sizeof(char) * (tamanio));
     
     memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
     memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
-    memcpy(&valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio + 1));
-            buffer->stream += (tamanio + 1); 
+    memcpy(&valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio));
+            buffer->stream += (tamanio); 
     
     escribir_en_memoria(valor_a_escribir, direccion_fisica, tamanio);
 }

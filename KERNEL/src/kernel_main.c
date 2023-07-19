@@ -225,6 +225,7 @@ void manejar_paquete_cpu()
             return;
 
         case PAQUETE_CPU:
+
             BUFFER *buffer = recibir_buffer(socket_cpu);
 
             PCB *pcb = malloc(sizeof(PCB));
@@ -232,6 +233,7 @@ void manejar_paquete_cpu()
             // Sumamos sizeof(int32_t) porque en PAQUETE se manda SIEMPRE [tamaño-valor]
             memcpy(&(pcb->PID), buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
+
             memcpy(&(pcb->program_counter), buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2);
 
@@ -533,11 +535,18 @@ void manejar_hilo_fileSystem(){
 
     while(true){
 
+        log_warning(logger, "trabados en esperar_respuesta_fileSystem");
         sem_wait(&esperar_respuesta_fileSystem);
 
+        log_warning(logger, "trabados en file_system_disponible");
         sem_wait(&file_system_disponible);
 
-        switch (obtener_codigo_operacion(socket_file_system))
+        CODIGO_OPERACION cod_op = obtener_codigo_operacion(socket_file_system);
+
+        log_warning(logger, "cod op %d", cod_op);
+
+
+        switch (cod_op)
         {
             
         case FINALIZO_TRUNCADO:
@@ -577,6 +586,8 @@ void manejar_hilo_fileSystem(){
         break;
 
         default:
+            log_warning(logger, "ERROR AL RECIBIR DE FILE SYSTEM EN EL HILO");
+            sem_post(&esperar_respuesta_fileSystem);
         break;
 
 
@@ -729,6 +740,7 @@ void manejar_f_read(Proceso* proceso, char* nombre_archivo, int direccion_fisica
     cambiar_estado(proceso, BLOCK);
 
     sem_post(&esperar_respuesta_fileSystem);
+    sem_post(&file_system_disponible);
     
 }
 
@@ -755,6 +767,7 @@ void manejar_f_write(Proceso* proceso, char* nombre_archivo, int direccion_fisic
     cambiar_estado(proceso, BLOCK);
 
     sem_post(&esperar_respuesta_fileSystem);
+    sem_post(&file_system_disponible);
 }
 
 ARCHIVO_GLOBAL * buscar_archivo_en_tabla_global(char* nombre_archivo){
@@ -1313,6 +1326,13 @@ void actualizar_segmentos_para_todos_los_procesos(BUFFER* buffer){
         if(segmento->pid != -1){
             Proceso* proceso = obtener_proceso_por_pid(segmento->pid);
             list_add(proceso->pcb->tabla_segmentos, segmento);
+        } else {
+            // Segmento -1 (segmento 0) se le agrega a todos los procesos.
+            Proceso* proceso;
+            for(int i = 0; i < list_size(procesos); i++){
+                proceso = list_get(procesos, i);
+                list_add(proceso->pcb->tabla_segmentos, segmento);
+            }
         }
 
 		size_segmento_acumulado += calcular_tamanio_segmento(segmento);

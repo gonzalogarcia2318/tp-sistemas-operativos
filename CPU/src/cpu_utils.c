@@ -168,9 +168,11 @@ int32_t realizar_traduccion(int32_t dir_logica, t_list *tabla_segmentos)
             break;
         }
     }
+    log_info(logger, "desplazamiento: %d", desplazamiento_segmento);
 
     int32_t direccion_fisica = (segmento->base) + desplazamiento_segmento;
 
+    log_info(logger, "direccion fisica: %d", direccion_fisica);
     return direccion_fisica;
 }
 int obtener_num_segmento(int32_t direccion_logica)
@@ -345,50 +347,62 @@ void asignar_a_registro(char *valor, char *registro_instr, PCB *pcb)
     if(!strcmp(registro_instr,"AX"))
     {
         strncpy(reg_cpu->valor_AX, valor, 4);
+        reg_cpu->valor_AX[4] = '\0';
     }
     else if(!strcmp(registro_instr,"BX"))
     {
         strncpy(reg_cpu->valor_BX, valor, 4);
+        reg_cpu->valor_BX[4] = '\0';
     }
     else if(!strcmp(registro_instr,"CX"))
     {
         strncpy(reg_cpu->valor_CX, valor, 4);
+        reg_cpu->valor_CX[4] = '\0';
     }
     else if(!strcmp(registro_instr,"DX"))
     {
         strncpy(reg_cpu->valor_DX, valor, 4);
+        reg_cpu->valor_DX[4] = '\0';
     }
     else if(!strcmp(registro_instr,"EAX"))
     {
         strncpy(reg_cpu->valor_EAX, valor, 8);
+        reg_cpu->valor_EAX[8] = '\0';
     }
     else if(!strcmp(registro_instr,"EBX"))
     {
         strncpy(reg_cpu->valor_EBX, valor, 8);
+        reg_cpu->valor_EBX[8] = '\0';
     }
     else if(!strcmp(registro_instr,"ECX"))
     {
         strncpy(reg_cpu->valor_ECX, valor, 8);
+        reg_cpu->valor_ECX[8] = '\0';
     }
     else if(!strcmp(registro_instr,"EDX"))
     {
         strncpy(reg_cpu->valor_EDX, valor, 8);
+        reg_cpu->valor_EDX[8] = '\0';
     }
     else if(!strcmp(registro_instr,"RAX"))
     {
         strncpy(reg_cpu->valor_RAX, valor, 16);
+        reg_cpu->valor_RAX[16] = '\0';
     }
     else if(!strcmp(registro_instr,"RBX"))
     {
         strncpy(reg_cpu->valor_RBX, valor, 16);
+        reg_cpu->valor_RBX[16] = '\0';
     }
     else if(!strcmp(registro_instr,"RCX"))
     {
         strncpy(reg_cpu->valor_RCX, valor, 16);
+        reg_cpu->valor_RCX[16] = '\0';
     }
     else if(!strcmp(registro_instr,"RDX"))
     {
         strncpy(reg_cpu->valor_RDX, valor, 16);
+        reg_cpu->valor_RDX[16] = '\0';
 
     }
     else
@@ -480,13 +494,15 @@ void ejecutar_set(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
     eliminar_paquete(paquete);
 }
 
-void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MODIFICADO CHK 4 PERO NO VERIFICADO
+void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <MOV_IN> - <REGISTRO:%s , DIRECCIÓN LÓGICA: %d>",
                 pcb->PID,
                 instruccion->registro,
                 instruccion->direccionLogica
                 );
+
+    imprimir_registros(pcb->registros_cpu); //TODO BORRAR
 
     int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);
     log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d>", 
@@ -517,10 +533,10 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MOD
 
             memcpy(valor, buffer->stream, tamanio);
             buffer->stream += tamanio;
+
+            valor[tamanio] = '\0';
         break;
     }
-
-    //char *valor = obtener_mensaje_del_servidor(socket_memoria);
 
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
 
@@ -531,6 +547,8 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MOD
                 valor);
     asignar_a_registro(valor, instruccion->registro, pcb);
     eliminar_paquete(paquete);
+    imprimir_registros(pcb->registros_cpu); //TODO BORRAR
+
 }
 
 void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MODIFICADO CHK 4 PERO NO VERIFICADO
@@ -540,12 +558,14 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
                 instruccion->direccionLogica,
                 instruccion->registro);
 
-    char *registro = string_duplicate(instruccion->registro);
+    imprimir_registros(pcb->registros_cpu); //TODO BORRAR
 
-    char *valor_registro = string_duplicate(obtener_valor_registro(pcb->registros_cpu, registro));
-    log_info(logger, "REGISTRO BX %s", pcb->registros_cpu.valor_BX);
-    int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);
-    log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d> - VALOR REGISTRO: %s", 
+    char *registro = string_duplicate(instruccion->registro); //TODO BORRAR
+
+    char *valor_registro = string_duplicate(obtener_valor_registro(pcb->registros_cpu, registro));//TODO BORRAR
+    
+    int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);//TODO BORRAR
+    log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d> - VALOR REGISTRO: %s", //TODO BORRAR
             instruccion->registro,
             tamanio_registro,
             valor_registro);
@@ -557,8 +577,10 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
     agregar_a_paquete(paquete,&pcb->PID,sizeof(int32_t));
     agregar_a_paquete(paquete, &instruccion->direccionFisica, sizeof(int32_t));
     agregar_a_paquete(paquete,&tamanio_registro,sizeof(int32_t));
-    agregar_a_paquete(paquete, valor_registro, strlen(valor_registro)+1);
+    agregar_a_paquete(paquete, valor_registro, strlen(valor_registro));
     enviar_paquete_a_servidor(paquete, socket_memoria);
+
+    log_info(logger, "//// CPU ENVIA PAQUETE A MEMORIA: TAMAÑO %d - VALOR %s ////", tamanio_registro, valor_registro);
 
     BUFFER *buffer;
     switch (obtener_codigo_operacion(socket_memoria))
@@ -573,9 +595,6 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
         break;
     }
 
-    //char *mensaje = obtener_mensaje_del_servidor(socket_memoria);
-
-    //log_info(logger, "CPU: Recibi un mensaje de MEMORIA como RTA a MOV_OUT: <%s>", mensaje);
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
 
     log_warning(logger, "CPU: PID: <%d> - Acción: <ESCRIBIR> - Segmento: <%d> - Dirección Física: <%d> - Valor: <%s>",
@@ -584,6 +603,9 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
                 instruccion->direccionFisica,
                 valor_registro);
     eliminar_paquete(paquete);
+
+    imprimir_registros(pcb->registros_cpu);
+
 }
 
 void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
@@ -674,6 +696,7 @@ void ejecutar_f_read(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    agregar_a_paquete(paquete_kernel, &instruccion->direccionFisica, sizeof(int32_t));
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
     eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
@@ -696,6 +719,7 @@ void ejecutar_f_write(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // N
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->registros_cpu, sizeof(Registro_CPU));
+    agregar_a_paquete(paquete_kernel, &instruccion->direccionFisica, sizeof(int32_t));
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
     eliminar_paquete(paquete_kernel);
     eliminar_paquete(paquete);
@@ -817,4 +841,22 @@ void imprimir_tabla_segmentos(t_list* tabla_segmentos){
         log_info(logger, "-> PID %d - ID %d - Base %d - Limite %d", segmento->pid, segmento->id, segmento->base, segmento->limite);
     }
     log_info(logger, "-------------------------------");
+}
+
+void imprimir_registros(Registro_CPU registro)
+{
+    log_info(logger, "--------------REGISTROS--------------");
+    log_info(logger, "AX: %s", registro.valor_AX);
+    log_info(logger, "BX: %s", registro.valor_BX);
+    log_info(logger, "CX: %s", registro.valor_CX);
+    log_info(logger, "DX: %s", registro.valor_DX);
+    log_info(logger, "EAX: %s", registro.valor_EAX);
+    log_info(logger, "EBX: %s", registro.valor_EBX);
+    log_info(logger, "ECX: %s", registro.valor_ECX);
+    log_info(logger, "EDX: %s", registro.valor_EDX);
+    log_info(logger, "RAX: %s", registro.valor_RAX);
+    log_info(logger, "RBX: %s", registro.valor_RBX);
+    log_info(logger, "RCX: %s", registro.valor_RCX);
+    log_info(logger, "RDX: %s", registro.valor_RDX);
+    log_info(logger, "-------------------------------------");
 }

@@ -390,11 +390,13 @@ int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, i
  return estado;
 }
 
-int ejecutar_f_write(char *nombre_archivo,uint32_t puntero_archivo, uint32_t tamanio, int32_t direccion_fisica){
+int ejecutar_f_write(char *nombre_archivo,uint32_t puntero_archivo, uint32_t direccion_fisica, int32_t tamanio){
 
   archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"wb+");
 
   char *datos= obtener_info_de_memoria(direccion_fisica, tamanio);
+
+  log_warning(logger, "DATO: %s", datos);      
 
   fseek(archivo_bloques,puntero_archivo,SEEK_SET);
   fwrite(&datos,sizeof(tamanio),1,archivo_bloques);
@@ -443,26 +445,34 @@ void enviar_respuesta_kernel(int ok, CODIGO_OPERACION cod){
 
 char* obtener_info_de_memoria(int32_t dir_fisica , uint32_t tamanio){
     PAQUETE *paquete = crear_paquete(READ);
-    char *dato = malloc(tamanio);
+    
     
     agregar_a_paquete(paquete, &dir_fisica, sizeof(int32_t));
     agregar_a_paquete(paquete, &tamanio,sizeof(uint32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
 
-     
-
     switch (obtener_codigo_operacion(socket_memoria))
     {  
         case READ:
             log_info(logger, "[FILE_SYSTEM]: MEMORIA LEYO CORRECTAMENTE");
-            BUFFER* buffer = recibir_buffer(socket_kernel);
-            
-            memcpy(dato, buffer->stream, tamanio + 1);
-            buffer->stream += tamanio + 1;
+            BUFFER* buffer = recibir_buffer(socket_memoria);
 
+            int32_t tamanio_dato;
+            memcpy(&tamanio_dato, buffer->stream, sizeof(int32_t));
+            buffer->stream += sizeof(int32_t); 
+
+            log_info(logger, "tamanio_dato; %d", tamanio_dato);
+
+            char *dato = malloc(tamanio_dato);
+
+            memcpy(dato, buffer->stream, tamanio_dato);
+            buffer->stream += tamanio_dato; 
+            log_info(logger, "dato %s", dato);
+
+            dato[tamanio_dato] = '\0';
+            
             return dato;
-            break;
         default: 
             log_error(logger, "[FILE_SYSTEM]: MEMORIA FALLO AL LEER");
             return;

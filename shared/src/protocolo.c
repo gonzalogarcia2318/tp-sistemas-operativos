@@ -223,7 +223,7 @@ BUFFER *serializar_pcb(PCB *pcb)
     BUFFER *buffer = malloc(sizeof(PCB));
 
     buffer->size = sizeof(int32_t) * 4
-                    + 4 * 4 + 4 * 8 + 4 * 16  // 4 registros de 4 bytes, 4 de 8, 4 de 16
+                    + 4 * 5 + 4 * 9 + 4 * 17  // 4 registros de 4 bytes, 4 de 8, 4 de 16
                     + calcular_tamanio_instrucciones(pcb->instrucciones)
                     + calcular_tamanio_segmentos(pcb->tabla_segmentos);
 
@@ -251,8 +251,8 @@ BUFFER *serializar_pcb(PCB *pcb)
     memcpy(stream + offset, buffer_segmentos->stream, buffer_segmentos->size);
     offset += buffer_segmentos->size;
 
-    memcpy(stream + offset, &pcb->registros_cpu, (4*4+4*8+4*16));
-    offset += (4*4+4*8+4*16);
+    memcpy(stream + offset, &pcb->registros_cpu, (4*5+4*9+4*17));
+    offset += (4*5+4*9+4*17);
 
     buffer->stream = stream;
 
@@ -345,8 +345,8 @@ PCB *deserializar_pcb(BUFFER *buffer)
     pcb->tabla_segmentos = deserializar_segmentos(buffer_segmentos);
     stream += buffer_segmentos->size;
 
-    memcpy(&(pcb->registros_cpu), stream, 112);
-    stream += 112;
+    memcpy(&(pcb->registros_cpu), stream, (4*5+4*9+4*17));
+    stream += (4*5+4*9+4*17);
 
     free(buffer_segmentos);
     free(buffer_instrucciones);
@@ -488,7 +488,9 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
 
     memcpy(&(instruccion->recurso_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
+
     instruccion->recurso = malloc(instruccion->recurso_long);
+
     memcpy(instruccion->recurso, stream, instruccion->recurso_long);
     instruccion->recurso[instruccion->recurso_long] = '\0';
     stream += instruccion->recurso_long + 1;
@@ -499,7 +501,6 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     memcpy(&(instruccion->tamanioSegmento), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-    
     memcpy(&(instruccion->tamanioArchivo), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
