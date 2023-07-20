@@ -585,6 +585,10 @@ void manejar_hilo_fileSystem(){
             sem_post(&operaciones_en_file_system);
         break;
 
+        case DESCONEXION:
+            log_error(logger, "[ERROR] DESCONEXION DE FILE SYSTEM");
+        break;
+
         default:
             log_warning(logger, "ERROR AL RECIBIR DE FILE SYSTEM EN EL HILO");
             sem_post(&esperar_respuesta_fileSystem);
@@ -1449,9 +1453,8 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
 
         case FALTA_MEMORIA:
             log_info(logger, "[KERNEL]: FALTA MEMORIAAAAA!! Terminar el proceso con error ");
-            eliminar_paquete(paquete);
 
-            finalizar_proceso(proceso, "OUT_OF_MEMORY");  // Falta Manejarlo en Memoria
+            finalizar_proceso(proceso, "OUT_OF_MEMORY"); 
 
             break;
         default: 
