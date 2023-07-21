@@ -146,7 +146,6 @@ t_list* manejar_crear_proceso()
 
     memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2);
-    log_info(logger,"RECIBI CREAR_PROCESO: PID:<%d>", pid); //ELIMINAR LUEGO DE VERIFICAR
 
     proceso->pid = pid;
     proceso->tabla_de_segmentos = crear_tabla_de_segmentos();
@@ -194,63 +193,12 @@ void enviar_tabla_de_segmentos_a_kernel_despues_de_consolidar(t_list* tabla_de_s
     eliminar_paquete(paquete);
 }
 
-/*
-void enviar_tablas_de_segmentos_a_kernel() //CHECKEAR
-{
-    PAQUETE* paquete = crear_paquete(CONSOLIDAR);
-    BUFFER* buff_aux = malloc(sizeof(BUFFER));
-    
-    int size = list_size(procesos_globales);
-    PROCESO_MEMORIA* proc_aux;
-    t_list* tabla_segs_aux;
-    int offset = 0;
-
-    for (int i = 0; i < size; i++)
-    {
-        proc_aux = list_get(procesos_globales,i);
-        tabla_segs_aux = proc_aux->tabla_de_segmentos;
-
-        buff_aux = serializar_segmentos(tabla_segs_aux);
-        log_info(logger, "Serializar segmento: i = %d", i);
-
-        if(i==0){
-            paquete->buffer->stream = malloc(buff_aux->size);
-            paquete->buffer->size = buff_aux->size;
-        } else {
-            log_info(logger, "antes de realloc");
-            paquete->buffer->stream = realloc(paquete->buffer->stream, buff_aux->size);
-            log_info(logger, "despues de realloc");
-            paquete->buffer->size += buff_aux->size;
-        }
-
-        log_info(logger, "despues de malloc y realloc: buffer->size = %d", paquete->buffer->size);
-        
-        memcpy(paquete->buffer->stream + offset, buff_aux->stream, buff_aux->size);
-        offset += buff_aux->size;
-    }
-    
-  enviar_paquete_a_cliente(paquete, socket_kernel);
-  eliminar_paquete(paquete);
-  free(buff_aux);
-}
-*/
-
-
-void enviar_tabla_de_segmentos_a_kernel_BORRAR(t_list* tabla_de_segmentos, int pid)
-{
-  PAQUETE* paquete = crear_paquete(BORRAR_SEGMENTO);
-  paquete->buffer = serializar_segmentos(tabla_de_segmentos);
-  enviar_paquete_a_cliente(paquete, socket_kernel);
-  eliminar_paquete(paquete);
-}
-
 void manejar_finalizar_proceso()
 {
     BUFFER* buffer = recibir_buffer(socket_kernel);
     int32_t pid;
     memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2);
-    log_info(logger,"RECIBI ELIMINAR_PROCESO: PID:<%d>", pid);
 
     t_list* tabla_segmentos_proceso = obtener_tabla_de_segmentos(pid);
 
@@ -356,7 +304,11 @@ int32_t manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio
     t_list* tabla_de_segmentos = obtener_tabla_de_segmentos(pid);
 
     if(!puedo_crear_nuevo_segmento_proceso(tabla_de_segmentos))
+    {
+        log_error(logger,"NO PUEDO CREAR NUEVO SEGMNETO, -3");
         return -3; //ERROR "Out of Memory" por tabla de segmentos llena.
+    }
+        
 
     int caso = hay_espacio_memoria(tamanio_segmento);
     
@@ -377,6 +329,7 @@ int32_t manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio
         return -2;
     case 3:
         //ERROR: OUT OF MEMORY -> AVISAR A KERNEL
+        log_error(logger,"FALTA MEMORIA, SALGO POR -3 DE CREAR SEGMENTO");
         return -3;
     default:
         break;
@@ -414,7 +367,7 @@ int hay_espacio_memoria(int32_t tamanio_segmento)
 {
     int size = list_size(huecos_libres);
     SEGMENTO* hueco_aux;
-
+    
     for (int i = 0; i < size; i++)
     {
         hueco_aux = list_get(huecos_libres,i);
@@ -849,7 +802,12 @@ void redimensionar_huecos_compactar(int32_t base_segmento, int32_t limite_segmen
     }
     else if(tiene_hueco_detras)//LE DEJA EL LUGAR
     {
-        if(hueco_detras->limite == limite_segmento) //OCUPO TOTALMENTE EL HUECO => LO ELIMINO
+        if((hueco_detras->limite == limite_segmento) && ((base_segmento + limite_segmento) == MemoriaConfig.TAM_MEMORIA)) //ÚLTIMO SEGMENTO ES IGUAL AL HUECO
+        {
+            hueco_detras->base = base_segmento;
+
+        }
+        else if(hueco_detras->limite == limite_segmento) //OCUPO TOTALMENTE EL HUECO => LO ELIMINO
         {
             eliminar_hueco(hueco_detras->base);
             log_info(logger,"ELIMINÉ UN HUECO POR MOTIVO DE CONSOLIDAR SEGMENTO, DADO QUE OCUPA TOTALMENTE EL MISMO");
@@ -929,7 +887,7 @@ char* manejar_read_file_system()
 
     strcpy(leido,leer_de_memoria(direccion_fisica, tamanio));
 
-    log_info(logger,"[MEMORIA]: manejar_read_file_system: %s", leido);
+    log_info(logger,"[MEMORIA]: manejar_read_file_system: %s", leido); //MODIFICAR POR LOG DE TP
 
     return leido;
 }

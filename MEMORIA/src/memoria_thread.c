@@ -34,7 +34,7 @@ void escuchar_kernel(int socket_kernel)
       break;
 
     case CONSOLIDAR:
-      log_info(logger,"Recibi de Kernel: CONSOLIDAR");
+      log_warning(logger,"SOLICITUD DE COMPACTACIÓN");
       BUFFER* buffer = recibir_buffer(socket_kernel);
       int32_t un_pid;
       memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
@@ -174,14 +174,11 @@ void recibir_instruccion_cpu()
                           direccion_fisica,
                           tamanio_registro
                   );
-      //enviar_mensaje_a_cliente(contenido,socket_cpu);
-      //log_info(logger, "[MEMORIA]: MENSAJE ENVIADO A CPU: <%s> COMO MOTIVO DE FIN DE MOV_IN", contenido);
       PAQUETE* paquete_mov_in = crear_paquete(MOV_IN);
       agregar_a_paquete(paquete_mov_in, contenido, strlen(contenido));
       enviar_paquete_a_cliente(paquete_mov_in, socket_cpu);
       log_info(logger, "[MEMORIA]: FIN MOV_IN - ENVIO: %s", contenido);
       eliminar_paquete(paquete_mov_in);
-      //free(contenido);
       break;
 
     case MOV_OUT:
@@ -192,7 +189,7 @@ void recibir_instruccion_cpu()
       valor_a_escribir[tamanio_registro] = '\0';
 
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_OUT");
-      log_info(logger, "VALOR A ESCRIBIR: <%s>", valor_a_escribir); //PARA COMPROBAR QUE LLEGA BIEN, ELIMINAR
+      log_info(logger, "VALOR A ESCRIBIR: <%s>", valor_a_escribir);
       
       escribir_en_memoria(valor_a_escribir,direccion_fisica,tamanio_registro);
 
@@ -201,8 +198,7 @@ void recibir_instruccion_cpu()
                           direccion_fisica,
                           tamanio_registro
                   );
-      //enviar_mensaje_a_cliente("[MEMORIA]: MOV_OUT:<OK>",socket_cpu);
-      //log_info(logger,"MEMORIA: ENVIE EL MENSAJE <OK> A CPU COMO MOTIVO DE FIN DE MOV_OUT");
+    
       PAQUETE* paquete_mov_out = crear_paquete(MOV_OUT);
       agregar_a_paquete(paquete_mov_out, &pid, sizeof(int32_t));
       enviar_paquete_a_cliente(paquete_mov_out, socket_cpu);
@@ -269,6 +265,7 @@ void recibir_instruccion_kernel()
         PAQUETE * paquete_fallo = crear_paquete(FALTA_MEMORIA);
         enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
         eliminar_paquete(paquete_fallo);
+        log_error(logger, "FALTA MEMORIA, FINALIZAR PROCESO:%d",pid);
         break;
       }
       else // base = 0 (ERROR EN ALGUNA FUNCIÓN ANTERIOR, VERIFICAR LOGS)

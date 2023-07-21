@@ -873,7 +873,11 @@ int existe_archivo_en_file_system(char* nombre_archivo){
 
     BUFFER *buffer;
 
-    switch (obtener_codigo_operacion(socket_file_system))
+    CODIGO_OPERACION cod_op = obtener_codigo_operacion(socket_file_system);
+
+    log_info(logger, "Recibimos codigo_operacion: %d", cod_op);
+
+    switch (cod_op)
     {  
         case RESPUESTA_FILE_SYSTEM:
             log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
@@ -886,6 +890,7 @@ int existe_archivo_en_file_system(char* nombre_archivo){
             return respuesta_file_system;
         default: 
             log_error(logger, "[KERNEL] ERROR DE FILE_SYSTEM EN EXISTE_ARCHIVO");
+            return -1;
         break;
     }
 

@@ -436,11 +436,14 @@ int enviar_a_memoria(int32_t direccion, char *valor){
 }
 
 void enviar_respuesta_kernel(int ok, CODIGO_OPERACION cod){
-    
+    log_warning(logger, "Se va a enviar a kernel un: %d",
+                          ok);
+
     PAQUETE *paquete_kernel = crear_paquete(cod);
     agregar_a_paquete(paquete_kernel, &ok, sizeof(int32_t));      
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
     eliminar_paquete(paquete_kernel);
+    log_warning(logger, "Se envio correctamente a kerne");
 }
 
 char* obtener_info_de_memoria(int32_t dir_fisica , uint32_t tamanio){
