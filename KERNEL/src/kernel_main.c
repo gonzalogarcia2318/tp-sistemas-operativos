@@ -545,6 +545,9 @@ void manejar_hilo_fileSystem(){
 
         log_warning(logger, "cod op %d", cod_op);
 
+        int respuesta_file_system;
+
+        BUFFER* buffer;
 
         switch (cod_op)
         {
@@ -552,6 +555,12 @@ void manejar_hilo_fileSystem(){
         case FINALIZO_TRUNCADO:
             // el unico proceso que puede estar es PID_en_file_system
             log_warning(logger, "FINALIZO TRUNCADO DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+
+            buffer = recibir_buffer(socket_file_system);
+
+            memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            //log_info(logger, "Respuesta fs: %d", respuesta_file_system);
+            
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
             PID_en_file_system = NULL;
@@ -562,6 +571,12 @@ void manejar_hilo_fileSystem(){
         case FINALIZO_LECTURA:
             // el unico proceso que puede estar es PID_en_file_system
             log_warning(logger, "FINALIZO LECTURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+            
+            buffer = recibir_buffer(socket_file_system);
+
+            memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            //log_info(logger, "Respuesta fs: %d", respuesta_file_system);
+
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
             PID_en_file_system = NULL;
@@ -575,6 +590,11 @@ void manejar_hilo_fileSystem(){
         case FINALIZO_ESCRITURA:
             // el unico proceso que puede estar es PID_en_file_system
             log_warning(logger, "FINALIZO ESCRITURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+
+            buffer = recibir_buffer(socket_file_system);
+
+            memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            //log_info(logger, "Respuesta fs: %d", respuesta_file_system);
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
             PID_en_file_system = NULL;
@@ -890,7 +910,6 @@ int existe_archivo_en_file_system(char* nombre_archivo){
             return respuesta_file_system;
         default: 
             log_error(logger, "[KERNEL] ERROR DE FILE_SYSTEM EN EXISTE_ARCHIVO");
-            return -1;
         break;
     }
 
@@ -990,6 +1009,9 @@ void manejar_f_close(Proceso * proceso, char* nombre_archivo){
 
         Proceso *  proceso_para_ready = obtener_proceso_por_pid(PID_a_ejecutar);
         cambiar_estado(proceso_para_ready, READY);
+        proceso_para_ready->pcb->cronometro_ready = temporal_create();
+        queue_push(cola_ready, proceso_para_ready);
+        imprimir_cola(*cola_ready);
 
     } else {
         sacar_entrada_archivo_abierto_tabla_global(nombre_archivo);
@@ -1429,6 +1451,8 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
 
                     log_info(logger, "VUELVO A ENVIAR PAQUETE: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
                     manejar_create_segment(proceso, id_segmento, tamanio_segmento);
+
+                    sem_post(&operaciones_en_file_system);
 
                     break;
                 case MENSAJE:
