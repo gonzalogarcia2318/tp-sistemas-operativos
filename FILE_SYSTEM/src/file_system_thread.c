@@ -61,6 +61,7 @@ void recibir_instruccion_kernel()
   int32_t direccion_fisica = 0;
   int32_t tamanio = 0;
   int32_t puntero_archivo = 0;
+  int32_t pid = 0;
 
   switch (cod_instruccion)
   {
@@ -91,7 +92,9 @@ void recibir_instruccion_kernel()
       memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
       memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
-            buffer->stream += (sizeof(int32_t) * 2); 
+            buffer->stream += (sizeof(int32_t) * 2);
+      memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2);
        
       log_warning(logger,"LEER ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d> - <TAMAÑO: %d>",
                           nombre_archivo,
@@ -99,7 +102,7 @@ void recibir_instruccion_kernel()
                           direccion_fisica,
                           tamanio);
                           
-      if(ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio,direccion_fisica) == SUCCESS){
+      if(ejecutar_f_read(nombre_archivo,puntero_archivo,tamanio,direccion_fisica,pid) == SUCCESS){
           enviar_respuesta_kernel(SUCCESS, FINALIZO_LECTURA);
       }
       else
@@ -115,6 +118,8 @@ void recibir_instruccion_kernel()
       memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
       memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2);
+      memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
 
       log_warning(logger,"ESCRIBIR ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
@@ -123,7 +128,7 @@ void recibir_instruccion_kernel()
                           direccion_fisica,
                           tamanio);
 
-      if(ejecutar_f_write(nombre_archivo,puntero_archivo,direccion_fisica,tamanio) == SUCCESS){ //TODO
+      if(ejecutar_f_write(nombre_archivo,puntero_archivo,direccion_fisica,tamanio,pid) == SUCCESS){ //TODO
           enviar_respuesta_kernel(SUCCESS, FINALIZO_ESCRITURA);
       }
       else
@@ -364,7 +369,7 @@ int buscar_bloque_libre(){
   return ptr; 
 }
 
-int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, int direccion_fisica){
+int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, int direccion_fisica,int32_t pid){
   //abrir archivo de bloques
   archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"rb+");
   char* valor_leido;
@@ -385,16 +390,16 @@ int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, i
 
   fclose(archivo_bloques);
 
-  int estado = enviar_a_memoria(direccion_fisica, valor_leido);
+  int estado = enviar_a_memoria(direccion_fisica, valor_leido, pid);
 
  return estado;
 }
 
-int ejecutar_f_write(char *nombre_archivo,uint32_t puntero_archivo, uint32_t direccion_fisica, int32_t tamanio){
+int ejecutar_f_write(char *nombre_archivo,uint32_t puntero_archivo, uint32_t direccion_fisica, int32_t tamanio,int32_t pid){
 
   archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"wb+");
 
-  char *datos= obtener_info_de_memoria(direccion_fisica, tamanio);
+  char *datos= obtener_info_de_memoria(direccion_fisica, tamanio, pid);
 
   log_warning(logger, "DATO: %s", datos);      
 
@@ -410,13 +415,14 @@ int ejecutar_f_write(char *nombre_archivo,uint32_t puntero_archivo, uint32_t dir
   return SUCCESS;
 }
 
-int enviar_a_memoria(int32_t direccion, char *valor){
+int enviar_a_memoria(int32_t direccion, char *valor,int32_t pid){
     PAQUETE *paquete = crear_paquete(WRITE);
      
      int tamanio =strlen(valor);
     agregar_a_paquete(paquete, &direccion, sizeof(int32_t));
     agregar_a_paquete(paquete, &tamanio,sizeof(int32_t));
     agregar_a_paquete(paquete, valor, tamanio*sizeof(char));
+    agregar_a_paquete(paquete, &pid, sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
 
@@ -446,12 +452,13 @@ void enviar_respuesta_kernel(int ok, CODIGO_OPERACION cod){
     log_warning(logger, "Se envio correctamente a kerne");
 }
 
-char* obtener_info_de_memoria(int32_t dir_fisica , uint32_t tamanio){
+char* obtener_info_de_memoria(int32_t dir_fisica , uint32_t tamanio, int32_t pid){
     PAQUETE *paquete = crear_paquete(READ);
     
     
     agregar_a_paquete(paquete, &dir_fisica, sizeof(int32_t));
-    agregar_a_paquete(paquete, &tamanio,sizeof(uint32_t));
+    agregar_a_paquete(paquete, &tamanio, sizeof(uint32_t));
+    agregar_a_paquete(paquete, &pid, sizeof(uint32_t));
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
 

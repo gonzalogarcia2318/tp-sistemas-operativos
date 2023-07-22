@@ -753,6 +753,7 @@ void manejar_f_read(Proceso* proceso, char* nombre_archivo, int direccion_fisica
     agregar_a_paquete(paquete, &archivo->puntero_ubicacion, sizeof(int32_t));
     agregar_a_paquete(paquete, &cant_bytes, sizeof(int32_t));
     agregar_a_paquete(paquete, &direccion_fisica, sizeof(int32_t));
+    agregar_a_paquete(paquete, &proceso->pcb->PID,sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
 
@@ -783,6 +784,7 @@ void manejar_f_write(Proceso* proceso, char* nombre_archivo, int direccion_fisic
     agregar_a_paquete(paquete, &archivo->puntero_ubicacion, sizeof(int32_t));
     agregar_a_paquete(paquete, &cant_bytes, sizeof(int32_t));
     agregar_a_paquete(paquete, &direccion_fisica, sizeof(int32_t));
+    agregar_a_paquete(paquete, &proceso->pcb->PID,sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
 
