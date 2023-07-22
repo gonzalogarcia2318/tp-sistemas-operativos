@@ -46,11 +46,10 @@ void recibir_instruccion_kernel()
     memcpy(&cod_instruccion, buffer->stream + sizeof(int32_t), sizeof(int32_t));
     buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
 
-    memcpy(&tamanio_nombre, buffer->stream, sizeof(int32_t) );
+    memcpy(&tamanio_nombre, buffer->stream, sizeof(int32_t));
     buffer->stream += (sizeof(int32_t)); 
 
     log_info(logger, "tamaño nombre: %d", tamanio_nombre);
-
 
     nombre_archivo = malloc(tamanio_nombre);
   
@@ -122,7 +121,7 @@ void recibir_instruccion_kernel()
       memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
 
-      log_warning(logger,"ESCRIBIR ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d>> - <TAMAÑO: %d>",
+      log_warning(logger,"ESCRIBIR ARCHIVO: <NOMBRE_ARCHIVO: %s> - <PUNTERO ARCHIVO: %d> - <DIRECCION MEMORIA: %d> - <TAMAÑO: %d>",
                           nombre_archivo,
                           puntero_archivo,
                           direccion_fisica,
@@ -372,21 +371,14 @@ int buscar_bloque_libre(){
 int ejecutar_f_read(char *nombre_archivo,uint32_t puntero_archivo,int tamanio, int direccion_fisica,int32_t pid){
   //abrir archivo de bloques
   archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"rb+");
-  char* valor_leido;
+  char* valor_leido = malloc(tamanio);
 
   fseek(archivo_bloques,puntero_archivo,SEEK_SET);
   fread(valor_leido,tamanio,1,archivo_bloques);
-  log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s", valor_leido);
+  valor_leido[tamanio] = '\0';
+  log_warning(logger, "NOMBRE_ARCHIVO>: %s - VALOR LEIDO: %s", nombre_archivo, valor_leido);
 
   aplicar_retardo_acceso_bloque();
-  log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
-                          nombre_archivo,
-                          puntero_archivo/superbloque.BLOCK_SIZE, //hay que hacer el mapeo con el numero de bloque de archivo
-                          puntero_archivo/superbloque.BLOCK_SIZE); 
-
-  log_info(logger, "111");
-  log_warning(logger, "VALOR LEIDO: Archivo: <NOMBRE_ARCHIVO>: %s", valor_leido);
-
 
   fclose(archivo_bloques);
 
@@ -399,17 +391,27 @@ int ejecutar_f_write(char *nombre_archivo,uint32_t puntero_archivo, uint32_t dir
 
   archivo_bloques= fopen(FileSystemConfig.PATH_BLOQUES,"wb+");
 
+
   char *datos= obtener_info_de_memoria(direccion_fisica, tamanio, pid);
 
   log_warning(logger, "DATO: %s", datos);      
 
   fseek(archivo_bloques,puntero_archivo,SEEK_SET);
-  fwrite(&datos,sizeof(tamanio),1,archivo_bloques);
+  fwrite(datos,tamanio,1,archivo_bloques);
 
   aplicar_retardo_acceso_bloque(); 
   
   log_warning(logger, "VALOR ESCRITO: Archivo: <DATOS>: %s",
-                          datos);                     
+                          datos);
+
+
+
+  // QUITAR
+  //fseek(archivo_bloques,puntero_archivo,SEEK_SET);
+  //char *test = malloc(16);
+  //fread(test,16,1,archivo_bloques);
+  //log_warning(logger, "VALOR LeiDO: Archivo: <DATOS>: %s",test);
+  //QUITAR
 
   fclose(archivo_bloques);
   return SUCCESS;
@@ -427,11 +429,16 @@ int enviar_a_memoria(int32_t direccion, char *valor,int32_t pid){
     eliminar_paquete(paquete);
 
     BUFFER *buffer;
-
+    
     switch (obtener_codigo_operacion(socket_memoria))
     {  
         case WRITE:
             log_info(logger, "[FILE_SYSTEM]: MEMORIA ESCRIBIO CORRECTAMENTE");
+
+            buffer = recibir_buffer(socket_memoria);
+            int respuesta;
+            memcpy(&respuesta, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+
             return SUCCESS;
             break;
         default: 
@@ -454,8 +461,9 @@ void enviar_respuesta_kernel(int ok, CODIGO_OPERACION cod){
 
 char* obtener_info_de_memoria(int32_t dir_fisica , uint32_t tamanio, int32_t pid){
     PAQUETE *paquete = crear_paquete(READ);
-    
-    
+        
+    PAQUETE *paquete = crear_paquete(READ);
+  
     agregar_a_paquete(paquete, &dir_fisica, sizeof(int32_t));
     agregar_a_paquete(paquete, &tamanio, sizeof(uint32_t));
     agregar_a_paquete(paquete, &pid, sizeof(uint32_t));

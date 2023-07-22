@@ -95,7 +95,9 @@ void escuchar_file_system(int socket_fs)
 
       manejar_write_file_system();
 
+      int32_t respuesta = 1;
       PAQUETE* paquete_write = crear_paquete(WRITE);
+      agregar_a_paquete(paquete_write, &respuesta, sizeof(int32_t));
       enviar_paquete_a_cliente(paquete_write,socket_fs);
       eliminar_paquete(paquete_write);
       break;
