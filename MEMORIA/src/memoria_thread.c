@@ -85,6 +85,7 @@ void escuchar_file_system(int socket_fs)
       PAQUETE* paquete_read = crear_paquete(READ);
       agregar_a_paquete(paquete_read, leido, strlen(leido)*sizeof(char));
       enviar_paquete_a_cliente(paquete_read, socket_fs);
+      
       log_info(logger,"[MEMORIA]: ENVIO PAQUETE A FS: %s", leido);
       eliminar_paquete(paquete_read);
       break;

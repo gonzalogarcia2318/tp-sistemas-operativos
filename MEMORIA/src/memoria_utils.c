@@ -876,18 +876,26 @@ char* manejar_read_file_system()
     BUFFER* buffer = recibir_buffer(socket_file_system);
     int32_t direccion_fisica;
     int32_t tamanio;
+    int32_t pid;
     char* leido;
     
     memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
     memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2);
+    memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
+     
     
     leido = malloc(tamanio);
 
     strcpy(leido,leer_de_memoria(direccion_fisica, tamanio));
 
-    log_info(logger,"[MEMORIA]: manejar_read_file_system: %s", leido); //MODIFICAR POR LOG DE TP
+    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN:<LEER> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
+                    pid,
+                    direccion_fisica,
+                    tamanio
+                ); 
 
     return leido;
 }
@@ -897,6 +905,9 @@ void manejar_write_file_system()
     BUFFER* buffer = recibir_buffer(socket_file_system);
     int32_t direccion_fisica;
     int32_t tamanio;
+
+    int32_t pid;
+    
     memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
     memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
@@ -906,8 +917,17 @@ void manejar_write_file_system()
 
     memcpy(valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio));
             buffer->stream += (tamanio); 
+  
+    memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+            buffer->stream += (sizeof(int32_t) * 2); 
     
     escribir_en_memoria(valor_a_escribir, direccion_fisica, tamanio);
+
+    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN:<ESCRIBIR> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
+                    pid,
+                    direccion_fisica,
+                    tamanio
+                ); 
 }
 
 //////////////////////////////////TERMINAR DE EJECUTAR///////////////////////////////////
