@@ -897,13 +897,14 @@ void manejar_write_file_system()
     BUFFER* buffer = recibir_buffer(socket_file_system);
     int32_t direccion_fisica;
     int32_t tamanio;
-    char* valor_a_escribir = malloc(sizeof(char) * (tamanio));
-    
     memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
     memcpy(&tamanio, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
-    memcpy(&valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio));
+
+    char* valor_a_escribir = malloc(sizeof(char) * (tamanio));
+
+    memcpy(valor_a_escribir, buffer->stream + sizeof(int32_t), sizeof(char) * (tamanio));
             buffer->stream += (tamanio); 
     
     escribir_en_memoria(valor_a_escribir, direccion_fisica, tamanio);

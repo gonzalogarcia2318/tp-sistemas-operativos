@@ -66,6 +66,8 @@ void liberar_recursos(Proceso *proceso);
 
 void devolver_proceso_a_cpu(Proceso* proceso);
 
+void imprimir_cola_block(ARCHIVO_GLOBAL* entrada_archivo_global);
+
 
 
 void manejar_f_seek(char * nombre_archivo, int32_t posicion,Proceso * proceso);
@@ -961,7 +963,10 @@ void manejar_f_open(Proceso * proceso, char * nombre_archivo){
         
         cambiar_estado(proceso, BLOCK);
 
+        proceso->pcb->program_counter++;
         queue_push(entrada_tabla_global->cola_block, proceso->pcb->PID);
+
+        imprimir_cola_block(entrada_tabla_global);
 
     }else{
         log_info(logger, "[KERNEL]: NO Existe el archivo en la tabla global");
@@ -1003,7 +1008,9 @@ void manejar_f_close(Proceso * proceso, char* nombre_archivo){
     ARCHIVO_GLOBAL* entrada_tabla_global = buscar_archivo_en_tabla_global(nombre_archivo);
 
     if(!queue_is_empty(entrada_tabla_global->cola_block)){
-        log_info(logger, "[KERNEL]: Cola_bloc de archivo no esta vacia -> desbloquear el siguiente proceso");
+        log_info(logger, "[KERNEL]: Cola_block de archivo no esta vacia -> desbloquear el siguiente proceso");
+
+        imprimir_cola_block(entrada_tabla_global);
         
         PID_a_ejecutar = queue_pop(entrada_tabla_global->cola_block);
 
@@ -1014,10 +1021,12 @@ void manejar_f_close(Proceso * proceso, char* nombre_archivo){
         imprimir_cola(*cola_ready);
 
     } else {
+        log_info(logger, "[KERNEL]: Cola_block de archivo esta vacia -> sacar entrada de tabla global");
         sacar_entrada_archivo_abierto_tabla_global(nombre_archivo);
-        devolver_proceso_a_cpu(proceso);
     }
 
+    devolver_proceso_a_cpu(proceso);
+    imprimir_cola(*cola_ready);
 }
 
 
@@ -1564,4 +1573,32 @@ void imprimir_tabla_archivos_global(t_list* tabla_archivos_globales){
         log_info(logger, "-> Archivo: %s - PID en uso %d - Cola block %d", archivo->nombre_archivo, archivo->PID_en_uso, queue_size(archivo->cola_block));
     }
     log_info(logger, "-----------------");
+}
+
+
+
+void imprimir_cola_block(ARCHIVO_GLOBAL* entrada_archivo_global)
+{
+
+    t_queue *copia = queue_create();
+    Proceso *paraImprimir;
+    int elementos = queue_size(entrada_archivo_global->cola_block);
+
+    char *lista_pids = string_new();
+    string_append(&lista_pids, "[ ");
+
+    for (int i = 0; i < elementos; i++)
+    {
+        paraImprimir = (int) queue_pop(entrada_archivo_global->cola_block);
+        string_append_with_format(&lista_pids, " %s ", string_itoa(paraImprimir));
+        queue_push(copia, (int) paraImprimir);
+    }
+
+    string_append(&lista_pids, " ]");
+
+    log_info(logger, "Cola Block de %s: %s ", entrada_archivo_global->nombre_archivo, lista_pids);
+
+    entrada_archivo_global->cola_block = copia;
+
+    free(lista_pids);
 }
