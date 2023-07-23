@@ -21,6 +21,7 @@ bool manejar_paquete_kernel(int socket_kernel)
     case INSTRUCCION:
       log_info(logger, "[FILE SYSTEM]: INSTRUCCION recibida de KERNEL");
       recibir_instruccion_kernel();
+      log_info(logger, "[FILE_SYSTEM]: Esperando conexiones de Kernel...");
       break;
 
     case DESCONEXION:
