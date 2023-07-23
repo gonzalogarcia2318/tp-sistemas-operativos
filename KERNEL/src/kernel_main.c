@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 
             sem_post(&semaforo_planificador);
 
-            sem_post(&semaforo_ejecutando);
+            //sem_post(&semaforo_ejecutando);
 
             sleep(1);
         }
@@ -394,7 +394,12 @@ void manejar_paquete_cpu()
 
             Proceso *proceso_a_finalizar = obtener_proceso_por_pid(pid_seg_fault);
 
+            log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - SEGMENTATION FAULT", pid_seg_fault);
+
             finalizar_proceso(proceso_a_finalizar, "SEG_FAULT");
+            
+            // Ya volvio el proceso de la CPU -> pasamos a ejecutar otro
+            sem_post(&semaforo_ejecutando);
             break;
         }
     }
@@ -1493,6 +1498,8 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
 
         case FALTA_MEMORIA:
             log_info(logger, "[KERNEL]: FALTA MEMORIAAAAA!! Terminar el proceso con error ");
+
+            log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - OUT OF MEMORY", proceso->pcb->PID);
 
             finalizar_proceso(proceso, "OUT_OF_MEMORY"); 
 
