@@ -20,6 +20,7 @@ extern int socket_memoria;
 extern int socket_file_system;
 extern sem_t semaforo_new;
 extern sem_t semaforo_planificador;
+extern sem_t semaforo_ejecutando;
 extern t_list *procesos;
 extern pthread_mutex_t mx_procesos;
 extern t_list * archivos_abiertos_global;

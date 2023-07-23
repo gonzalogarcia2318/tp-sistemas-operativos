@@ -71,7 +71,9 @@ void manejar_paquete_consola(int socketConsola)
 void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
 {
     //log_info(logger, "[KERNEL]: Creando PCB");
-
+    
+    pthread_mutex_lock(&mx_procesos);
+    
     PCB *pcb = malloc(sizeof(PCB));
 
     pcb->PID = PROCESO_ID++;
@@ -102,7 +104,7 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
         return proceso->estado == NEW;
     }
 
-    pthread_mutex_lock(&mx_procesos);
+    
     t_list *procesos_en_new = list_filter(procesos, (void *)en_new);
     
     list_add(procesos, proceso);
@@ -113,6 +115,19 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
     if (list_size(procesos_en_new) == 0 && (list_size(procesos)-1)!=0)
     {
         sem_post(&semaforo_planificador);
+
+        bool en_finished(Proceso * proceso)
+        {
+            return proceso->estado == FINISHED;
+        }
+
+    
+        t_list *procesos_finished = list_filter(procesos, (void *)en_finished);
+        log_info(logger, "finished %d - total %d", list_size(procesos_finished), list_size(procesos));
+        if(list_size(procesos_finished) == list_size(procesos)-1){ // procesos - 1 porque ese es el new que recien se creo
+            log_info(logger, "destrabar semaforo ejecutando");
+            sem_post(&semaforo_ejecutando);
+        }
     }
 
     

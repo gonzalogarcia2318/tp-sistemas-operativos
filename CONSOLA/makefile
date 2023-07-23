@@ -65,6 +65,12 @@ rune1: all
 rune2: all
 	./$(PROCESS_NAME) config/consola.config ./error2.txt
 
+rune3: all
+	./$(PROCESS_NAME) config/consola.config ./error3.txt
+
+rune4: all
+	./$(PROCESS_NAME) config/consola.config ./error4.txt
+
 runs1: all
 	./$(PROCESS_NAME) config/consola.config ./create_segment.txt
 
