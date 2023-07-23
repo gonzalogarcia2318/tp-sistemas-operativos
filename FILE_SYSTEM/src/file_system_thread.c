@@ -460,9 +460,7 @@ void enviar_respuesta_kernel(int ok, CODIGO_OPERACION cod){
 }
 
 char* obtener_info_de_memoria(int32_t dir_fisica , uint32_t tamanio, int32_t pid){
-    PAQUETE *paquete = crear_paquete(READ);
-        
-    PAQUETE *paquete = crear_paquete(READ);
+    PAQUETE *paquete = crear_paquete(READ);   
   
     agregar_a_paquete(paquete, &dir_fisica, sizeof(int32_t));
     agregar_a_paquete(paquete, &tamanio, sizeof(uint32_t));
