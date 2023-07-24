@@ -484,8 +484,7 @@ char* obtener_info_de_memoria(int32_t dir_fisica , uint32_t tamanio, int32_t pid
             char *dato = malloc(tamanio_dato);
 
             memcpy(dato, buffer->stream, tamanio_dato);
-            buffer->stream += tamanio_dato; 
-            log_info(logger, "dato %s", dato);
+            buffer->stream += tamanio_dato;
 
             dato[tamanio_dato] = '\0';
             
