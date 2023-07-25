@@ -33,7 +33,6 @@ int conectar_con_file_system();
 void conectar_con_consola();
 int conectar_con_cpu();
 int conectar_con_memoria();
-void terminar_ejecucion();
 t_list* crear_recursos(char** recursos, char** instancias_recursos);
 
 #endif

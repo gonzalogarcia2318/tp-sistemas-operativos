@@ -63,6 +63,7 @@ void imprimir_segmentos_de_todos_los_procesos();
 void imprimir_tabla_archivos_global(t_list* tabla_archivos_globales);
 
 void liberar_recursos(Proceso *proceso);
+void terminar_ejecucion();
 
 void devolver_proceso_a_cpu(Proceso* proceso);
 
@@ -1121,8 +1122,16 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
     }
 
     recurso->instancias += 1;
-    // REVISAR SEGMENTATION FAULT ACA
-    //list_remove(proceso->pcb->recursos_asignados, nombre_recurso);
+
+    int a_borrar;
+    for(int i = 0; i < list_size(proceso->pcb->recursos_asignados); i++){
+        char* recurso = list_get(proceso->pcb->recursos_asignados, i);
+        if(strcmp(recurso, nombre_recurso) == 0){
+            a_borrar = i;
+            list_remove(proceso->pcb->recursos_asignados, i);
+            break;
+        }
+    }
 
     log_warning(logger, "[KERNEL]: PID: <%d> - SIGNAL: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
 
@@ -1197,9 +1206,21 @@ void finalizar_proceso(Proceso* proceso, char* motivo){
     // avisar a consola que finalizo
     avisar_a_consola_fin_proceso(proceso);
     //
-    //liberar_recursos(proceso);
+    liberar_recursos(proceso);
     //
     //liberar_proceso(proceso);
+
+    bool en_finished(Proceso * proceso)
+    {
+        return proceso->estado == FINISHED;
+    }
+
+    t_list *procesos_finished = list_filter(procesos, (void *)en_finished);
+    if(list_size(procesos_finished) == list_size(procesos)){ 
+        // Estan todos en FINISHED
+        terminar_ejecucion();
+    }
+
 }
 
 void manejar_io(Proceso *proceso, int32_t PID, int tiempo)
@@ -1251,6 +1272,59 @@ void liberar_proceso(Proceso *proceso)
     // free(proceso->pcb); -> Todavia no se puede liberar. Hacer free al final
 }
 
+void terminar_ejecucion()
+{
+    log_warning(logger, "[KERNEL]: Liberando recursos...");
+    
+    config_destroy(config);
+
+    queue_destroy(cola_ready);
+    queue_destroy_and_destroy_elements(cola_io, free);
+
+    //log_warning(logger, "1");
+
+    // No deberia haber nada => se van liberando a medida que se cierran
+    for(int i = 0; i < list_size(archivos_abiertos_global); i++){
+        ARCHIVO_GLOBAL* archivo_global = (ARCHIVO_GLOBAL*) list_get(archivos_abiertos_global, i);
+        free(archivo_global->nombre_archivo);
+        queue_destroy(archivo_global->cola_block);
+    }
+    list_destroy(archivos_abiertos_global);
+
+    // liberar procesos
+    for(int i = 0; i < list_size(procesos); i++){
+        Proceso* proceso = (Proceso*) list_get(procesos, i);
+
+        // No deberia haber nada => se van liberando a medida que se cierran
+        for(int j = 0; j < list_size(proceso->pcb->archivos_abiertos); j++){
+            ARCHIVO_PROCESO* archivo_proceso = (ARCHIVO_PROCESO*) list_get(proceso->pcb->archivos_abiertos, j);
+            free(archivo_proceso->nombre_archivo);
+        }
+        list_destroy(proceso->pcb->archivos_abiertos);
+
+        //log_warning(logger, "2");
+
+        list_destroy_and_destroy_elements(proceso->pcb->recursos_asignados, free);
+
+        //log_warning(logger, "3");
+
+        list_destroy_and_destroy_elements(proceso->pcb->instrucciones, liberar_instruccion);
+
+        //log_warning(logger, "4");
+        temporal_destroy(proceso->pcb->cronometro_ready);
+        temporal_destroy(proceso->pcb->cronometro_exec);
+
+        //log_warning(logger, "5");
+        free(proceso->pcb);
+    }
+
+    list_destroy(procesos);
+
+    log_destroy(logger);
+
+    exit(EXIT_SUCCESS);
+}
+
 void liberar_recursos(Proceso *proceso)
 {
     if (!list_is_empty(proceso->pcb->recursos_asignados))
@@ -1268,10 +1342,6 @@ void liberar_recursos(Proceso *proceso)
 
             //log_info(logger, "[KERNEL] SUMAMOS RECURSO %s - %d ", recurso->nombre, recurso->instancias);
         }
-
-        // REVISAR DOBLE FREE
-        list_destroy(proceso->pcb->recursos_asignados);
-        //list_destroy_and_destroy_elements(proceso->pcb->recursos_asignados, free);
     }
 }
 
