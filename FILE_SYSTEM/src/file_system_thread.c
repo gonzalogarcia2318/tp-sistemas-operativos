@@ -261,7 +261,7 @@ void ejecutar_f_truncate(char *nombre, int a_truncar)
             // Convertir uint32_t a string
             log_info(logger, "puntero directo: %d", puntero_directo);
             size_t longitud = strlen(puntero_directo_str);
-            log_info(logger, "tamanio  buffer: %%zu\n", longitud);
+            //log_info(logger, "tamanio  buffer: %%zu\n", longitud);
             snprintf(puntero_directo_str, sizeof(puntero_directo_str), "%u", puntero_directo);
             config_set_value(fcb, "PUNTERO_DIRECTO", puntero_directo_str);
             bloques_necesarios--;
@@ -318,7 +318,7 @@ void ejecutar_f_truncate(char *nombre, int a_truncar)
                 fread(&valor_puntero, sizeof(uint32_t), 1, archivo_bloques);
                 // marcar como libres en el bitmap
                 bitarray_clean_bit(bitmap, valor_puntero / superbloque.BLOCK_SIZE);
-                log_warning(logger, "ACCESO A BITMAP: <NUMERO BLOQUE: %ld> - Estado: <ESTADO>: %d>",
+                log_warning(logger, "ACCESO A BITMAP: <NUMERO BLOQUE: %d> - Estado: <ESTADO>: %d>",
                             valor_puntero / superbloque.BLOCK_SIZE,
                             0);
                 copybr--;
@@ -342,7 +342,7 @@ void ejecutar_f_truncate(char *nombre, int a_truncar)
                             valor_puntero / superbloque.BLOCK_SIZE);
                 // marcar como libres en el bitmap
                 bitarray_clean_bit(bitmap, valor_puntero / superbloque.BLOCK_SIZE);
-                log_warning(logger, "ACCESO A BITMAP: <NUMERO BLOQUE: %ld> - Estado: <ESTADO>: %d>",
+                log_warning(logger, "ACCESO A BITMAP: <NUMERO BLOQUE: %d> - Estado: <ESTADO>: %d>",
                             valor_puntero / superbloque.BLOCK_SIZE,
                             0);
                 // se dejan los valores en el archivo de bloques, pero al marcarse libres, otro proceso pisara los valores
@@ -523,7 +523,7 @@ char *obtener_info_de_memoria(int32_t dir_fisica, uint32_t tamanio, int32_t pid)
         return dato;
     default:
         log_error(logger, "[FILE_SYSTEM]: MEMORIA FALLO AL LEER");
-        return;
+        return NULL;
         break;
     }
 }

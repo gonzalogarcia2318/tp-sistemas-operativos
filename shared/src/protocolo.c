@@ -350,6 +350,7 @@ PCB *deserializar_pcb(BUFFER *buffer)
 
     free(buffer_segmentos);
     free(buffer_instrucciones);
+    //NO HACER FREE DE "buffer", se hace dsps.
 
     return pcb;
 }

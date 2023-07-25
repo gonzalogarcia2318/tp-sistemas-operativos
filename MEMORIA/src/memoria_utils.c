@@ -282,10 +282,9 @@ void escribir_en_memoria(char* contenido, int32_t direccion_fisica, int32_t byte
 
     memcpy(posicion,contenido,bytes_registro);
 
-    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d> - strlen: %ld",
+    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d>",
                      contenido,
-                     direccion_fisica,
-                     bytes_registro
+                     direccion_fisica
             );
     aplicar_retardo_espacio_usuario();
 }

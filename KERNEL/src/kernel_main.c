@@ -81,7 +81,7 @@ void manejar_f_close(Proceso * proceso, char* nombre_archivo);
 ARCHIVO_PROCESO * buscar_archivo_en_tabla_proceso(Proceso * proceso , char* nombre_archivo);
 ARCHIVO_GLOBAL * buscar_archivo_en_tabla_global(char* nombre_archivo);
 
-int32_t PID_en_file_system = NULL;
+int32_t PID_en_file_system = 0;
 
 
 int main(int argc, char **argv)
@@ -579,7 +579,7 @@ void manejar_hilo_fileSystem(){
             
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
-            PID_en_file_system = NULL;
+            PID_en_file_system = 0;
             // post al semaforo para que siga ejecutando (si no hay otro proceso antes)
             sem_post(&semaforo_ejecutando);
         break;
@@ -595,7 +595,7 @@ void manejar_hilo_fileSystem(){
 
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
-            PID_en_file_system = NULL;
+            PID_en_file_system = 0;
 
             // post al semaforo para que siga ejecutando (si no hay otro proceso antes)
             sem_post(&semaforo_ejecutando);
@@ -613,7 +613,7 @@ void manejar_hilo_fileSystem(){
             //log_info(logger, "Respuesta fs: %d", respuesta_file_system);
             // Pasar proceso a ready
             pasar_proceso_a_ready(PID_en_file_system);
-            PID_en_file_system = NULL;
+            PID_en_file_system = 0;
             
             // post al semaforo para que siga ejecutando (si no hay otro proceso antes)
             sem_post(&semaforo_ejecutando);
@@ -1036,7 +1036,7 @@ void manejar_f_close(Proceso * proceso, char* nombre_archivo){
 
         imprimir_cola_block(entrada_tabla_global);
         
-        PID_a_ejecutar = queue_pop(entrada_tabla_global->cola_block);
+        PID_a_ejecutar = (int32_t)queue_pop(entrada_tabla_global->cola_block);
 
         Proceso *  proceso_para_ready = obtener_proceso_por_pid(PID_a_ejecutar);
         cambiar_estado(proceso_para_ready, READY);
@@ -1266,7 +1266,7 @@ void liberar_instruccion(Instruccion *instruccion)
 
 void liberar_proceso(Proceso *proceso)
 {
-    list_destroy_and_destroy_elements(proceso->pcb->instrucciones, liberar_instruccion);
+    list_destroy_and_destroy_elements(proceso->pcb->instrucciones, (void*)liberar_instruccion);
     temporal_destroy(proceso->pcb->cronometro_ready);
     temporal_destroy(proceso->pcb->cronometro_exec);
     // free(proceso->pcb); -> Todavia no se puede liberar. Hacer free al final
@@ -1308,7 +1308,7 @@ void terminar_ejecucion()
 
         //log_warning(logger, "3");
 
-        list_destroy_and_destroy_elements(proceso->pcb->instrucciones, liberar_instruccion);
+        list_destroy_and_destroy_elements(proceso->pcb->instrucciones, (void*)liberar_instruccion);
 
         //log_warning(logger, "4");
         temporal_destroy(proceso->pcb->cronometro_ready);
@@ -1674,7 +1674,7 @@ void imprimir_cola_block(ARCHIVO_GLOBAL* entrada_archivo_global)
 {
 
     t_queue *copia = queue_create();
-    Proceso *paraImprimir;
+    int paraImprimir;
     int elementos = queue_size(entrada_archivo_global->cola_block);
 
     char *lista_pids = string_new();
