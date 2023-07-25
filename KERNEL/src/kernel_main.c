@@ -177,7 +177,7 @@ int main(int argc, char **argv)
         pthread_mutex_lock(&mx_procesos);
         t_list *procesos_en_new = list_filter(procesos, (void *)en_new);
 
-        log_info(logger, "En NEW: %d", list_size(procesos_en_new));
+        //log_info(logger, "En NEW: %d", list_size(procesos_en_new));
 
         if (list_size(procesos_en_new) > 0)
         {
@@ -223,7 +223,7 @@ void manejar_paquete_cpu()
             free(mensaje);
             break;
         case DESCONEXION:
-            log_warning(logger, "[KERNEL]: Conexión de CPU terminada.");
+            log_info(logger, "[KERNEL]: Conexión de CPU terminada.");
             return;
 
         case PAQUETE_CPU:
@@ -299,6 +299,8 @@ void manejar_paquete_cpu()
             case F_OPEN:
                 log_info(logger, "[KERNEL] Llego Instruccion F_OPEN - Proceso PID:<%d> - Archivo: <%s>", proceso->pcb->PID, instruccion->nombreArchivo);
 
+                log_warning(logger, "[KERNEL] PID: <%d> - Abrir Archivo: <%s>", proceso->pcb->PID, instruccion->nombreArchivo);
+
                 // Encapsular en llamada a file system con semaforo -- file_system_disponible -- YA NO HACE FALTA NO?
                 manejar_f_open(proceso, instruccion->nombreArchivo);
 
@@ -306,6 +308,8 @@ void manejar_paquete_cpu()
 
             case F_CLOSE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_CLOSE - Proceso PID:<%d> - Archivo: <%s>", proceso->pcb->PID, instruccion->nombreArchivo);
+
+                log_warning(logger, "[KERNEL] PID: <%d> - Cerrar Archivo: <%s>", proceso->pcb->PID, instruccion->nombreArchivo);
                 
                 // Encapsular en llamada a file system con semaforo -- file_system_disponible
                 
@@ -315,7 +319,7 @@ void manejar_paquete_cpu()
 
             case F_SEEK:
                 log_info(logger, "[KERNEL] Llego Instruccion F_SEEK");
-                log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->posicion);
+                //log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->posicion);
                 
                 
                 manejar_f_seek(instruccion->nombreArchivo, instruccion->posicion, proceso);
@@ -329,7 +333,8 @@ void manejar_paquete_cpu()
                 memcpy(&(instruccion->direccionFisica), buffer->stream + sizeof(int32_t), sizeof(int32_t));
                 buffer->stream += (sizeof(int32_t) * 2);
 
-                log_info(logger, "Parametros: %s - %d - %d", instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
+                //log_info(logger, "Parametros: %s - %d - %d", instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
+
 
                 manejar_f_read(proceso, instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
                 break;
@@ -341,7 +346,7 @@ void manejar_paquete_cpu()
                 memcpy(&(instruccion->direccionFisica), buffer->stream + sizeof(int32_t), sizeof(int32_t));
                 buffer->stream += (sizeof(int32_t) * 2);
 
-                log_info(logger, "Parametros: %s - %d - %d", instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
+                //log_info(logger, "Parametros: %s - %d - %d", instruccion->nombreArchivo, instruccion->direccionFisica, instruccion->cantBytes);
 
                 manejar_f_write(proceso,instruccion->nombreArchivo, instruccion->direccionFisica,instruccion->cantBytes );
 
@@ -349,7 +354,10 @@ void manejar_paquete_cpu()
 
             case F_TRUNCATE:
                 log_info(logger, "[KERNEL] Llego Instruccion F_TRUNCATE");
-                log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->tamanioArchivo);
+                //log_info(logger, "Parametros: %s - %d", instruccion->nombreArchivo, instruccion->tamanioArchivo);
+
+                log_warning(logger, "[KERNEL] PID: <%d> - Truncar Archivo: <%s> - Tamaño: <%d>", proceso->pcb->PID, instruccion->nombreArchivo, instruccion->tamanioArchivo);
+
                 
                 manejar_f_truncate(proceso, instruccion->nombreArchivo, instruccion->tamanioArchivo);
                 
@@ -357,8 +365,8 @@ void manejar_paquete_cpu()
 
             case CREATE_SEGMENT:
                 log_info(logger, "[KERNEL] Llego Instruccion CREATE_SEGMENT");
-                log_info(logger, "Parametros: %d - %d", instruccion->idSegmento, instruccion->tamanioSegmento);
-                log_warning(logger, "PID: <%d> - Crear Segmento - Id: <%d> - Tamaño:<%d>",
+                //log_info(logger, "Parametros: %d - %d", instruccion->idSegmento, instruccion->tamanioSegmento);
+                log_warning(logger, "[KERNEL] PID: <%d> - Crear Segmento - Id: <%d> - Tamaño:<%d>",
                             pcb->PID,
                             instruccion->idSegmento,
                             instruccion->tamanioSegmento);
@@ -367,8 +375,8 @@ void manejar_paquete_cpu()
 
             case DELETE_SEGMENT:
                 log_info(logger, "[KERNEL] Llego Instruccion DELETE_SEGMENT");
-                log_info(logger, "Parametros: %d", instruccion->idSegmento);
-                log_warning(logger, "PID: <%d> - Eliminar Segmento - Id Segmento: <%d>",
+                //log_info(logger, "Parametros: %d", instruccion->idSegmento);
+                log_warning(logger, "[KERNEL] PID: <%d> - Eliminar Segmento - Id Segmento: <%d>",
                             pcb->PID,
                             instruccion->idSegmento);
                 manejar_delete_segment(proceso, instruccion->idSegmento);
@@ -385,7 +393,7 @@ void manejar_paquete_cpu()
             break;
 
         case SEG_FAULT:
-            log_warning(logger, "[KERNEL]: LLEGO SEGMENTATION_FAULT DE CPU. ");
+            log_info(logger, "[KERNEL]: LLEGO SEGMENTATION_FAULT DE CPU. ");
             BUFFER *buffer_seg_fault = recibir_buffer(socket_cpu);
 
             int pid_seg_fault;
@@ -521,7 +529,7 @@ void imprimir_cola(t_queue cola)
 
     string_append(&lista_pids, " ]");
 
-    log_info(logger, "Cola Ready %s: %s ", KernelConfig.ALGORITMO_PLANIFICACION, lista_pids);
+    log_warning(logger, "Cola Ready %s: %s ", KernelConfig.ALGORITMO_PLANIFICACION, lista_pids);
 
     cola_ready = copia;
 
@@ -542,15 +550,15 @@ void manejar_hilo_fileSystem(){
 
     while(true){
 
-        log_warning(logger, "trabados en esperar_respuesta_fileSystem");
+        //log_warning(logger, "trabados en esperar_respuesta_fileSystem");
         sem_wait(&esperar_respuesta_fileSystem);
 
-        log_warning(logger, "trabados en file_system_disponible");
+        //log_warning(logger, "trabados en file_system_disponible");
         sem_wait(&file_system_disponible);
 
         CODIGO_OPERACION cod_op = obtener_codigo_operacion(socket_file_system);
 
-        log_warning(logger, "cod op %d", cod_op);
+        //log_warning(logger, "cod op %d", cod_op);
 
         int respuesta_file_system;
 
@@ -561,7 +569,7 @@ void manejar_hilo_fileSystem(){
             
         case FINALIZO_TRUNCADO:
             // el unico proceso que puede estar es PID_en_file_system
-            log_warning(logger, "FINALIZO TRUNCADO DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+            log_info(logger, "FINALIZO TRUNCADO DE FILE SYSTEM: Proceso %d", PID_en_file_system);
 
             buffer = recibir_buffer(socket_file_system);
 
@@ -577,7 +585,7 @@ void manejar_hilo_fileSystem(){
 
         case FINALIZO_LECTURA:
             // el unico proceso que puede estar es PID_en_file_system
-            log_warning(logger, "FINALIZO LECTURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+            log_info(logger, "FINALIZO LECTURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
             
             buffer = recibir_buffer(socket_file_system);
 
@@ -596,7 +604,7 @@ void manejar_hilo_fileSystem(){
 
         case FINALIZO_ESCRITURA:
             // el unico proceso que puede estar es PID_en_file_system
-            log_warning(logger, "FINALIZO ESCRITURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
+            log_info(logger, "FINALIZO ESCRITURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
 
             buffer = recibir_buffer(socket_file_system);
 
@@ -617,7 +625,7 @@ void manejar_hilo_fileSystem(){
         break;
 
         default:
-            log_warning(logger, "ERROR AL RECIBIR DE FILE SYSTEM EN EL HILO");
+            log_info(logger, "ERROR AL RECIBIR DE FILE SYSTEM EN EL HILO");
             sem_post(&esperar_respuesta_fileSystem);
         break;
 
@@ -643,10 +651,10 @@ void manejar_hilo_ejecutar()
     while (true)
     {
 
-        log_info(logger, "se traba en semaforo_ejecutando");
+        //log_info(logger, "se traba en semaforo_ejecutando");
         sem_wait(&semaforo_ejecutando); // Ejecuta uno a la vez
 
-        log_info(logger, "En ready: %d", queue_size(cola_ready));
+        //log_info(logger, "En ready: %d", queue_size(cola_ready));
 
         if (!queue_is_empty(cola_ready))
         {
@@ -691,7 +699,7 @@ void manejar_hilo_io()
     {
         sem_wait(&semaforo_io);
         Proceso_IO *proceso_io = (Proceso_IO *)queue_pop(cola_io);
-        log_info(logger, "[KERNEL]: PID: <%d> - Ejecuta IO: %d", proceso_io->PID, proceso_io->tiempo_bloqueado);
+        log_warning(logger, "[KERNEL]: PID: <%d> - Ejecuta IO: %d", proceso_io->PID, proceso_io->tiempo_bloqueado);
         sleep(proceso_io->tiempo_bloqueado);
 
         Proceso *proceso = obtener_proceso_por_pid(proceso_io->PID);
@@ -719,6 +727,8 @@ void manejar_f_seek(char * nombre_archivo, int32_t posicion,Proceso * proceso){
 
     archivo->puntero_ubicacion = posicion;
 
+    log_warning(logger, "[KERNEL] PID: <%d> - Actualizar puntero archvio: <%s> - Puntero: <%d>", proceso->pcb->PID, nombre_archivo, archivo->puntero_ubicacion);
+
     devolver_proceso_a_cpu(proceso);
 
     return;
@@ -739,7 +749,7 @@ void manejar_f_truncate(Proceso * proceso, char * nombre_archivo , int32_t taman
     cambiar_estado(proceso,BLOCK);
 
     PID_en_file_system = proceso->pcb->PID;
-    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_TRUNCATE> - %s - tamanio: %d ", nombre_archivo, tamanioArchivo);
+    //log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_TRUNCATE> - %s - tamanio: %d ", nombre_archivo, tamanioArchivo);
 
     //Al finalizar Proceso F_TRUNCATE
     sem_post(&esperar_respuesta_fileSystem);
@@ -751,6 +761,8 @@ void manejar_f_read(Proceso* proceso, char* nombre_archivo, int direccion_fisica
     PID_en_file_system = proceso->pcb->PID;
 
     ARCHIVO_PROCESO* archivo = buscar_archivo_en_tabla_proceso(proceso,nombre_archivo);
+
+    log_warning(logger, "[KERNEL] PID: <%d> - Leer Archivo: <%s> - Puntero: <%d> - Direccion memoria: <%d> - Tamaño: <%d>", proceso->pcb->PID, nombre_archivo, archivo->puntero_ubicacion, direccion_fisica, cant_bytes);
 
     // Solicitar lectura a file system
     PAQUETE * paquete = crear_paquete(INSTRUCCION);
@@ -765,7 +777,7 @@ void manejar_f_read(Proceso* proceso, char* nombre_archivo, int direccion_fisica
     eliminar_paquete(paquete);
 
     
-    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_READ> - %s - puntero: %d - bytes: %d - dir fisica: %d", nombre_archivo, archivo->puntero_ubicacion, cant_bytes, direccion_fisica);
+    //log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_READ> - %s - puntero: %d - bytes: %d - dir fisica: %d", nombre_archivo, archivo->puntero_ubicacion, cant_bytes, direccion_fisica);
 
     
 
@@ -783,6 +795,8 @@ void manejar_f_write(Proceso* proceso, char* nombre_archivo, int direccion_fisic
 
     ARCHIVO_PROCESO * archivo = buscar_archivo_en_tabla_proceso(proceso,nombre_archivo);
 
+    log_warning(logger, "[KERNEL] PID: <%d> - Escribir Archivo: <%s> - Puntero: <%d> - Direccion memoria: <%d> - Tamaño: <%d>", proceso->pcb->PID, nombre_archivo, archivo->puntero_ubicacion, direccion_fisica, cant_bytes);
+
     // Solicitar escritura a file system
     PAQUETE * paquete = crear_paquete(INSTRUCCION);
     int32_t f_write = F_WRITE;
@@ -795,7 +809,7 @@ void manejar_f_write(Proceso* proceso, char* nombre_archivo, int direccion_fisic
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
 
-    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_WRITE> - %s - puntero: %d - bytes: %d - dir fisica: %d", nombre_archivo, archivo->puntero_ubicacion, cant_bytes, direccion_fisica);
+    //log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_WRITE> - %s - puntero: %d - bytes: %d - dir fisica: %d", nombre_archivo, archivo->puntero_ubicacion, cant_bytes, direccion_fisica);
 
     cambiar_estado(proceso, BLOCK);
 
@@ -809,7 +823,7 @@ ARCHIVO_GLOBAL * buscar_archivo_en_tabla_global(char* nombre_archivo){
 
     bool comparar_archivo_por_nombre(ARCHIVO_GLOBAL* archivo_global)
     {
-        log_info(logger, "[-]: comparar %s - %s", nombre_archivo, archivo_global->nombre_archivo);
+        //log_info(logger, "[-]: comparar %s - %s", nombre_archivo, archivo_global->nombre_archivo);
         return strcmp(nombre_archivo, archivo_global->nombre_archivo) == 0;
     }
 
@@ -898,18 +912,18 @@ int existe_archivo_en_file_system(char* nombre_archivo){
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
 
-    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <EXISTE_ARCHIVO?> - %s", nombre_archivo);
+    //log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <EXISTE_ARCHIVO?> - %s", nombre_archivo);
 
     BUFFER *buffer;
 
     CODIGO_OPERACION cod_op = obtener_codigo_operacion(socket_file_system);
 
-    log_info(logger, "Recibimos codigo_operacion: %d", cod_op);
+    //log_info(logger, "Recibimos codigo_operacion: %d", cod_op);
 
     switch (cod_op)
     {  
         case RESPUESTA_FILE_SYSTEM:
-            log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
+            //log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
 
             buffer = recibir_buffer(socket_file_system);
 
@@ -934,14 +948,14 @@ int avisar_file_system_crear_archivo(char * nombre_archivo){
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
 
-    log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <CREAR_ARCHIVO?> - %s", nombre_archivo);
+    //log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <CREAR_ARCHIVO?> - %s", nombre_archivo);
 
     BUFFER *buffer;
 
     switch (obtener_codigo_operacion(socket_file_system))
     {  
         case RESPUESTA_FILE_SYSTEM:
-            log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
+            //log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
 
             buffer = recibir_buffer(socket_file_system);
 
@@ -968,6 +982,8 @@ void manejar_f_open(Proceso * proceso, char * nombre_archivo){
 
         agregar_entrada_archivo_abierto_tabla_por_proceso(proceso, nombre_archivo);  
         
+        log_warning(logger, "[KERNEL] PID: <%d> - Bloqueado por: %s", proceso->pcb->PID, nombre_archivo);
+
         cambiar_estado(proceso, BLOCK);
 
         proceso->pcb->program_counter++;
@@ -982,11 +998,11 @@ void manejar_f_open(Proceso * proceso, char * nombre_archivo){
 
         sem_wait(&file_system_disponible);
         existe_archivo = existe_archivo_en_file_system(nombre_archivo);
-        log_info(logger, "[KERNEL]: existe_archivo_en_file_system %d", existe_archivo);
+        log_info(logger, "[KERNEL]: Existe archivo en file system? (-1 = no): %d", existe_archivo);
         sem_post(&file_system_disponible);
 
         if(existe_archivo == -1){
-            log_info(logger, "[KERNEL]: avisar a file system para crear archivo");
+            log_info(logger, "[KERNEL]: Avisar a file system para crear archivo");
             
             sem_wait(&file_system_disponible);
             avisar_file_system_crear_archivo(nombre_archivo);
@@ -1059,8 +1075,6 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
         return;
     }
 
-    log_info(logger, "-------------------------------------------------------------WAIT: %s", nombre_recurso);
-    log_info(logger, "instancias ANTES DE RESTAR 1 = %d", recurso->instancias);
 
     if (recurso->instancias > 0)
     {
@@ -1068,7 +1082,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
         list_add(proceso->pcb->recursos_asignados, nombre_recurso);
         
 
-        log_info(logger, "[KERNEL]: PID: <%d> - WAIT: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
+        log_warning(logger, "[KERNEL]: PID: <%d> - WAIT: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
 
         proceso->pcb->program_counter++;
         cambiar_estado(proceso, READY);
@@ -1080,7 +1094,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
     {
         cambiar_estado(proceso, BLOCK);
 
-        log_error(logger, "[KERNEL] PID: <%d> - Bloqueado por: %s", proceso->pcb->PID, nombre_recurso);
+        log_warning(logger, "[KERNEL] PID: <%d> - Bloqueado por: %s", proceso->pcb->PID, nombre_recurso);
 
         queue_push(recurso->cola_block, proceso);
     }
@@ -1106,21 +1120,18 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
         return;
     }
 
-    log_info(logger, "-------------------------------------------------------------SIGNAL: %s", nombre_recurso);
-    log_info(logger, "instancias ANTES DE SUMAR 1 = %d", recurso->instancias);
     recurso->instancias += 1;
-    log_info(logger, "signal");
     // REVISAR SEGMENTATION FAULT ACA
     //list_remove(proceso->pcb->recursos_asignados, nombre_recurso);
 
-    log_info(logger, "[KERNEL]: PID: <%d> - SIGNAL: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
+    log_warning(logger, "[KERNEL]: PID: <%d> - SIGNAL: %s - INSTANCIAS: %d", proceso->pcb->PID, nombre_recurso, recurso->instancias);
 
     if (!queue_is_empty(recurso->cola_block))
     {
         recurso->instancias -= 1;
-        log_info(logger, "[KERNEL] desbloquear %s ", nombre_recurso);
+        //log_info(logger, "[KERNEL] desbloquear %s ", nombre_recurso);
         Proceso *proceso_bloqueado = (Proceso *)queue_pop(recurso->cola_block);
-        log_info(logger, "[KERNEL] recurso %s del proceso %d ", nombre_recurso, proceso_bloqueado->pcb->PID);
+        //log_info(logger, "[KERNEL] recurso %s del proceso %d ", nombre_recurso, proceso_bloqueado->pcb->PID);
         // estado es EXEC? hay que sacarlo de block
         //proceso_bloqueado->estado = EXEC;
         //
@@ -1195,7 +1206,7 @@ void manejar_io(Proceso *proceso, int32_t PID, int tiempo)
 {
     cambiar_estado(proceso, BLOCK);
 
-    log_error(logger, "[KERNEL] PID: <%d> - Bloqueado por: IO", PID);
+    log_warning(logger, "[KERNEL] PID: <%d> - Bloqueado por: IO", PID);
 
     Proceso_IO *proceso_io = malloc(sizeof(Proceso_IO));
     proceso_io->PID = PID;
@@ -1255,7 +1266,7 @@ void liberar_recursos(Proceso *proceso)
             Recurso *recurso = list_find(recursos, (void *)comparar_recurso_por_nombre);
             recurso->instancias += 1;
 
-            log_info(logger, "[KERNEL] SUMAMOS RECURSO %s - %d ", recurso->nombre, recurso->instancias);
+            //log_info(logger, "[KERNEL] SUMAMOS RECURSO %s - %d ", recurso->nombre, recurso->instancias);
         }
 
         // REVISAR DOBLE FREE
@@ -1274,7 +1285,7 @@ void enviar_proceso_a_memoria(Proceso* proceso){
     switch (obtener_codigo_operacion(socket_memoria))
     {   
         case CREAR_PROCESO:
-            log_info(logger, "[KERNEL]: Llego tabla de segmentos de MEMORIA");
+            //log_info(logger, "[KERNEL]: Llego tabla de segmentos de MEMORIA");
 
             BUFFER *buffer = recibir_buffer(socket_memoria);
 
@@ -1368,7 +1379,7 @@ void actualizar_segmentos_para_todos_los_procesos(BUFFER* buffer){
 	int size_segmento_acumulado = 0;
 	do {
 		SEGMENTO* segmento = deserializar_segmento(buffer, size_segmento_acumulado);
-        log_info(logger, "Segmento deserializado PID: %d - SEG: %d - BASE: %d - LIMITE: %d", segmento->pid, segmento->id, segmento->base, segmento->limite);
+        //log_info(logger, "Segmento deserializado PID: %d - SEG: %d - BASE: %d - LIMITE: %d", segmento->pid, segmento->id, segmento->base, segmento->limite);
         // Hacer asi o cuando se cambia de PID indicaria un grupo de segmentos para ese proceso?
         if(segmento->pid != -1){
             Proceso* proceso = obtener_proceso_por_pid(segmento->pid);
@@ -1407,14 +1418,14 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
     eliminar_paquete(paquete);
     
 
-    log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
+    //log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
 
     BUFFER *buffer;
 
     switch (obtener_codigo_operacion(socket_memoria))
     {  
        case CREAR_SEGMENTO:
-            log_info(logger, "[KERNEL]: Se puede crear el segmento !! ");
+            log_info(logger, "[KERNEL]: Se pudo crear el segmento");
 
             buffer = recibir_buffer(socket_memoria);
            
@@ -1430,16 +1441,17 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
             //proceso->pcb->cronometro_exec = temporal_create();
             break; 
         case CONSOLIDAR:
-            log_info(logger, "[KERNEL]: CONSOLIDAR para crear segmento de memoria !! ");
+            //log_info(logger, "[KERNEL]: CONSOLIDAR para crear segmento de memoria");
 
             buffer = recibir_buffer(socket_memoria);
             int32_t un_pid;
             memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t)*2);
 
-            log_info(logger, "llego un_pid %d", un_pid);
+           
 
 
+            log_warning(logger, "[KERNEL] Compactacion: Esperando fin de Operaciones de FS");
             sem_wait(&operaciones_en_file_system);
             // Si pasa este semaforo => no se estan realizando fread/fwrite en file system
             PAQUETE *paquete_consolidar = crear_paquete(CONSOLIDAR);
@@ -1447,14 +1459,16 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
             enviar_paquete_a_servidor(paquete_consolidar, socket_memoria);
             eliminar_paquete(paquete_consolidar);
 
-            log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <CONSOLIDAR>");
+            //log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <CONSOLIDAR>");
+
+            log_warning(logger, "[KERNEL] Compactacion: Se solicto compactacion");
             
             BUFFER *buffer_consolidar;
 
             switch (obtener_codigo_operacion(socket_memoria))
             {  
                 case CONSOLIDAR:
-                    log_info(logger, "[KERNEL]: SE TERMINO DE CONSOLIDAR LA MEMORIA");
+                    log_warning(logger, "[KERNEL]: Se finalizo el proceso de compactacion");
 
                     buffer_consolidar = recibir_buffer(socket_memoria);
 
@@ -1465,7 +1479,7 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
 
                     imprimir_segmentos_de_todos_los_procesos();
 
-                    log_info(logger, "VUELVO A ENVIAR PAQUETE: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
+                    log_info(logger, "Se vuelve a enviar: <CREATE_SEGMENT> - id_segmento: %d - tamanio: %d", segmento->id, tamanio_segmento);
                     manejar_create_segment(proceso, id_segmento, tamanio_segmento);
 
                     sem_post(&operaciones_en_file_system);
@@ -1473,7 +1487,7 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
                     break;
                 case MENSAJE:
                     char* mensaje = obtener_mensaje_del_cliente(socket_memoria);
-                    log_info(logger, "Mensaje recibido de MEMORIA: %s", mensaje);
+                    //log_info(logger, "Mensaje recibido de MEMORIA: %s", mensaje);
                 default: 
                     log_error(logger, "[KERNEL] ERROR DE MEMORIA AL CONSOLIDAR");
                 break;
@@ -1497,7 +1511,7 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
             break;
 
         case FALTA_MEMORIA:
-            log_info(logger, "[KERNEL]: FALTA MEMORIAAAAA!! Terminar el proceso con error ");
+            //log_info(logger, "[KERNEL]: FALTA MEMORIAAAAA!! Terminar el proceso con error ");
 
             log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - OUT OF MEMORY", proceso->pcb->PID);
 
@@ -1521,14 +1535,14 @@ void manejar_delete_segment(Proceso* proceso, int32_t id_segmento)
     enviar_paquete_a_servidor(paquete, socket_memoria);
     eliminar_paquete(paquete);
 
-    log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <DELETE_SEGMENT> - id segmento: %d", id_segmento);
+    //log_info(logger, "ENVIÉ PAQUETE A MEMORIA: <DELETE_SEGMENT> - id segmento: %d", id_segmento);
 
     BUFFER *buffer;
 
     switch (obtener_codigo_operacion(socket_memoria))
     {  
         case BORRAR_SEGMENTO:
-            log_info(logger, "[KERNEL]: Llego BORRAR SEGMENTO de MEMORIA");
+            //log_info(logger, "[KERNEL]: Llego BORRAR SEGMENTO de MEMORIA");
 
             buffer = recibir_buffer(socket_memoria);
 

@@ -82,7 +82,7 @@ t_list *leer_instrucciones(char *path_instrucciones)
 
     while (fgets(linea, sizeof(linea), archivo_instrucciones))
     {
-        log_info(logger, "Linea leida22: %s", linea);
+        log_info(logger, "Linea leida: %s", linea);
 
         Instruccion *instruccion = parsear_instruccion_por_linea(linea);
 
@@ -90,8 +90,6 @@ t_list *leer_instrucciones(char *path_instrucciones)
     }
 
     fclose(archivo_instrucciones);
-
-    log_info(logger, "1SIZE %d", list_size(instrucciones));
 
     return instrucciones;
 }

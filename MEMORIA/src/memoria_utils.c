@@ -317,7 +317,7 @@ int32_t manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio
     case 1:
         //OK -> ASIGNAR SEGÚN ALGORITMO ASIGNACIÓN 
         int32_t dire_base = crear_segmento(pid, id_segmento, tamanio_segmento);
-        log_warning(logger,"PID: <%d> - Crear Segmento: ID SEGMENTO:<%d> - Base: <%d> - TAMAÑO: <%d>",
+        log_warning(logger,"PID: <%d> - Crear Segmento: ID SEGMENTO: <%d> - BASE: <%d> - TAMAÑO: <%d>",
                     pid,
                     id_segmento,
                     dire_base,
@@ -835,7 +835,7 @@ void imprimir_tabla_segmentos_globales()
     {
         seg_aux = list_get(tabla_de_segmentos_globales,i);
 
-        log_info(logger, "PID:<%d>, SEGMENTO:<%d>, BASE:<%d>, TAMAÑO:<%d>",
+        log_warning(logger, "PID:<%d>, SEGMENTO:<%d>, BASE:<%d>, TAMAÑO:<%d>",
                         seg_aux->pid,
                         seg_aux->id,
                         seg_aux->base,
@@ -891,7 +891,7 @@ char* manejar_read_file_system()
 
     strcpy(leido,leer_de_memoria(direccion_fisica, tamanio));
 
-    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN:<LEER> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
+    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN: <LEER> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
                     pid,
                     direccion_fisica,
                     tamanio
@@ -923,7 +923,7 @@ void manejar_write_file_system()
     
     escribir_en_memoria(valor_a_escribir, direccion_fisica, tamanio);
 
-    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN:<ESCRIBIR> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
+    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN: <ESCRIBIR> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
                     pid,
                     direccion_fisica,
                     tamanio

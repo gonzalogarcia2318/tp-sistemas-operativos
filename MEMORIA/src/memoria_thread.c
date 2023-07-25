@@ -39,7 +39,6 @@ void escuchar_kernel(int socket_kernel)
       int32_t un_pid;
       memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
       buffer->stream += (sizeof(int32_t)*2);
-      log_info(logger,"un_pid %d", un_pid);
 
       compactar();
       log_info(logger,"TERMINA EL COMPACTAR");
