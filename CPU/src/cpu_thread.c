@@ -11,12 +11,29 @@ PCB * recibir_pcb(int socket_kernel){
 	return pcb;
 }
 
-void enviar_pcb(PCB* pcb)
+void liberar_pcb_cpu(PCB* pcb)
 {
-  PAQUETE* paquete_pcb = crear_paquete(OP_PCB);
-  paquete_pcb->buffer = serializar_pcb(pcb);
-  enviar_paquete_a_cliente(paquete_pcb, socket_kernel);
-  eliminar_paquete(paquete_pcb);
+  //--------------------------------------INSTRUCCIONES
+  int size = list_size(pcb->instrucciones);
+
+  for (int i = 0; i < size; i++)
+  {
+    liberar_instruccion(list_get(pcb->instrucciones,i));
+  }
+  list_destroy(pcb->instrucciones);
+  //--------------------------------------TABLA SEGMENTOS
+   
+  int size2 = list_size(pcb->tabla_segmentos);
+
+  for (int i = 0; i < size2; i++)
+  {
+    free(list_get(pcb->tabla_segmentos,i));
+  }
+  list_destroy(pcb->tabla_segmentos);
+  
+  //--------------------------------------PCB
+   
+  free(pcb);
 }
 
 void manejar_paquete_kernel(int socket_kernel)
@@ -40,16 +57,11 @@ void manejar_paquete_kernel(int socket_kernel)
     case OP_PCB:
       log_info(logger, "[CPU]: OP PCB Recibido de Kernel");
       PCB *pcb = recibir_pcb(socket_kernel);
-      log_info(logger, "[CPU]: PCB Deserializada: con PID:[%d]",pcb->PID);
-      /*
-      for (int i = 0; i < list_size(pcb->instrucciones); i++)
-            {
-                Instruccion *instruccion = list_get(pcb->instrucciones, i);
-                // log_info(logger, "Instruccion %d: nombre: %s", i, instruccion->nombreInstruccion);
-            }
-      */
-      log_info(logger, "[CPU]: Lista de instrucciones recibida");
+     
       manejar_instrucciones(pcb);
+
+      liberar_pcb_cpu(pcb);
+
       log_info(logger, "[CPU]: Esperando conexiones de KERNEL..");
       break;
     default:

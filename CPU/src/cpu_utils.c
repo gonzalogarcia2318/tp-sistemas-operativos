@@ -71,7 +71,6 @@ void terminar_ejecucion()
 
 void manejar_instrucciones(PCB *pcb)
 {
-    t_list *instrucciones = list_duplicate(pcb->instrucciones);
 
     Instruccion *prox_instruccion;
 
@@ -79,7 +78,7 @@ void manejar_instrucciones(PCB *pcb)
 
     while (seguir)
     {
-        prox_instruccion = list_get(instrucciones, pcb->program_counter); // FORMA PARTE DEL FETCH
+        prox_instruccion = list_get(pcb->instrucciones, pcb->program_counter); // FORMA PARTE DEL FETCH
 
         if (!decode_instruccion(prox_instruccion, pcb)) // SI SEGMENTATION FAULT
         {
@@ -90,7 +89,7 @@ void manejar_instrucciones(PCB *pcb)
         {
             seguir = ejecutar_instruccion(prox_instruccion, pcb);
 
-            pcb->program_counter++;    
+            pcb->program_counter++;  
         }
     }
 }
@@ -131,12 +130,10 @@ void aplicar_retardo(int32_t retardo)
 }
 bool requiere_traduccion(Instruccion *instruccion)
 {
-    char *nombre_instru = string_duplicate(instruccion->nombreInstruccion);
-
-    if (!strcmp(nombre_instru, "MOV_IN") ||
-        !strcmp(nombre_instru, "MOV_OUT") ||
-        !strcmp(nombre_instru, "F_READ") ||
-        !strcmp(nombre_instru, "F_WRITE"))
+    if (!strcmp(instruccion->nombreInstruccion, "MOV_IN") ||
+        !strcmp(instruccion->nombreInstruccion, "MOV_OUT") ||
+        !strcmp(instruccion->nombreInstruccion, "F_READ") ||
+        !strcmp(instruccion->nombreInstruccion, "F_WRITE"))
         return true;
 
     else
@@ -149,15 +146,6 @@ int32_t realizar_traduccion(int32_t dir_logica, t_list *tabla_segmentos)
     int num_segmento = obtener_num_segmento(dir_logica);
 
     int desplazamiento_segmento = obtener_desplazamiento_segmento(dir_logica);
-
-    // SE FIJA POR EL ID DE SEGMENTO -> NO POR EL INDICE
-    //SEGMENTO *segmento = (SEGMENTO *)list_get(tabla_segmentos, num_segmento);
-
-    //bool comparar_id_segmentos(SEGMENTO* segmento)
-    //{
-    //    return segmento->id == num_segmento;
-    //}
-    //SEGMENTO *segmento = list_find(tabla_segmentos, (void *)comparar_id_segmentos);
 
     SEGMENTO *segmento_aux;
     SEGMENTO *segmento;
@@ -236,104 +224,94 @@ void avisar_seg_fault_kernel(PCB *pcb, Instruccion *instruccion)
 
 int ejecutar_instruccion(Instruccion *Instruccion, PCB *pcb) // EXECUTE //CADA INSTRUCCIÓN DEBE TENER SU log_warning(PID: <PID> - Ejecutando: <INSTRUCCION> - <PARAMETROS>)
 {
-    char *nombre_instru = string_duplicate(Instruccion->nombreInstruccion);
 
     PAQUETE *paquete = crear_paquete(INSTRUCCION);
 
     //quitar_salto_de_linea(nombre_instru);
 
-    if (!strcmp(nombre_instru, "SET"))
+    if (!strcmp(Instruccion->nombreInstruccion, "SET"))
     {
         ejecutar_set(paquete, Instruccion, pcb);
-        free(nombre_instru);
         return 1;
     }
-    else if (!strcmp(nombre_instru, "MOV_IN"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "MOV_IN"))
     {
         ejecutar_mov_in(paquete, Instruccion, pcb);
-        free(nombre_instru);
         return 1;
     }
-    else if (!strcmp(nombre_instru, "MOV_OUT"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "MOV_OUT"))
     {
         ejecutar_mov_out(paquete, Instruccion, pcb);
-        free(nombre_instru);
         return 1;
     }
-    else if (!strcmp(nombre_instru, "I/O"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "I/O"))
     {
         ejecutar_IO(paquete, Instruccion, pcb);
-        free(nombre_instru);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "F_OPEN"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "F_OPEN"))
     {
         ejecutar_f_open(paquete, Instruccion, pcb);
-        free(nombre_instru);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "F_CLOSE"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "F_CLOSE"))
     {
         ejecutar_f_close(paquete, Instruccion, pcb);
-        free(nombre_instru);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "F_SEEK"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "F_SEEK"))
     {
         ejecutar_f_seek(paquete, Instruccion, pcb);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "F_READ"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "F_READ"))
     {
         ejecutar_f_read(paquete, Instruccion, pcb); // DIR LOGICA?
         return 0;
     }
-    else if (!strcmp(nombre_instru, "F_WRITE"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "F_WRITE"))
     {
         ejecutar_f_write(paquete, Instruccion, pcb); // DIR LOGICA?
         return 0;
     }
-    else if (!strcmp(nombre_instru, "F_TRUNCATE"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "F_TRUNCATE"))
     {
         ejecutar_f_truncate(paquete, Instruccion, pcb);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "WAIT")) // CAMIL
+    else if (!strcmp(Instruccion->nombreInstruccion, "WAIT")) // CAMIL
     {
         ejecutar_wait(paquete, Instruccion, pcb);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "SIGNAL")) // CAMIL
+    else if (!strcmp(Instruccion->nombreInstruccion, "SIGNAL")) // CAMIL
     {
         ejecutar_signal(paquete, Instruccion, pcb);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "CREATE_SEGMENT")) // CAMIL
+    else if (!strcmp(Instruccion->nombreInstruccion, "CREATE_SEGMENT")) // CAMIL
     {
         ejecutar_create_segment(paquete, Instruccion, pcb);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "DELETE_SEGMENT")) // CAMIL
+    else if (!strcmp(Instruccion->nombreInstruccion, "DELETE_SEGMENT")) // CAMIL
     {
         ejecutar_delete_segment(paquete, Instruccion, pcb);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "YIELD"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "YIELD"))
     {
         ejecutar_yield(paquete, pcb);
-        free(nombre_instru);
         return 0;
     }
-    else if (!strcmp(nombre_instru, "EXIT"))
+    else if (!strcmp(Instruccion->nombreInstruccion, "EXIT"))
     {
         ejecutar_exit(paquete, pcb);
-        free(nombre_instru);
         return 0;
     }
     else
     {
         log_error(logger, "[CPU]: Codigo de Instruccion no encontrado");
-        free(nombre_instru);
         eliminar_paquete(paquete);
         return 0;
     }
@@ -415,7 +393,7 @@ char *obtener_valor_registro(Registro_CPU registros_pcb, char *registro_buscado)
     char *valor = malloc(17); // solo lo inicializo, se tiene q pisar
     //quitar_salto_de_linea(registro_buscado);
 
-       if (!strcmp(registro_buscado, "AX"))
+    if (!strcmp(registro_buscado, "AX"))
     {
         strncpy(valor, registros_pcb.valor_AX, 4);
         valor[4] = '\0';
@@ -507,7 +485,8 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);
     log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d>", 
             instruccion->registro,
-            tamanio_registro);
+            tamanio_registro
+            );
     if(tamanio_registro == 0) //NO LO ENCONTRÓ
         return;
 
@@ -536,6 +515,9 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
 
             valor[tamanio] = '\0';
         break;
+        default:
+            log_error(logger,"NO RECIBI FIN DE MOV_IN");
+        break;
     }
 
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
@@ -544,11 +526,14 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
                 pcb->PID,
                 num_segmento,
                 instruccion->direccionFisica,
-                valor);
+                valor
+                );
     asignar_a_registro(valor, instruccion->registro, pcb);
     eliminar_paquete(paquete);
     imprimir_registros(pcb->registros_cpu); //TODO BORRAR
 
+    free(valor);
+    free(buffer);
 }
 
 void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MODIFICADO CHK 4 PERO NO VERIFICADO
@@ -556,15 +541,15 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <MOV_OUT> - <DIRECCIÓN LÓGICA: %d, REGISTRO: %s>",
                 pcb->PID,
                 instruccion->direccionLogica,
-                instruccion->registro);
-
+                instruccion->registro
+                );
     imprimir_registros(pcb->registros_cpu); //TODO BORRAR
 
-    char *registro = string_duplicate(instruccion->registro); //TODO BORRAR
+    char *registro = instruccion->registro; //TODO BORRAR
 
-    char *valor_registro = string_duplicate(obtener_valor_registro(pcb->registros_cpu, registro));//TODO BORRAR
+    char *valor_registro = obtener_valor_registro(pcb->registros_cpu, registro);
     
-    int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);//TODO BORRAR
+    int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);
     log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d> - VALOR REGISTRO: %s", //TODO BORRAR
             instruccion->registro,
             tamanio_registro,
@@ -593,6 +578,9 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
             memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t)*2);
         break;
+        default:
+            log_error(logger, "[CPU]: NO RECIBI FIN DE MOV_OUT ");
+        break;
     }
 
     int num_segmento = floor(instruccion->direccionLogica / CPUConfig.TAM_MAX_SEGMENTO);
@@ -601,19 +589,21 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
                 pcb->PID,
                 num_segmento,
                 instruccion->direccionFisica,
-                valor_registro);
+                valor_registro
+                );
     eliminar_paquete(paquete);
 
     imprimir_registros(pcb->registros_cpu);
 
+    free(buffer);
 }
 
 void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <I/O> - <TIEMPO: %d>",
                 pcb->PID,
-                instruccion->tiempo);
-
+                instruccion->tiempo
+                );
     PAQUETE *paquete2 = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete2, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete2, &pcb->program_counter, sizeof(int32_t));
@@ -627,11 +617,9 @@ void ejecutar_f_open(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_OPEN> - <NOMBRE_ARCHIVO: %s>",
                 pcb->PID,
-                instruccion->nombreArchivo);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION f_open = F_OPEN;
-    //agregar_a_paquete(paquete, &f_open, sizeof(int));
-    //agregar_a_paquete(paquete, &instruccion->nombreArchivo, strlen(instruccion->nombreArchivo) + 1);
+                instruccion->nombreArchivo
+                );
+
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
@@ -645,11 +633,8 @@ void ejecutar_f_close(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // N
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_CLOSE> - <NOMBRE_ARCHIVO: %s>",
                 pcb->PID,
-                instruccion->nombreArchivo);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION f_close = F_CLOSE;
-    //agregar_a_paquete(paquete, &f_close, sizeof(int));
-    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
+                instruccion->nombreArchivo
+                );
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
@@ -664,12 +649,8 @@ void ejecutar_f_seek(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_SEEK> - <NOMBRE_ARCHIVO: %s> - <POSICION: %d> ",
                 pcb->PID,
                 instruccion->nombreArchivo,
-                instruccion->posicion);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION f_seek = F_SEEK;
-    //agregar_a_paquete(paquete, &f_seek, sizeof(int));
-    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    //agregar_a_paquete(paquete, &(instruccion->posicion), sizeof(int));
+                instruccion->posicion
+                );
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
@@ -685,13 +666,9 @@ void ejecutar_f_read(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // NI
                 pcb->PID,
                 instruccion->nombreArchivo,
                 instruccion->direccionFisica,
-                instruccion->cantBytes);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION f_read = F_READ;
-    //agregar_a_paquete(paquete, &f_read, sizeof(int));
-    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    //agregar_a_paquete(paquete, &(instruccion->direccionFisica), sizeof(int));
-    //agregar_a_paquete(paquete, &(instruccion->cantBytes), sizeof(int));
+                instruccion->cantBytes
+                );
+
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
@@ -708,13 +685,9 @@ void ejecutar_f_write(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) // N
                 pcb->PID,
                 instruccion->nombreArchivo,
                 instruccion->direccionFisica,
-                instruccion->cantBytes);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION f_write = F_WRITE;
-    //agregar_a_paquete(paquete, &f_write, sizeof(int));
-    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    //agregar_a_paquete(paquete, &(instruccion->direccionFisica), sizeof(int));
-    //agregar_a_paquete(paquete, &(instruccion->cantBytes), sizeof(int));
+                instruccion->cantBytes
+                );
+
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
@@ -730,12 +703,9 @@ void ejecutar_f_truncate(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) /
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <F_TRUNCATE> - <NOMBRE_ARCHIVO: %s> - <TAM_ARCHIVO: %d>",
                 pcb->PID,
                 instruccion->nombreArchivo,
-                instruccion->tamanioArchivo);
-    //enviar_pcb(pcb);
-    //CODIGO_INSTRUCCION f_truncate = F_TRUNCATE;
-    //agregar_a_paquete(paquete, &f_truncate, sizeof(int));
-    //agregar_a_paquete(paquete, &(instruccion->nombreArchivo), strlen(instruccion->nombreArchivo) + 1);
-    //agregar_a_paquete(paquete, &(instruccion->tamanioArchivo), sizeof(int));
+                instruccion->tamanioArchivo
+                );
+
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
     agregar_a_paquete(paquete_kernel, &pcb->program_counter, sizeof(int32_t));
@@ -749,7 +719,8 @@ void ejecutar_wait(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <WAIT> - <RECURSO: %s>",
                 pcb->PID,
-                instruccion->recurso);
+                instruccion->recurso
+                );
             
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
@@ -763,7 +734,8 @@ void ejecutar_signal(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <SIGNAL> - <RECURSO: %s>",
                 pcb->PID,
-                instruccion->recurso);
+                instruccion->recurso
+                );
 
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
@@ -779,7 +751,8 @@ void ejecutar_create_segment(PAQUETE *paquete, Instruccion *instruccion, PCB *pc
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <CREATE_SEGMENT> - <ID_SEGMENTO: %d> - <TAMANIO: %d>",
                 pcb->PID,
                 instruccion->idSegmento,
-                instruccion->tamanioSegmento);
+                instruccion->tamanioSegmento
+                );
 
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
@@ -793,7 +766,8 @@ void ejecutar_delete_segment(PAQUETE *paquete, Instruccion *instruccion, PCB *pc
 {
     log_warning(logger, "CPU: PID: <%d> - Ejecutando: <DELETE_SEGMENT> - <ID_SEGMENTO: %d> ",
                 pcb->PID,
-                instruccion->idSegmento);
+                instruccion->idSegmento
+                );
 
     PAQUETE *paquete_kernel = crear_paquete(PAQUETE_CPU);
     agregar_a_paquete(paquete_kernel, &pcb->PID, sizeof(int32_t));
@@ -859,4 +833,14 @@ void imprimir_registros(Registro_CPU registro)
     log_info(logger, "RCX: %s", registro.valor_RCX);
     log_info(logger, "RDX: %s", registro.valor_RDX);
     log_info(logger, "-------------------------------------");
+}
+
+void liberar_instruccion(Instruccion *instruccion)
+{
+    free(instruccion->nombreInstruccion);
+    free(instruccion->valor);
+    free(instruccion->registro);
+    free(instruccion->nombreArchivo);
+    free(instruccion->recurso);
+    free(instruccion);
 }

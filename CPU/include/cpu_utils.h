@@ -38,6 +38,7 @@ void manejar_instrucciones(PCB*); //ES GENERAL PARA TODAS, INCLUYE FETCH
         int32_t realizar_traduccion(int32_t, t_list*);
             int obtener_num_segmento(int32_t);
             int obtener_desplazamiento_segmento(int32_t);
+            void imprimir_tabla_segmentos(t_list* tabla_segmentos);
         bool comprobar_segmentation_fault(int32_t, Instruccion*, t_list*);
         void avisar_seg_fault_kernel(PCB*, Instruccion*);
     
@@ -61,6 +62,9 @@ void manejar_instrucciones(PCB*); //ES GENERAL PARA TODAS, INCLUYE FETCH
         void ejecutar_delete_segment(PAQUETE*,Instruccion*,PCB*);
         void ejecutar_yield(PAQUETE*,PCB*);
         void ejecutar_exit(PAQUETE*,PCB*);
+    
+    void imprimir_registros(Registro_CPU registro);
+    void liberar_instruccion(Instruccion *instruccion);
 
     
 #endif
