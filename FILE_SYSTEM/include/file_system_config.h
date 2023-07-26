@@ -13,7 +13,7 @@ typedef struct FILE_SYSTEM_CONFIG
     char *PATH_BITMAP;
     char *PATH_BLOQUES;
     char *PATH_FCB;
-    char *RETARDO_ACCESO_BLOQUE;
+    int RETARDO_ACCESO_BLOQUE;
 
 } FILE_SYSTEM_CONFIG;
 

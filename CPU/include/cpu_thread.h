@@ -4,7 +4,7 @@
 #include "cpu_utils.h"
 
 PCB* recibir_pcb(int);
-void enviar_pcb(PCB*);
+void liberar_pcb_cpu(PCB* pcb);
 void manejar_paquete_kernel(int socket_kernel);
 
 

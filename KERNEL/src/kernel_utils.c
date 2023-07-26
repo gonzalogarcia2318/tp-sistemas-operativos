@@ -98,13 +98,6 @@ int conectar_con_file_system()
     return SUCCESS;
 }
 
-void terminar_ejecucion()
-{
-    log_warning(logger, "[KERNEL]: Finalizando ejecucion...");
-    log_destroy(logger);
-    config_destroy(config);
-}
-
 t_list* crear_recursos(char** recursos, char** instancias_recursos){
     log_info(logger, "[KERNEL]: Crear recursos");
 

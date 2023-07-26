@@ -97,7 +97,7 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
 
     proceso->pcb->recursos_asignados = list_create();
 
-    log_info(logger, "[KERNEL]: Proceso Creado (en NEW) - PID: <%d>", pcb->PID);
+    log_warning(logger, "[KERNEL]: Proceso Creado (en NEW) - PID: <%d>", pcb->PID);
     
     bool en_new(Proceso * proceso)
     {
@@ -123,9 +123,9 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
 
     
         t_list *procesos_finished = list_filter(procesos, (void *)en_finished);
-        log_info(logger, "finished %d - total %d", list_size(procesos_finished), list_size(procesos));
+        //log_info(logger, "finished %d - total %d", list_size(procesos_finished), list_size(procesos));
         if(list_size(procesos_finished) == list_size(procesos)-1){ // procesos - 1 porque ese es el new que recien se creo
-            log_info(logger, "destrabar semaforo ejecutando");
+            //log_info(logger, "destrabar semaforo ejecutando");
             sem_post(&semaforo_ejecutando);
         }
     }

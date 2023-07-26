@@ -141,6 +141,8 @@ void crear_tabla_segmentos_globales()
 t_list* manejar_crear_proceso()
 {
     BUFFER* buffer = recibir_buffer(socket_kernel);
+    void * buffer_stream_inicial = buffer->stream;
+
     PROCESO_MEMORIA* proceso = malloc(sizeof(PROCESO_MEMORIA));
     int32_t pid;
 
@@ -153,7 +155,10 @@ t_list* manejar_crear_proceso()
     list_add(procesos_globales, proceso);
 
     log_warning(logger,"Creación de Proceso PID: <%d>", pid);
+
+    free(buffer_stream_inicial);
     free(buffer);
+
     return proceso->tabla_de_segmentos;
 }
 
@@ -196,6 +201,8 @@ void enviar_tabla_de_segmentos_a_kernel_despues_de_consolidar(t_list* tabla_de_s
 void manejar_finalizar_proceso()
 {
     BUFFER* buffer = recibir_buffer(socket_kernel);
+    void* buffer_stream_inicial = buffer->stream;
+
     int32_t pid;
     memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2);
@@ -214,6 +221,9 @@ void manejar_finalizar_proceso()
     list_destroy(tabla_segmentos_proceso);
     eliminar_proceso_de_globales(pid); //FREE INCLUIDO
     log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);
+
+    free(buffer_stream_inicial);
+    free(buffer);
 }
 
 PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid)
@@ -282,10 +292,9 @@ void escribir_en_memoria(char* contenido, int32_t direccion_fisica, int32_t byte
 
     memcpy(posicion,contenido,bytes_registro);
 
-    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d> - strlen: %ld",
+    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d>",
                      contenido,
-                     direccion_fisica,
-                     bytes_registro
+                     direccion_fisica
             );
     aplicar_retardo_espacio_usuario();
 }
@@ -317,7 +326,7 @@ int32_t manejar_crear_segmento(int32_t pid, int32_t id_segmento, int32_t tamanio
     case 1:
         //OK -> ASIGNAR SEGÚN ALGORITMO ASIGNACIÓN 
         int32_t dire_base = crear_segmento(pid, id_segmento, tamanio_segmento);
-        log_warning(logger,"PID: <%d> - Crear Segmento: ID SEGMENTO:<%d> - Base: <%d> - TAMAÑO: <%d>",
+        log_warning(logger,"PID: <%d> - Crear Segmento: ID SEGMENTO: <%d> - BASE: <%d> - TAMAÑO: <%d>",
                     pid,
                     id_segmento,
                     dire_base,
@@ -750,11 +759,11 @@ void compactar()
 
 void leer_y_escribir_memoria(int32_t base_nueva, SEGMENTO* segmento)
 {   
-    char* leido = malloc(segmento->limite);
-
-    strcpy(leido, leer_de_memoria(segmento->base,segmento->limite));
+    char* leido = leer_de_memoria(segmento->base,segmento->limite);
     
     escribir_en_memoria(leido, base_nueva, segmento->limite);
+
+    free(leido);
 
 }
 
@@ -835,7 +844,7 @@ void imprimir_tabla_segmentos_globales()
     {
         seg_aux = list_get(tabla_de_segmentos_globales,i);
 
-        log_info(logger, "PID:<%d>, SEGMENTO:<%d>, BASE:<%d>, TAMAÑO:<%d>",
+        log_warning(logger, "PID:<%d>, SEGMENTO:<%d>, BASE:<%d>, TAMAÑO:<%d>",
                         seg_aux->pid,
                         seg_aux->id,
                         seg_aux->base,
@@ -874,10 +883,11 @@ void aplicar_retardo_compactacion()
 char* manejar_read_file_system()
 {
     BUFFER* buffer = recibir_buffer(socket_file_system);
+    void * buffer_stream_inicial = buffer->stream;
+
     int32_t direccion_fisica;
     int32_t tamanio;
     int32_t pid;
-    char* leido;
     
     memcpy(&direccion_fisica, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); // *2 por tamaño y valor
@@ -885,17 +895,17 @@ char* manejar_read_file_system()
             buffer->stream += (sizeof(int32_t) * 2);
     memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2); 
-     
-    
-    leido = malloc(tamanio);
 
-    strcpy(leido,leer_de_memoria(direccion_fisica, tamanio));
+    char* leido = leer_de_memoria(direccion_fisica, tamanio);
 
-    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN:<LEER> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
+    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN: <LEER> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
                     pid,
                     direccion_fisica,
                     tamanio
                 ); 
+
+    free(buffer_stream_inicial);
+    free(buffer);
 
     return leido;
 }
@@ -903,6 +913,9 @@ char* manejar_read_file_system()
 void manejar_write_file_system()
 {
     BUFFER* buffer = recibir_buffer(socket_file_system);
+    void * buffer_stream_inicial = buffer->stream;
+
+
     int32_t direccion_fisica;
     int32_t tamanio;
 
@@ -923,11 +936,15 @@ void manejar_write_file_system()
     
     escribir_en_memoria(valor_a_escribir, direccion_fisica, tamanio);
 
-    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN:<ESCRIBIR> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
+    log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID:<%d> - ACCIÓN: <ESCRIBIR> - DIRECCIÓN FÍSICA:<%d> - TAMAÑO:<%d> - ORIGEN: <FS>", 
                     pid,
                     direccion_fisica,
                     tamanio
                 ); 
+    free(buffer_stream_inicial);
+    free(buffer);
+    
+    free(valor_a_escribir);
 }
 
 //////////////////////////////////TERMINAR DE EJECUTAR///////////////////////////////////

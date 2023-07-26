@@ -1,7 +1,5 @@
 #include "memoria_thread.h"
 
-t_list* tabla_test;
-
 void escuchar_kernel(int socket_kernel)
 {
   log_info(logger,"[MEMORIA]: Escuchando KERNEL...");
@@ -19,8 +17,9 @@ void escuchar_kernel(int socket_kernel)
       break;
     case CREAR_PROCESO:
       t_list* tabla_de_segmentos = manejar_crear_proceso();
-      tabla_test = tabla_de_segmentos;
+    
       enviar_tabla_de_segmentos_a_kernel(tabla_de_segmentos);
+
       log_info(logger,"ENVÍE TABLA DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE CREAR_PROCESO");
       break;
     
@@ -38,13 +37,15 @@ void escuchar_kernel(int socket_kernel)
       BUFFER* buffer = recibir_buffer(socket_kernel);
       int32_t un_pid;
       memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
-      buffer->stream += (sizeof(int32_t)*2);
-      log_info(logger,"un_pid %d", un_pid);
+      //buffer->stream += (sizeof(int32_t)*2);
 
       compactar();
       log_info(logger,"TERMINA EL COMPACTAR");
       enviar_tabla_de_segmentos_a_kernel_despues_de_consolidar(tabla_de_segmentos_globales); //CHECKEAR
       log_info(logger,"ENVÍE TABLAS DE SEGMENTOS A KERNEL COMO MOTIVO DE FIN DE COMPACTACIÓN");
+
+      free(buffer->stream);
+      free(buffer);
       break;
     
     case DESCONEXION:
@@ -88,6 +89,7 @@ void escuchar_file_system(int socket_fs)
       
       log_info(logger,"[MEMORIA]: ENVIO PAQUETE A FS: %s", leido);
       eliminar_paquete(paquete_read);
+      free(leido);
       break;
 
     case WRITE:
@@ -139,6 +141,7 @@ void escuchar_cpu(int socket_cpu)
 void recibir_instruccion_cpu()
 {
   BUFFER *buffer = recibir_buffer(socket_cpu);
+  void* buffer_stream_inicial = buffer->stream;
 
   int32_t cod_instruccion;
   int32_t pid;
@@ -168,9 +171,7 @@ void recibir_instruccion_cpu()
     case MOV_IN:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
 
-      char* contenido = malloc(tamanio_registro);
-
-      strcpy(contenido,leer_de_memoria(direccion_fisica,tamanio_registro));
+      char* contenido = leer_de_memoria(direccion_fisica,tamanio_registro);
       
       log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <%d> - Acción: <LEER> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
                           pid,
@@ -182,6 +183,10 @@ void recibir_instruccion_cpu()
       enviar_paquete_a_cliente(paquete_mov_in, socket_cpu);
       log_info(logger, "[MEMORIA]: FIN MOV_IN - ENVIO: %s", contenido);
       eliminar_paquete(paquete_mov_in);
+
+      free(contenido);
+      free(buffer_stream_inicial);
+      free(buffer);
       break;
 
     case MOV_OUT:
@@ -207,7 +212,10 @@ void recibir_instruccion_cpu()
       enviar_paquete_a_cliente(paquete_mov_out, socket_cpu);
       log_info(logger,"MEMORIA: FIN DE MOV_OUT");
       eliminar_paquete(paquete_mov_out);
-      
+
+      free(valor_a_escribir);
+      free(buffer_stream_inicial);
+      free(buffer);
       break;
     
   default:
@@ -219,6 +227,8 @@ void recibir_instruccion_cpu()
 void recibir_instruccion_kernel()
 {
   BUFFER* buffer = recibir_buffer(socket_kernel);
+  void* buffer_stream_inicial = buffer->stream;
+
   int32_t cod_instruccion;
   int32_t pid;
   int32_t id_segmento;
@@ -252,6 +262,8 @@ void recibir_instruccion_kernel()
         agregar_a_paquete(paquete_ok, &base, sizeof(int32_t)); //ENVIAR_DIRE_BASE
         enviar_paquete_a_cliente(paquete_ok, socket_kernel);
         eliminar_paquete(paquete_ok);
+        free(buffer_stream_inicial);
+        free(buffer);
         break;
       }
       else if (base == -2) //CONSOLIDAR (HAY ESPACIO NO CONTIGUO)
@@ -261,6 +273,8 @@ void recibir_instruccion_kernel()
         enviar_paquete_a_cliente(paquete_consolidar, socket_kernel);
         eliminar_paquete(paquete_consolidar);
         log_info(logger, "Enviar HAY QUE CONSOLIDAR A KERNEL");
+        free(buffer_stream_inicial);
+        free(buffer);
         break;
       }
       else if (base == -3) //FALTA ESPACIO "Out of Memory"
@@ -269,13 +283,18 @@ void recibir_instruccion_kernel()
         enviar_paquete_a_cliente(paquete_fallo, socket_kernel);
         eliminar_paquete(paquete_fallo);
         log_error(logger, "FALTA MEMORIA, FINALIZAR PROCESO:%d",pid);
+        free(buffer_stream_inicial);
+        free(buffer);
         break;
       }
       else // base = 0 (ERROR EN ALGUNA FUNCIÓN ANTERIOR, VERIFICAR LOGS)
       {
         log_error(logger,"ERROR AL ASIGNAR BASE");
+        free(buffer_stream_inicial);
+        free(buffer);
         break;
       }
+      
     break;
 
     case DELETE_SEGMENT:
@@ -291,6 +310,8 @@ void recibir_instruccion_kernel()
       if(segmento == NULL)
       {
         log_error(logger,"ERROR AL RECUPERAR SEGMENTO DE TABLA DE SEGMENTOS DEL PROCESO");
+        free(buffer_stream_inicial);
+      free(buffer);
         break;
       }
 
@@ -305,6 +326,8 @@ void recibir_instruccion_kernel()
 
       enviar_tabla_de_segmentos_a_kernel_por_delete_segment(tabla_de_segmentos);
 
+      free(buffer_stream_inicial);
+      free(buffer);
       break;
 
     default:

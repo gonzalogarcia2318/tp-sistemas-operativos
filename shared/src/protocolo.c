@@ -128,6 +128,9 @@ void * obtener_paquete_estructura_dinamica(int socketCliente){
     
   t_list* instrucciones = deserializar_instrucciones(buffer);
 
+  free(buffer->stream);
+  free(buffer);
+
   return instrucciones;
 }
 
@@ -256,34 +259,43 @@ BUFFER *serializar_pcb(PCB *pcb)
 
     buffer->stream = stream;
 
+    free(buffer_instrucciones->stream);
+    free(buffer_instrucciones);
+
+    free(buffer_segmentos->stream);
+    free(buffer_segmentos);
+
     return buffer;
 }
 
 BUFFER *serializar_segmentos(t_list *segmentos){
+
     BUFFER* buffer = malloc(sizeof(BUFFER));
-	buffer->size = 0;
+    buffer->size = 0;
 
-	// Calcular tamaño total del buffer
-	int i = 0;
-	for(i = 0; i < list_size(segmentos); i++){
-		SEGMENTO* segmento = list_get(segmentos, i);
-        buffer->size += calcular_tamanio_segmento(segmento);
-	}
+    // Calcular tamaño total del buffer
+    int i = 0;
+    for(i = 0; i < list_size(segmentos); i++){
+      SEGMENTO* segmento = list_get(segmentos, i);
+          buffer->size += calcular_tamanio_segmento(segmento);
+    }
 
-	void* stream = malloc(buffer->size);
-	int offset = 0;
+    void* stream = malloc(buffer->size);
+    int offset = 0;
 
-	i = 0;
-	for(i = 0; i < list_size(segmentos); i++){
-		SEGMENTO* segmento = list_get(segmentos, i);
-		BUFFER* buffer_segmento = serializar_segmento(segmento);
-		memcpy(stream + offset, buffer_segmento->stream, buffer_segmento->size);
-		offset += buffer_segmento->size;
-	}
+    i = 0;
+    for(i = 0; i < list_size(segmentos); i++){
+      SEGMENTO* segmento = list_get(segmentos, i);
+      BUFFER* buffer_segmento = serializar_segmento(segmento);
+      memcpy(stream + offset, buffer_segmento->stream, buffer_segmento->size);
+      offset += buffer_segmento->size;
+      free(buffer_segmento->stream);
+      free(buffer_segmento);
+    }
 
-	buffer->stream = stream;
+    buffer->stream = stream;
 
-	return buffer;
+    return buffer;
 }
 
 BUFFER *serializar_segmento(SEGMENTO *segmento)
@@ -347,9 +359,10 @@ PCB *deserializar_pcb(BUFFER *buffer)
 
     memcpy(&(pcb->registros_cpu), stream, (4*5+4*9+4*17));
     stream += (4*5+4*9+4*17);
-
+    
     free(buffer_segmentos);
     free(buffer_instrucciones);
+    //NO HACER FREE DE "buffer", se hace dsps.
 
     return pcb;
 }
@@ -439,7 +452,6 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     void* stream = buffer->stream;
     stream += stream_offset;
 
-
     // Lee cada miembro de la estructura desde el búfer
 
     memcpy(&(instruccion->nombreInstruccion_long), stream, sizeof(int32_t));
@@ -448,7 +460,6 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     memcpy(instruccion->nombreInstruccion, stream, instruccion->nombreInstruccion_long);
     instruccion->nombreInstruccion[instruccion->nombreInstruccion_long] = '\0'; // Agrega el caracter nulo al final de la cadena
     stream += instruccion->nombreInstruccion_long + 1;
-
 
     memcpy(&(instruccion->valor), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
@@ -462,7 +473,9 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
 
     memcpy(&(instruccion->registro_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
+
     instruccion->registro = malloc(instruccion->registro_long);
+
     memcpy(instruccion->registro, stream, instruccion->registro_long);
     instruccion->registro[instruccion->registro_long] = '\0';
     stream += instruccion->registro_long + 1;
@@ -476,6 +489,7 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     memcpy(&(instruccion->nombreArchivo_long), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
     instruccion->nombreArchivo = malloc(instruccion->nombreArchivo_long);
+
     memcpy(instruccion->nombreArchivo, stream, instruccion->nombreArchivo_long);
     instruccion->nombreArchivo[instruccion->nombreArchivo_long] = '\0';
     stream += instruccion->nombreArchivo_long + 1;
@@ -504,7 +518,7 @@ Instruccion* deserializar_instruccion(BUFFER* buffer, int stream_offset)
     memcpy(&(instruccion->tamanioArchivo), stream, sizeof(int32_t));
     stream += sizeof(int32_t);
 
-
+    //FREE BUFFER SE HACE FUERA DE LA FUNCIÓN
     return instruccion;
 }
 
@@ -529,6 +543,7 @@ SEGMENTO* deserializar_segmento(BUFFER* buffer, int stream_offset)
     //memcpy(&(segmento->validez), stream, sizeof(int32_t));
     //stream += sizeof(int32_t);
 
+    //FREE BUFFER SE HACE FUERA DE LA FUNCIÓN
     return segmento;
 }
 
@@ -552,6 +567,9 @@ BUFFER *serializar_instrucciones(t_list *instrucciones){
 		BUFFER* buffer_instruccion = serializar_instruccion(instruccion);
 		memcpy(stream + offset, buffer_instruccion->stream, buffer_instruccion->size);
 		offset += buffer_instruccion->size;
+
+    free(buffer_instruccion->stream);
+    free(buffer_instruccion);
 	}
 
 	buffer->stream = stream;
@@ -568,9 +586,8 @@ t_list* deserializar_instrucciones(BUFFER* buffer){
 		size_instrucciones_acumulado += calcular_tamanio_instruccion(instruccion);
 		list_add(instrucciones, instruccion);
 	} while(size_instrucciones_acumulado < buffer->size);
-	// Repetir mientras lo que ya se leyo no sea lo que trajo el buffer entero,
-	// porque quiere decir que hay mas instrucciones por leer
-
+	
+  //NO LIBERAR BUFFER!
 	return instrucciones;
 }
 
