@@ -1,6 +1,34 @@
 #!/bin/bash
-FILE=FILE_SYSTEM
-make $FILE
-if test -f "./$FILE"; then
-    valgrind --tool=memcheck --leak-check=yes --show-possibly-lost=no --show-reachable=no --num-callers=20 ./$FILE config/file_system_base.config
+
+# Nombre del archivo ejecutable
+EXECUTABLE="FILE_SYSTEM"
+
+# Compilar el programa
+make $EXECUTABLE
+
+# Verificar si la compilación tuvo éxito
+if [ -f "./$EXECUTABLE" ]; then
+    # Ejecutar Valgrind con opciones para detectar errores de memoria
+    valgrind \
+        --tool=memcheck \
+        --leak-check=full \
+        --track-origins=yes \
+        --show-reachable=yes \
+        --num-callers=20 \
+        --log-file=valgrind_output.txt \
+        --xml-file=valgrind_output.xml \
+        --track-origins=yes \
+        --show-error-list=yes \
+        --errors-for-leak-kinds=all \
+        ./$EXECUTABLE config/file_system_base.config
+
+    # Comprobar el código de salida de Valgrind para detectar errores
+    VALGRIND_EXIT_CODE=$?
+    if [ $VALGRIND_EXIT_CODE -eq 0 ]; then
+        echo "Valgrind no detectó errores de memoria."
+    else
+        echo "Valgrind detectó errores de memoria. Código de salida: $VALGRIND_EXIT_CODE"
+    fi
+else
+    echo "La compilación de $EXECUTABLE falló. Verifica los errores de compilación."
 fi

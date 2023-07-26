@@ -1,11 +1,12 @@
 #include "cpu_thread.h"
 
-PCB * recibir_pcb(int socket_kernel){
+  PCB * recibir_pcb(int socket_kernel){
 
 	BUFFER* buffer = recibir_buffer(socket_kernel);
 
 	PCB* pcb = deserializar_pcb(buffer);
 
+  free(buffer->stream);
 	free(buffer);
 
 	return pcb;
@@ -56,6 +57,7 @@ void manejar_paquete_kernel(int socket_kernel)
 
     case OP_PCB:
       log_info(logger, "[CPU]: OP PCB Recibido de Kernel");
+
       PCB *pcb = recibir_pcb(socket_kernel);
      
       manejar_instrucciones(pcb);

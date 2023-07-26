@@ -34,7 +34,40 @@ int main(int argc, char** argv)
         desconectar_con_kernel();
     }
 
+    list_destroy_and_destroy_elements(instrucciones, liberar_instruccion);
+
     terminar_consola();
 
     return 0;
+}
+
+void liberar_instruccion(Instruccion *instruccion)
+{
+    if (strcmp(instruccion->nombreInstruccion, "SET") == 0 
+        || strcmp(instruccion->nombreInstruccion, "MOV_IN") == 0
+        || strcmp(instruccion->nombreInstruccion, "MOV_OUT") == 0)
+    {
+        free(instruccion->registro);
+    }
+
+    if (strcmp(instruccion->nombreInstruccion, "SET") == 0)
+    {
+        free(instruccion->valor);
+    }
+
+    if (strcmp(instruccion->nombreInstruccion, "F_OPEN") == 0 || strcmp(instruccion->nombreInstruccion, "F_CLOSE") == 0
+        || strcmp(instruccion->nombreInstruccion, "F_SEEK") == 0
+        || strcmp(instruccion->nombreInstruccion, "F_READ") == 0 || strcmp(instruccion->nombreInstruccion, "F_WRITE") == 0
+        || strcmp(instruccion->nombreInstruccion, "F_TRUNCATE") == 0)
+    {
+        free(instruccion->nombreArchivo);
+    }
+
+    if (strcmp(instruccion->nombreInstruccion, "WAIT") == 0 || strcmp(instruccion->nombreInstruccion, "SIGNAL") == 0)
+    {
+        free(instruccion->recurso);
+    }
+    
+    free(instruccion->nombreInstruccion);
+    free(instruccion);
 }

@@ -128,6 +128,9 @@ void * obtener_paquete_estructura_dinamica(int socketCliente){
     
   t_list* instrucciones = deserializar_instrucciones(buffer);
 
+  free(buffer->stream);
+  free(buffer);
+
   return instrucciones;
 }
 
@@ -256,7 +259,10 @@ BUFFER *serializar_pcb(PCB *pcb)
 
     buffer->stream = stream;
 
+    free(buffer_instrucciones->stream);
     free(buffer_instrucciones);
+
+    free(buffer_segmentos->stream);
     free(buffer_segmentos);
 
     return buffer;
@@ -283,6 +289,7 @@ BUFFER *serializar_segmentos(t_list *segmentos){
       BUFFER* buffer_segmento = serializar_segmento(segmento);
       memcpy(stream + offset, buffer_segmento->stream, buffer_segmento->size);
       offset += buffer_segmento->size;
+      free(buffer_segmento->stream);
       free(buffer_segmento);
     }
 
@@ -352,7 +359,7 @@ PCB *deserializar_pcb(BUFFER *buffer)
 
     memcpy(&(pcb->registros_cpu), stream, (4*5+4*9+4*17));
     stream += (4*5+4*9+4*17);
-
+    
     free(buffer_segmentos);
     free(buffer_instrucciones);
     //NO HACER FREE DE "buffer", se hace dsps.
@@ -560,6 +567,8 @@ BUFFER *serializar_instrucciones(t_list *instrucciones){
 		BUFFER* buffer_instruccion = serializar_instruccion(instruccion);
 		memcpy(stream + offset, buffer_instruccion->stream, buffer_instruccion->size);
 		offset += buffer_instruccion->size;
+
+    free(buffer_instruccion->stream);
     free(buffer_instruccion);
 	}
 

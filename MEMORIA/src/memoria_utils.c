@@ -141,6 +141,9 @@ void crear_tabla_segmentos_globales()
 t_list* manejar_crear_proceso()
 {
     BUFFER* buffer = recibir_buffer(socket_kernel);
+    void * buffer_stream_inicial = buffer->stream;
+
+
     PROCESO_MEMORIA* proceso = malloc(sizeof(PROCESO_MEMORIA));
     int32_t pid;
 
@@ -153,7 +156,10 @@ t_list* manejar_crear_proceso()
     list_add(procesos_globales, proceso);
 
     log_warning(logger,"Creación de Proceso PID: <%d>", pid);
+
+    free(buffer_stream_inicial);
     free(buffer);
+
     return proceso->tabla_de_segmentos;
 }
 
@@ -196,6 +202,8 @@ void enviar_tabla_de_segmentos_a_kernel_despues_de_consolidar(t_list* tabla_de_s
 void manejar_finalizar_proceso()
 {
     BUFFER* buffer = recibir_buffer(socket_kernel);
+    void* buffer_stream_inicial = buffer->stream;
+
     int32_t pid;
     memcpy(&pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t) * 2);
@@ -214,6 +222,9 @@ void manejar_finalizar_proceso()
     list_destroy(tabla_segmentos_proceso);
     eliminar_proceso_de_globales(pid); //FREE INCLUIDO
     log_warning(logger,"Eliminación de Proceso PID: <%d>", pid);
+
+    free(buffer_stream_inicial);
+    free(buffer);
 }
 
 PROCESO_MEMORIA* obtener_proceso_de_globales(int32_t pid)
@@ -755,6 +766,8 @@ void leer_y_escribir_memoria(int32_t base_nueva, SEGMENTO* segmento)
     
     escribir_en_memoria(leido, base_nueva, segmento->limite);
 
+    free(leido);
+
 }
 
 void redimensionar_huecos_compactar(int32_t base_segmento, int32_t limite_segmento)
@@ -873,6 +886,8 @@ void aplicar_retardo_compactacion()
 char* manejar_read_file_system()
 {
     BUFFER* buffer = recibir_buffer(socket_file_system);
+    void * buffer_stream_inicial = buffer->stream;
+
     int32_t direccion_fisica;
     int32_t tamanio;
     int32_t pid;
@@ -896,12 +911,18 @@ char* manejar_read_file_system()
                     tamanio
                 ); 
 
+    free(buffer_stream_inicial);
+    free(buffer);
+
     return leido;
 }
 
 void manejar_write_file_system()
 {
     BUFFER* buffer = recibir_buffer(socket_file_system);
+    void * buffer_stream_inicial = buffer->stream;
+
+
     int32_t direccion_fisica;
     int32_t tamanio;
 
@@ -927,6 +948,10 @@ void manejar_write_file_system()
                     direccion_fisica,
                     tamanio
                 ); 
+    free(buffer_stream_inicial);
+    free(buffer);
+    
+    free(valor_a_escribir);
 }
 
 //////////////////////////////////TERMINAR DE EJECUTAR///////////////////////////////////

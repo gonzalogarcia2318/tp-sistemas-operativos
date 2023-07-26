@@ -533,6 +533,8 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
     imprimir_registros(pcb->registros_cpu); //TODO BORRAR
 
     free(valor);
+    buffer->stream -= buffer->size;
+    free(buffer->stream);
     free(buffer);
 }
 
@@ -576,7 +578,7 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
             buffer = recibir_buffer(socket_memoria);
             int32_t un_pid;
             memcpy(&un_pid, buffer->stream + sizeof(int32_t), sizeof(int32_t));
-            buffer->stream += (sizeof(int32_t)*2);
+            //buffer->stream += (sizeof(int32_t)*2);
         break;
         default:
             log_error(logger, "[CPU]: NO RECIBI FIN DE MOV_OUT ");
@@ -595,7 +597,10 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
 
     imprimir_registros(pcb->registros_cpu);
 
+    free(buffer->stream);
     free(buffer);
+    
+    free(valor_registro);
 }
 
 void ejecutar_IO(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //OK

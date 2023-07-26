@@ -17,6 +17,9 @@ void enviar_instrucciones_a_kernel(t_list* instrucciones_archivo)
     log_info(logger, "[CONSOLA]: Enviar INSTRUCCIONES a KERNEL: enviar");
 
     enviar_paquete_a_servidor(paquete_instrucciones, socket_kernel);
+
+    eliminar_paquete(paquete_instrucciones);
+
 }
 
 void escuchar_kernel()

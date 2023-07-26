@@ -25,6 +25,7 @@ void inicializar_config_consola();
 int conectar_con_kernel(void);
 int desconectar_con_kernel(void);
 void terminar_consola(void);
+void liberar_instruccion(Instruccion *instruccion);
 
 Instruccion *parsear_instruccion_por_linea(char *linea);
 t_list *leer_instrucciones(char *path_instrucciones);
