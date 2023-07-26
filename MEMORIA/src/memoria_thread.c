@@ -171,9 +171,7 @@ void recibir_instruccion_cpu()
     case MOV_IN:
       log_info(logger, "[MEMORIA]: INSTRUCCION recibida: MOV_IN");
 
-      char* contenido = malloc(tamanio_registro);
-
-      strcpy(contenido,leer_de_memoria(direccion_fisica,tamanio_registro));
+      char* contenido = leer_de_memoria(direccion_fisica,tamanio_registro);
       
       log_warning(logger,"ACCESO A ESPACIO DE USUARIO: PID: <%d> - Acción: <LEER> - Dirección física: <%d> - Tamaño: <%d> - Origen: <CPU>",
                           pid,
@@ -187,7 +185,6 @@ void recibir_instruccion_cpu()
       eliminar_paquete(paquete_mov_in);
 
       free(contenido);
-      
       free(buffer_stream_inicial);
       free(buffer);
       break;
@@ -217,8 +214,6 @@ void recibir_instruccion_cpu()
       eliminar_paquete(paquete_mov_out);
 
       free(valor_a_escribir);
-      
-      
       free(buffer_stream_inicial);
       free(buffer);
       break;
