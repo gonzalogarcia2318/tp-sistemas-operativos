@@ -258,6 +258,10 @@ void ejecutar_f_truncate(char *nombre, int a_truncar)
         if (tamanio == 0)
         {
             puntero_directo = buscar_bloque_libre();
+            log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+                            nombre,
+                            1,
+                            puntero_directo / superbloque.BLOCK_SIZE);
             // Convertir uint32_t a string
             log_info(logger, "puntero directo: %d", puntero_directo);
             size_t longitud = strlen(puntero_directo_str);
@@ -390,7 +394,8 @@ int buscar_bloque_libre()
 
 int ejecutar_f_read(char *nombre_archivo, uint32_t puntero_archivo, int tamanio, int direccion_fisica, int32_t pid)
 {
-    // abrir archivo de bloques
+    uint32_t puntero_traducido = realizar_traduccion_bloque(puntero_archivo, nombre_archivo);
+    
     archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "rb+");
     char *valor_leido = malloc(tamanio);
 
@@ -416,6 +421,7 @@ int ejecutar_f_read(char *nombre_archivo, uint32_t puntero_archivo, int tamanio,
 
 int ejecutar_f_write(char *nombre_archivo, uint32_t puntero_archivo, uint32_t direccion_fisica, int32_t tamanio, int32_t pid)
 {
+    uint32_t puntero_traducido = realizar_traduccion_bloque(puntero_archivo, nombre_archivo);
 
     archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "wb+");
 
@@ -423,13 +429,8 @@ int ejecutar_f_write(char *nombre_archivo, uint32_t puntero_archivo, uint32_t di
 
     log_info(logger, "DATO: %s", datos);
 
-    fseek(archivo_bloques, puntero_archivo, SEEK_SET);
+    fseek(archivo_bloques, puntero_traducido, SEEK_SET);
     fwrite(datos, tamanio, 1, archivo_bloques);
-
-    log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
-                nombre_archivo,
-                puntero_archivo / superbloque.BLOCK_SIZE, //cambiar por el del archivo
-                puntero_archivo / superbloque.BLOCK_SIZE);
 
     aplicar_retardo_acceso_bloque();
 
@@ -526,4 +527,52 @@ char *obtener_info_de_memoria(int32_t dir_fisica, uint32_t tamanio, int32_t pid)
         return NULL;
         break;
     }
+}
+
+uint32_t realizar_traduccion_bloque(uint32_t puntero_kernel,char *nombre_archivo){
+  
+    char *pathFcb = FileSystemConfig.PATH_FCB;
+    char *pathCompleto = string_duplicate(pathFcb);
+
+    string_append(&pathCompleto, nombre_archivo);
+    string_append(&pathCompleto, ".config");
+
+    t_config *fcb = config_create(pathCompleto);
+    uint32_t puntero_directo_archivo = config_get_int_value(fcb, "PUNTERO_DIRECTO");
+    uint32_t puntero_indirecto_archivo = config_get_int_value(fcb, "PUNTERO_INDIRECTO");
+  
+  // int nro_byte = malloc(sizeof(int)); 
+  uint32_t puntero_traducido = malloc(sizeof(uint32_t));
+
+  int nro_bloque = (puntero_kernel/superbloque.BLOCK_SIZE) + 1 ;// porque se considera el bloque directo como 1
+  if(nro_bloque == 1){
+    // float byte = (1-((float)puntero_kernel/(float)superbloque.BLOCK_SIZE))*(float)superbloque.BLOCK_SIZE;
+
+    // int nro_byte = (int)byte;
+      log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+                nombre_archivo,
+                nro_bloque,
+                puntero_directo_archivo  / superbloque.BLOCK_SIZE);
+
+   puntero_traducido = puntero_directo_archivo  + puntero_kernel;
+  }
+  else
+  {
+    int byte = puntero_kernel % superbloque.BLOCK_SIZE;
+    archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "rb+"); 
+  
+    fseek(archivo_bloques, puntero_indirecto_archivo + sizeof(uint32_t)*nro_bloque -1 , SEEK_SET); 
+    fread(&puntero_traducido, sizeof(uint32_t), 1, archivo_bloques);
+
+    log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+                nombre_archivo,
+                nro_bloque,
+                puntero_traducido / superbloque.BLOCK_SIZE); 
+    
+    puntero_traducido += byte;
+    fclose(archivo_bloques);
+  }
+
+
+  return puntero_traducido;
 }
