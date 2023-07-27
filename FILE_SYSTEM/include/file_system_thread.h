@@ -27,4 +27,5 @@ int enviar_a_memoria(int32_t, char *,int32_t);
 int ejecutar_f_write(char *,uint32_t, uint32_t, int32_t,int32_t);
 int ejecutar_f_read(char *,uint32_t ,int, int, int32_t);
 int buscar_bloque_libre();
+int realizar_traduccion_bloque(uint32_t ,char *);
 #endif
