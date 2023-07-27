@@ -40,6 +40,9 @@ clean:
 run: all
 	./$(PROCESS_NAME) config/kernel_base.config
 
+runhrrn: all
+	./$(PROCESS_NAME) config/kernel_base_hrrn.config
+
 rund: all
 	./$(PROCESS_NAME) config/kernel_deadlock.config
 

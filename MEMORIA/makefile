@@ -46,8 +46,14 @@ rund: all
 rune: all
 	./$(PROCESS_NAME) config/memoria_error.config
 
-runm: all
-	./$(PROCESS_NAME) config/memoria_memoria.config
+runmf: all
+	./$(PROCESS_NAME) config/memoria_memoria_first.config
+
+runmb: all
+	./$(PROCESS_NAME) config/memoria_memoria_best.config
+
+runmw: all
+	./$(PROCESS_NAME) config/memoria_memoria_worst.config
 
 runfs: all
 	./$(PROCESS_NAME) config/memoria_fs.config
