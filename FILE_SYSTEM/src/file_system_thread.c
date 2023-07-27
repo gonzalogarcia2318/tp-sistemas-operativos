@@ -193,8 +193,12 @@ int crear_archivo(char *nombre)
     int res = config_save_in_file(&fcb_config, pathCompleto);
 
     free(pathCompleto);
-    dictionary_destroy_and_destroy_elements(diccionario, free);
-
+    // dictionary_destroy_and_destroy_elements(diccionario, free);
+    // dictionary_remove(diccionario, "NOMBRE_ARCHIVO");
+    // dictionary_remove(diccionario, "TAMANIO_ARCHIVO");
+    // dictionary_remove(diccionario, "PUNTERO_DIRECTO");
+    // dictionary_remove(diccionario, "PUNTERO_INDIRECTO");
+    dictionary_destroy(diccionario);
     return res;
 }
 
@@ -257,7 +261,6 @@ void ejecutar_f_truncate(char *nombre, int a_truncar)
                             1,
                             puntero_directo / superbloque.BLOCK_SIZE);
             // Convertir uint32_t a string
-            log_info(logger, "puntero directo: %d", puntero_directo);
             size_t longitud = strlen(puntero_directo_str);
             //log_info(logger, "tamanio  buffer: %%zu\n", longitud);
             snprintf(puntero_directo_str, sizeof(puntero_directo_str), "%u", puntero_directo);
@@ -391,7 +394,6 @@ int buscar_bloque_libre()
 int ejecutar_f_read(char *nombre_archivo, uint32_t puntero_archivo, int tamanio, int direccion_fisica, int32_t pid)
 {
     uint32_t puntero_traducido = realizar_traduccion_bloque(puntero_archivo, nombre_archivo);
-    log_info(logger, "puntero_traducido:  %u", puntero_traducido);
     archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "rb+");
     char *valor_leido = malloc(tamanio);
 
@@ -420,7 +422,6 @@ int ejecutar_f_read(char *nombre_archivo, uint32_t puntero_archivo, int tamanio,
 int ejecutar_f_write(char *nombre_archivo, uint32_t puntero_archivo, uint32_t direccion_fisica, int32_t tamanio, int32_t pid)
 {
     uint32_t puntero_traducido = realizar_traduccion_bloque(puntero_archivo, nombre_archivo);
-    log_info(logger, "puntero_traducido:  %u", puntero_traducido);
     archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "wb+");
 
     char *datos = obtener_info_de_memoria(direccion_fisica, tamanio, pid);
@@ -480,14 +481,11 @@ int enviar_a_memoria(int32_t direccion, char *valor, int32_t pid)
 
 void enviar_respuesta_kernel(int ok, CODIGO_OPERACION cod)
 {
-    log_info(logger, "Se va a enviar a kernel un: %d",
-             ok);
 
     PAQUETE *paquete_kernel = crear_paquete(cod);
     agregar_a_paquete(paquete_kernel, &ok, sizeof(int32_t));
     enviar_paquete_a_cliente(paquete_kernel, socket_kernel);
     eliminar_paquete(paquete_kernel);
-    log_info(logger, "Se envio correctamente a kernel");
 }
 
 char *obtener_info_de_memoria(int32_t dir_fisica, uint32_t tamanio, int32_t pid)
@@ -544,8 +542,6 @@ int realizar_traduccion_bloque(uint32_t puntero_kernel,char *nombre_archivo){
     t_config *fcb = config_create(pathCompleto);
     uint32_t puntero_directo_archivo = config_get_int_value(fcb, "PUNTERO_DIRECTO");
     uint32_t puntero_indirecto_archivo = config_get_int_value(fcb, "PUNTERO_INDIRECTO");
-    log_info(logger, "puntero_directo_archivo:  %u", puntero_directo_archivo);
-    log_info(logger, "puntero_indirecto_archivo:  %u", puntero_indirecto_archivo);
     // int nro_byte = malloc(sizeof(int)); 
     uint32_t puntero_traducido;
 
@@ -569,7 +565,6 @@ int realizar_traduccion_bloque(uint32_t puntero_kernel,char *nombre_archivo){
         fseek(archivo_bloques, puntero_indirecto_archivo + (sizeof(uint32_t)*(nro_bloque- 1))  , SEEK_SET);
         //log_info(logger, "fseek, posicion:  %u", puntero_indirecto_archivo + (sizeof(uint32_t)*(nro_bloque- 1)));
         fread(&puntero_traducido, sizeof(uint32_t), 1, archivo_bloques);
-        log_info(logger, "puntero_leido:  %u", puntero_traducido);
         log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
                     nombre_archivo,
                     nro_bloque,

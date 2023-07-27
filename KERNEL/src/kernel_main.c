@@ -23,6 +23,8 @@ t_list *recursos;
 t_list * archivos_abiertos_global;
 t_list *listaReady;
 
+t_list * cronometros;
+
 void manejar_paquete_cpu();
 void manejar_hilo_io();
 void manejar_hilo_ejecutar();
@@ -92,6 +94,7 @@ int main(int argc, char **argv)
     archivos_abiertos_global = list_create();
     cola_ready = queue_create();
     cola_io = queue_create();
+    cronometros = list_create();
 
     sem_init(&semaforo_new, 0, 0);
     
@@ -191,6 +194,7 @@ int main(int argc, char **argv)
             enviar_proceso_a_memoria(proceso_para_ready);
   
             proceso_para_ready->pcb->cronometro_ready = temporal_create();
+            list_add(cronometros, proceso_para_ready->pcb->cronometro_ready);
 
             queue_push(cola_ready, (Proceso *)proceso_para_ready);
             imprimir_cola(*cola_ready);
@@ -293,6 +297,21 @@ void manejar_paquete_cpu()
 
                 memcpy(&(pcb->registros_cpu), buffer->stream + sizeof(int32_t), sizeof(Registro_CPU));
                 buffer->stream += (sizeof(int32_t) + sizeof(Registro_CPU));
+
+
+                // PARA LIBERAR BUFFER SI SE TERMINAN TODOS LOS PROCESOS
+                bool en_finished(Proceso * proceso)
+                {
+                    return proceso->estado == FINISHED;
+                }
+
+                t_list *procesos_finished = list_filter(procesos, (void *)en_finished);
+                if(list_size(procesos_finished) == list_size(procesos)-1){ // procesos - 1 porque el proceso ACTUAL todavia no esta FINISHED
+                    list_destroy(procesos_finished);
+                    free(pcb);
+                    free(buffer_stream_inicial); 
+                    free(buffer);
+                }
 
                 manejar_exit(proceso, pcb);
                 break;
@@ -525,7 +544,6 @@ void imprimir_cola(t_queue cola)
 
     for (int i = 0; i < elementos; i++)
     {
-
         paraImprimir = (Proceso *)queue_pop(&cola);
         string_append_with_format(&lista_pids, " %s ", string_itoa(paraImprimir->pcb->PID));
         // log_info(logger, "Proceso ID : %d ", paraImprimir->pcb->PID);
@@ -536,6 +554,7 @@ void imprimir_cola(t_queue cola)
 
     log_warning(logger, "Cola Ready %s: %s ", KernelConfig.ALGORITMO_PLANIFICACION, lista_pids);
 
+    queue_destroy(cola_ready); //TODO VERIFICAR
     cola_ready = copia;
 
     free(lista_pids);
@@ -546,6 +565,7 @@ void pasar_proceso_a_ready(int32_t PID){
     proceso->pcb->program_counter++;
     cambiar_estado(proceso, READY);
     proceso->pcb->cronometro_ready = temporal_create();
+    list_add(cronometros,proceso->pcb->cronometro_ready);
     queue_push(cola_ready, proceso);
     imprimir_cola(*cola_ready);
 }
@@ -568,6 +588,7 @@ void manejar_hilo_fileSystem(){
         int respuesta_file_system;
 
         BUFFER* buffer;
+        void * buffer_stream_inicial;
 
         switch (cod_op)
         {
@@ -577,6 +598,7 @@ void manejar_hilo_fileSystem(){
             log_info(logger, "FINALIZO TRUNCADO DE FILE SYSTEM: Proceso %d", PID_en_file_system);
 
             buffer = recibir_buffer(socket_file_system);
+            buffer_stream_inicial = buffer->stream;
 
             memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             //log_info(logger, "Respuesta fs: %d", respuesta_file_system);
@@ -586,6 +608,8 @@ void manejar_hilo_fileSystem(){
             PID_en_file_system = 0;
             // post al semaforo para que siga ejecutando (si no hay otro proceso antes)
             sem_post(&semaforo_ejecutando);
+            free(buffer_stream_inicial);
+            free(buffer);
         break;
 
         case FINALIZO_LECTURA:
@@ -593,6 +617,7 @@ void manejar_hilo_fileSystem(){
             log_info(logger, "FINALIZO LECTURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
             
             buffer = recibir_buffer(socket_file_system);
+            buffer_stream_inicial = buffer->stream;
 
             memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             //log_info(logger, "Respuesta fs: %d", respuesta_file_system);
@@ -605,6 +630,8 @@ void manejar_hilo_fileSystem(){
             sem_post(&semaforo_ejecutando);
 
             sem_post(&operaciones_en_file_system);
+             free(buffer_stream_inicial);
+            free(buffer);
         break;
 
         case FINALIZO_ESCRITURA:
@@ -612,6 +639,7 @@ void manejar_hilo_fileSystem(){
             log_info(logger, "FINALIZO ESCRITURA DE FILE SYSTEM: Proceso %d", PID_en_file_system);
 
             buffer = recibir_buffer(socket_file_system);
+            buffer_stream_inicial = buffer->stream;
 
             memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             //log_info(logger, "Respuesta fs: %d", respuesta_file_system);
@@ -623,6 +651,8 @@ void manejar_hilo_fileSystem(){
             sem_post(&semaforo_ejecutando);
 
             sem_post(&operaciones_en_file_system);
+            free(buffer_stream_inicial);
+            free(buffer);
         break;
 
         case DESCONEXION:
@@ -633,16 +663,10 @@ void manejar_hilo_fileSystem(){
             log_info(logger, "ERROR AL RECIBIR DE FILE SYSTEM EN EL HILO");
             sem_post(&esperar_respuesta_fileSystem);
         break;
-
-
         }
+
         sem_post(&file_system_disponible);
-
-
     }
-
-
-
 }
 
 
@@ -688,6 +712,7 @@ void manejar_hilo_ejecutar()
             //   Enviar PCB a CPU
             enviar_pcb_a_cpu(proceso_a_ejecutar->pcb);
             proceso_a_ejecutar->pcb->cronometro_exec = temporal_create();
+            list_add(cronometros,proceso_a_ejecutar->pcb->cronometro_exec);
         }
         else
         {
@@ -696,8 +721,6 @@ void manejar_hilo_ejecutar()
     }
 }
 
-// duda por lo que dice el enunciado
-// asi esta bien o 1 hilo por proceso y que sleep de ese hilo?
 void manejar_hilo_io()
 {
     while (true)
@@ -712,7 +735,11 @@ void manejar_hilo_io()
         log_info(logger, "[KERNEL] Poner <%d> en READY por IO", proceso_io->PID);
         cambiar_estado(proceso, READY);
 
+        free(proceso_io);
+
+        //temporal_destroy(proceso->pcb->cronometro_ready);
         proceso->pcb->cronometro_ready = temporal_create();
+        list_add(cronometros, proceso->pcb->cronometro_ready);
 
         sem_post(&semaforo_planificador);
         
@@ -722,7 +749,6 @@ void manejar_hilo_io()
         sem_post(&semaforo_ejecutando);
     }
 }
-
 
 // FUNCIONES PARA MANEJAR FILE SYSTEM
 
@@ -738,8 +764,6 @@ void manejar_f_seek(char * nombre_archivo, int32_t posicion,Proceso * proceso){
 
     return;
 }
-
-
 
 void manejar_f_truncate(Proceso * proceso, char * nombre_archivo , int32_t tamanioArchivo){
 
@@ -780,12 +804,7 @@ void manejar_f_read(Proceso* proceso, char* nombre_archivo, int direccion_fisica
     agregar_a_paquete(paquete, &proceso->pcb->PID,sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
-
     
-    //log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_READ> - %s - puntero: %d - bytes: %d - dir fisica: %d", nombre_archivo, archivo->puntero_ubicacion, cant_bytes, direccion_fisica);
-
-    
-
     cambiar_estado(proceso, BLOCK);
 
     sem_post(&esperar_respuesta_fileSystem);
@@ -798,7 +817,7 @@ void manejar_f_write(Proceso* proceso, char* nombre_archivo, int direccion_fisic
     sem_wait(&operaciones_en_file_system);
     PID_en_file_system = proceso->pcb->PID;
 
-    ARCHIVO_PROCESO * archivo = buscar_archivo_en_tabla_proceso(proceso,nombre_archivo);
+    ARCHIVO_PROCESO * archivo = buscar_archivo_en_tabla_proceso(proceso, nombre_archivo);
 
     log_warning(logger, "[KERNEL] PID: <%d> - Escribir Archivo: <%s> - Puntero: <%d> - Direccion memoria: <%d> - Tamaño: <%d>", proceso->pcb->PID, nombre_archivo, archivo->puntero_ubicacion, direccion_fisica, cant_bytes);
 
@@ -813,8 +832,6 @@ void manejar_f_write(Proceso* proceso, char* nombre_archivo, int direccion_fisic
     agregar_a_paquete(paquete, &proceso->pcb->PID,sizeof(int32_t));
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
-
-    //log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <F_WRITE> - %s - puntero: %d - bytes: %d - dir fisica: %d", nombre_archivo, archivo->puntero_ubicacion, cant_bytes, direccion_fisica);
 
     cambiar_estado(proceso, BLOCK);
 
@@ -917,23 +934,24 @@ int existe_archivo_en_file_system(char* nombre_archivo){
     enviar_paquete_a_servidor(paquete, socket_file_system);
     eliminar_paquete(paquete);
 
-    //log_info(logger, "ENVIÉ PAQUETE A FILE_SYSTEM: <EXISTE_ARCHIVO?> - %s", nombre_archivo);
-
     BUFFER *buffer;
 
     CODIGO_OPERACION cod_op = obtener_codigo_operacion(socket_file_system);
 
-    //log_info(logger, "Recibimos codigo_operacion: %d", cod_op);
+    void* buffer_inicial;
 
     switch (cod_op)
     {  
         case RESPUESTA_FILE_SYSTEM:
-            //log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
 
             buffer = recibir_buffer(socket_file_system);
+            buffer_inicial = buffer->stream;
 
             int respuesta_file_system;
             memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
+
+            free(buffer_inicial);
+            free(buffer);
 
             return respuesta_file_system;
         default: 
@@ -963,10 +981,13 @@ int avisar_file_system_crear_archivo(char * nombre_archivo){
             //log_info(logger, "[KERNEL]: Llego RESPUESTA_FILE_SYSTEM");
 
             buffer = recibir_buffer(socket_file_system);
-
+            void * buffer_stream_inicial = buffer->stream;
             int respuesta_file_system;
             memcpy(&respuesta_file_system, buffer->stream + sizeof(int32_t), sizeof(int32_t));
             buffer->stream += (sizeof(int32_t)*2);
+
+            free(buffer_stream_inicial);
+            free(buffer);
 
             return respuesta_file_system;
         default: 
@@ -1015,13 +1036,12 @@ void manejar_f_open(Proceso * proceso, char * nombre_archivo){
 
         }
 
-        
-
         agregar_entrada_archivo_abierto_tabla_global(proceso, nombre_archivo);
 
         agregar_entrada_archivo_abierto_tabla_por_proceso(proceso, nombre_archivo);
 
         log_info(logger, "[KERNEL]: Devolver proceso a CPU");
+
         devolver_proceso_a_cpu(proceso);
     }
         
@@ -1045,6 +1065,7 @@ void manejar_f_close(Proceso * proceso, char* nombre_archivo){
         Proceso *  proceso_para_ready = obtener_proceso_por_pid(PID_a_ejecutar);
         cambiar_estado(proceso_para_ready, READY);
         proceso_para_ready->pcb->cronometro_ready = temporal_create();
+        list_add(cronometros,proceso_para_ready->pcb->cronometro_ready);
         queue_push(cola_ready, proceso_para_ready);
         imprimir_cola(*cola_ready);
 
@@ -1066,7 +1087,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
     bool comparar_recurso_por_nombre(Recurso * recurso)
     {
         return strcmp(recurso->nombre, nombre_recurso) == 0;
-    }
+    };
 
     Recurso *recurso = list_find(recursos, (void *)comparar_recurso_por_nombre);
 
@@ -1092,6 +1113,7 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
         proceso->pcb->program_counter++;
         cambiar_estado(proceso, READY);
         proceso->pcb->cronometro_ready = temporal_create();
+        list_add(cronometros, proceso->pcb->cronometro_ready);
         queue_push(cola_ready, proceso);
         imprimir_cola(*cola_ready);
     }
@@ -1107,7 +1129,6 @@ void manejar_wait(Proceso *proceso, char *nombre_recurso)
 
 void manejar_signal(Proceso *proceso, char *nombre_recurso)
 {
-    // quitar_salto_de_linea(nombre_recurso);
     bool comparar_recurso_por_nombre(Recurso * recurso)
     {
         return strcmp(recurso->nombre, nombre_recurso) == 0;
@@ -1118,8 +1139,6 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
     if (recurso == NULL)
     {
         log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - SIGNAL DE RECURSO NO EXISTENTE (%s)", proceso->pcb->PID, nombre_recurso);
-        //cambiar_estado(proceso, FINISHED);
-        //sem_post(&semaforo_multiprogramacion);
 
         finalizar_proceso(proceso, "INVALID_RESOURCE");
         return;
@@ -1142,17 +1161,15 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
     if (!queue_is_empty(recurso->cola_block))
     {
         recurso->instancias -= 1;
-        //log_info(logger, "[KERNEL] desbloquear %s ", nombre_recurso);
+    
         Proceso *proceso_bloqueado = (Proceso *)queue_pop(recurso->cola_block);
-        //log_info(logger, "[KERNEL] recurso %s del proceso %d ", nombre_recurso, proceso_bloqueado->pcb->PID);
-        // estado es EXEC? hay que sacarlo de block
-        //proceso_bloqueado->estado = EXEC;
-        //
+    
         list_add(proceso_bloqueado->pcb->recursos_asignados, nombre_recurso);
 
         proceso_bloqueado->pcb->program_counter++;
         cambiar_estado(proceso_bloqueado, READY);
         proceso_bloqueado->pcb->cronometro_ready = temporal_create();
+        list_add(cronometros, proceso_bloqueado->pcb->cronometro_ready);
         queue_push(cola_ready, proceso_bloqueado);
         imprimir_cola(*cola_ready);
     }
@@ -1160,6 +1177,7 @@ void manejar_signal(Proceso *proceso, char *nombre_recurso)
     proceso->pcb->program_counter++;
     cambiar_estado(proceso, READY);
     proceso->pcb->cronometro_ready = temporal_create();
+    list_add(cronometros, proceso->pcb->cronometro_ready);
     queue_push(cola_ready, proceso);
     imprimir_cola(*cola_ready);
 }
@@ -1183,6 +1201,7 @@ void manejar_yield(Proceso *proceso, PCB *pcb)
     cambiar_estado(proceso, READY);
 
     proceso->pcb->cronometro_ready = temporal_create();
+    list_add(cronometros,proceso->pcb->cronometro_ready);
     queue_push(cola_ready, proceso);
     imprimir_cola(*cola_ready);
 
@@ -1192,9 +1211,6 @@ void manejar_yield(Proceso *proceso, PCB *pcb)
 void manejar_exit(Proceso *proceso, PCB *pcb)
 {
     proceso->pcb->registros_cpu = pcb->registros_cpu;
-
-    //cambiar_estado(proceso, FINISHED);
-    //sem_post(&semaforo_multiprogramacion);
 
     finalizar_proceso(proceso, "SUCCESS");
 }
@@ -1221,10 +1237,10 @@ void finalizar_proceso(Proceso* proceso, char* motivo){
 
     t_list *procesos_finished = list_filter(procesos, (void *)en_finished);
     if(list_size(procesos_finished) == list_size(procesos)){ 
+        list_destroy(procesos_finished);
         // Estan todos en FINISHED
         terminar_ejecucion();
     }
-
 }
 
 void manejar_io(Proceso *proceso, int32_t PID, int tiempo)
@@ -1274,8 +1290,8 @@ void liberar_instruccion(Instruccion *instruccion)
 void liberar_proceso(Proceso *proceso)
 {
     list_destroy_and_destroy_elements(proceso->pcb->instrucciones, (void*)liberar_instruccion);
-    temporal_destroy(proceso->pcb->cronometro_ready);
-    temporal_destroy(proceso->pcb->cronometro_exec);
+    //temporal_destroy(proceso->pcb->cronometro_ready);
+    //temporal_destroy(proceso->pcb->cronometro_exec);
     // free(proceso->pcb); -> Todavia no se puede liberar. Hacer free al final
 }
 
@@ -1309,34 +1325,37 @@ void terminar_ejecucion()
         }
         list_destroy(proceso->pcb->archivos_abiertos);
 
-        //log_warning(logger, "2");
-
-
-        //for(int k = 0; k < list_size(proceso->pcb->tabla_segmentos); k++){
-        //    SEGMENTO* segmento = (SEGMENTO*) list_get(proceso->pcb->tabla_segmentos, k);
-        //    free(segmento);
-        //}
+        /*
+        for(int i = 0; i < list_size(proceso->pcb->tabla_segmentos); i++){
+            log_warning(logger, "segmento: %d", i);
+            SEGMENTO* segmento = (SEGMENTO*) list_get(proceso->pcb->tabla_segmentos, i);
+            free(segmento);
+        }
+        */
+        
         list_destroy(proceso->pcb->tabla_segmentos);
 
         list_destroy(proceso->pcb->recursos_asignados);
 
-        //log_warning(logger, "3");
 
         list_destroy_and_destroy_elements(proceso->pcb->instrucciones, (void*)liberar_instruccion);
 
         //log_warning(logger, "4");
-        temporal_destroy(proceso->pcb->cronometro_ready);
-        temporal_destroy(proceso->pcb->cronometro_exec);
+        //temporal_destroy(proceso->pcb->cronometro_ready);
+        //temporal_destroy(proceso->pcb->cronometro_exec);
 
         //log_warning(logger, "5");
         free(proceso->pcb);
     }
 
+    for(int i = 0; i < list_size(cronometros); i++){
+        t_temporal* cronometro = (t_temporal*) list_get(cronometros, i);
+        temporal_destroy(cronometro);
+    }
+
     list_destroy(procesos);
 
     log_destroy(logger);
-
-    //pthread_cancel
 
     exit(EXIT_SUCCESS);
 }
@@ -1351,7 +1370,7 @@ void liberar_recursos(Proceso *proceso)
             bool comparar_recurso_por_nombre(Recurso * recurso)
             {
                 return strcmp(recurso->nombre, list_get(proceso->pcb->recursos_asignados, i)) == 0;
-            }
+            };
 
             Recurso *recurso = list_find(recursos, (void *)comparar_recurso_por_nombre);
             recurso->instancias += 1;
@@ -1456,7 +1475,9 @@ void cambiar_estado(Proceso *proceso, ESTADO estado)
 void devolver_proceso_a_cpu(Proceso* proceso){
     proceso->pcb->program_counter++;
     enviar_pcb_a_cpu(proceso->pcb);
+    
     proceso->pcb->cronometro_exec = temporal_create();
+    list_add(cronometros,proceso->pcb->cronometro_exec);
 }
 
 void eliminar_segmentos_de_procesos(){
@@ -1594,31 +1615,14 @@ void manejar_create_segment(Proceso* proceso, int32_t id_segmento, int32_t taman
                     break;
                 case MENSAJE:
                     char* mensaje = obtener_mensaje_del_cliente(socket_memoria);
-                    //log_info(logger, "Mensaje recibido de MEMORIA: %s", mensaje);
                 default: 
                     log_error(logger, "[KERNEL] ERROR DE MEMORIA AL CONSOLIDAR");
                 break;
             }
 
-
-            /*
-                Puede consolidar ? SI --- Envio Peticion
-                NO --- Espero hasta que se pueda...Envio Peticion
-                -> cuando se envie peticion para compactar
-                -> despues nos quedamos esperando a COMPACTACION_TERMINADA
-                -> y actualizar_segmentos_procesos()
-
-                Deberiamos esperar con un semaforo? 
-            */
-
-            //verificar_operaciones_FS_y_Memoria();     (F_READ y F_WRITE)
-
-            //avisar_puede_crear_segmento();  COD OP: SOLICITAR_COMPACTACION
-
             break;
 
         case FALTA_MEMORIA:
-            //log_info(logger, "[KERNEL]: FALTA MEMORIAAAAA!! Terminar el proceso con error ");
 
             log_error(logger, "[KERNEL]: PID: <%d> - FINALIZADO POR ERROR - OUT OF MEMORY", proceso->pcb->PID);
 
@@ -1709,8 +1713,6 @@ void imprimir_tabla_archivos_global(t_list* tabla_archivos_globales){
     log_info(logger, "-----------------");
 }
 
-
-
 void imprimir_cola_block(ARCHIVO_GLOBAL* entrada_archivo_global)
 {
 
@@ -1732,7 +1734,8 @@ void imprimir_cola_block(ARCHIVO_GLOBAL* entrada_archivo_global)
 
     log_info(logger, "Cola Block de %s: %s ", entrada_archivo_global->nombre_archivo, lista_pids);
 
-    entrada_archivo_global->cola_block = copia;
+   
+    queue_destroy(entrada_archivo_global->cola_block); entrada_archivo_global->cola_block = copia; //TODO VERIFICAR
 
     free(lista_pids);
 }

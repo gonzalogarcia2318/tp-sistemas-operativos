@@ -125,10 +125,12 @@ BUFFER* recibir_buffer(int socket) {
 
 void * obtener_paquete_estructura_dinamica(int socketCliente){
   BUFFER *buffer = recibir_buffer(socketCliente);
+  
+  void * buffer_stream_inicial = buffer->stream;
     
   t_list* instrucciones = deserializar_instrucciones(buffer);
 
-  free(buffer->stream);
+  free(buffer_stream_inicial);
   free(buffer);
 
   return instrucciones;
@@ -151,6 +153,9 @@ Lista *obtener_paquete_como_lista(int socketCliente)
   Lista *contenido = list_create();
   //void *buffer = obtener_buffer_del_cliente(&tamanioBuffer, socketCliente);
   BUFFER *buffer = recibir_buffer(socketCliente);
+  void * buffer_stream_inicial = buffer->stream;
+
+
 
   while (desplazamiento < buffer->size)
   {
@@ -164,6 +169,7 @@ Lista *obtener_paquete_como_lista(int socketCliente)
     list_add(contenido, valor);
   }
 
+  free(buffer_stream_inicial);
   free(buffer);
   return contenido;
 }
@@ -190,10 +196,14 @@ char *obtener_mensaje_del_servidor(int socketServidor)
 }
 
 PCB *obtener_paquete_pcb(int socket_cpu){
+
   BUFFER *buffer = recibir_buffer(socket_cpu);
+  void * buffer_stream_inicial = buffer->stream;
     
   PCB* pcb = deserializar_pcb(buffer);
 
+  
+free(buffer_stream_inicial);
   free(buffer);
 
   return pcb;

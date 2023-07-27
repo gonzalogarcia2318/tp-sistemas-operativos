@@ -119,7 +119,7 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
         bool en_finished(Proceso * proceso)
         {
             return proceso->estado == FINISHED;
-        }
+        };
 
     
         t_list *procesos_finished = list_filter(procesos, (void *)en_finished);
@@ -128,7 +128,10 @@ void manejar_proceso_consola(t_list *instrucciones, int socket_consola)
             //log_info(logger, "destrabar semaforo ejecutando");
             sem_post(&semaforo_ejecutando);
         }
+        list_destroy(procesos_finished);
     }
+
+    list_destroy(procesos_en_new);
 
     
 }
@@ -137,6 +140,7 @@ void confirmar_recepcion_a_consola(int socket_consola){
     log_info(logger, "[KERNEL]: Confirmando recepcion a consola - SOCKET_CONSOLA: <%d>", socket_consola);
     PAQUETE *paquete = crear_paquete(RECEPCION_OK);
     enviar_paquete_a_cliente(paquete, socket_consola);
+    eliminar_paquete(paquete);
 }
 
 void enviar_pcb_a_cpu(PCB *pcb)

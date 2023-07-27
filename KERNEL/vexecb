@@ -15,12 +15,12 @@ if [ -f "./$EXECUTABLE" ]; then
         --track-origins=yes \
         --show-reachable=yes \
         --num-callers=20 \
-        --log-file=valgrind_output1.txt \
+        --log-file=valgrind_output.txt \
         --xml-file=valgrind_output.xml \
         --track-origins=yes \
         --show-error-list=yes \
         --errors-for-leak-kinds=all \
-        ./$EXECUTABLE config/kernel_fs.config
+        ./$EXECUTABLE config/kernel_base.config
 
     # Comprobar el código de salida de Valgrind para detectar errores
     VALGRIND_EXIT_CODE=$?
