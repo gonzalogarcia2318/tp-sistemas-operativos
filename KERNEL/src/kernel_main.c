@@ -1374,10 +1374,14 @@ void enviar_proceso_a_memoria(Proceso* proceso){
             //log_info(logger, "[KERNEL]: Llego tabla de segmentos de MEMORIA");
 
             BUFFER *buffer = recibir_buffer(socket_memoria);
+            void* buffer_stream_inicial = buffer->stream;
 
             proceso->pcb->tabla_segmentos = deserializar_segmentos(buffer);
             imprimir_segmentos(proceso);
 
+            free(buffer_stream_inicial);
+            free(buffer);
+            
         break;
         default: 
             log_error(logger, "[KERNEL] ERROR DE MEMORIA AL CREAR PROCESO");
