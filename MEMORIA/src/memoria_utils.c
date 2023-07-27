@@ -276,7 +276,7 @@ char* leer_de_memoria(int32_t direccion_fisica, int32_t bytes_registro)
 
     contenido[tamanio] = '\0';
 
-    log_info(logger,"LEÍ DE MEMORIA EL CONTENIDO:<%s>, DE LA DIRECCIÓN FÍSICA:<%d> y DE TAMANIO:<%d>",
+    log_warning(logger,"LEÍ DE MEMORIA EL CONTENIDO:<%s>, DE LA DIRECCIÓN FÍSICA:<%d> y DE TAMANIO:<%d>",
                      contenido,
                      direccion_fisica,
                      tamanio
@@ -292,7 +292,7 @@ void escribir_en_memoria(char* contenido, int32_t direccion_fisica, int32_t byte
 
     memcpy(posicion,contenido,bytes_registro);
 
-    log_info(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d>",
+    log_warning(logger,"ESCRIBÍ EN MEMORIA EL CONTENIDO:<%s> EN LA DIRECCIÓN FÍSICA:<%d>",
                      contenido,
                      direccion_fisica
             );

@@ -480,7 +480,7 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
                 instruccion->direccionLogica
                 );
 
-    imprimir_registros(pcb->registros_cpu); //TODO BORRAR
+    //imprimir_registros(pcb->registros_cpu); //TODO BORRAR
 
     int32_t tamanio_registro = obtener_tamanio_registro(instruccion->registro);
     log_info(logger, "REGISTRO: <%s> - TAMANIO REGISTRO: <%d>", 
@@ -530,7 +530,7 @@ void ejecutar_mov_in(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb)
                 );
     asignar_a_registro(valor, instruccion->registro, pcb);
     eliminar_paquete(paquete);
-    imprimir_registros(pcb->registros_cpu); //TODO BORRAR
+    //imprimir_registros(pcb->registros_cpu); //TODO BORRAR
 
     free(valor);
     buffer->stream -= buffer->size;
@@ -545,7 +545,7 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
                 instruccion->direccionLogica,
                 instruccion->registro
                 );
-    imprimir_registros(pcb->registros_cpu); //TODO BORRAR
+    //imprimir_registros(pcb->registros_cpu); //TODO BORRAR
 
     char *registro = instruccion->registro; //TODO BORRAR
 
@@ -595,7 +595,7 @@ void ejecutar_mov_out(PAQUETE *paquete, Instruccion *instruccion, PCB *pcb) //MO
                 );
     eliminar_paquete(paquete);
 
-    imprimir_registros(pcb->registros_cpu);
+    //imprimir_registros(pcb->registros_cpu);
 
     free(buffer->stream);
     free(buffer);

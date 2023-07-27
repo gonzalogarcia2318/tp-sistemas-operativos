@@ -185,5 +185,6 @@ void terminar_ejecucion()
 void aplicar_retardo_acceso_bloque()
 {
     int segundos = config_get_int_value(config, "RETARDO_ACCESO_BLOQUE") / 1000;
+    log_info(logger,"Retraso de <%d> segundos por acceso a bloque",segundos);
     sleep(segundos);
 }
