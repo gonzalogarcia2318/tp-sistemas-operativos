@@ -403,10 +403,10 @@ int ejecutar_f_read(char *nombre_archivo, uint32_t puntero_archivo, int tamanio,
 
     log_info(logger, "NOMBRE_ARCHIVO>: %s - VALOR LEIDO: %s", nombre_archivo, valor_leido);
 
-    log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
-                nombre_archivo,
-                puntero_archivo / superbloque.BLOCK_SIZE, //cambiar por el del archivo
-                puntero_archivo / superbloque.BLOCK_SIZE);
+    // log_warning(logger, "ACCESO A BlOQUE: Archivo: <NOMBRE_ARCHIVO>: %s - Bloque Archivo: <NUMERO BLOQUE ARCHIVO>:%d - Bloque File System <NUMERO BLOQUE FS>: %d",
+    //             nombre_archivo,
+    //             puntero_archivo / superbloque.BLOCK_SIZE, //cambiar por el del archivo
+    //             puntero_archivo / superbloque.BLOCK_SIZE);
 
     aplicar_retardo_acceso_bloque();
 
