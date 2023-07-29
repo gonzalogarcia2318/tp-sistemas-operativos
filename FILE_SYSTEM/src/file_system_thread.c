@@ -272,7 +272,7 @@ void ejecutar_f_truncate(char *nombre, int a_truncar)
             if (puntero_indirecto == 0)
                 puntero_indirecto = buscar_bloque_libre();
 
-            archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "wb+");
+            archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "ab+");
 
             for (int bloques_restantes = bloques_necesarios - 1; bloques_restantes >= 0; bloques_restantes--)
             {
@@ -422,7 +422,7 @@ int ejecutar_f_read(char *nombre_archivo, uint32_t puntero_archivo, int tamanio,
 int ejecutar_f_write(char *nombre_archivo, uint32_t puntero_archivo, uint32_t direccion_fisica, int32_t tamanio, int32_t pid)
 {
     uint32_t puntero_traducido = realizar_traduccion_bloque(puntero_archivo, nombre_archivo);
-    archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "wb+");
+    archivo_bloques = fopen(FileSystemConfig.PATH_BLOQUES, "ab+");
 
     char *datos = obtener_info_de_memoria(direccion_fisica, tamanio, pid);
 
